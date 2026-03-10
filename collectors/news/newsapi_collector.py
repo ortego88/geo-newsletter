@@ -1,5 +1,7 @@
 import requests
-from config.config import NEWS_API_KEY
+import os
+
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
 def fetch_news():
 
