@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/dani/geo-newsletter/scheduler/scheduler.py", line 3, in <module>
+    from main import run_realtime
+ModuleNotFoundError: No module named 'main'
+Traceback (most recent call last):
+  File "/Users/dani/geo-newsletter/scheduler/scheduler.py", line 3, in <module>
+    from main import run_realtime
+ModuleNotFoundError: No module named 'main'

@@ -1,0 +1,5 @@
+requests
+newspaper3k
+langdetect
+deep-translator
+python-dotenv
