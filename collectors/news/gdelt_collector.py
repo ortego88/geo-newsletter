@@ -1,5 +1,10 @@
 import requests
-from config.config import GDELT_QUERY
+import os
+
+GDELT_QUERY = os.getenv(
+    "GDELT_QUERY",
+    "oil OR pipeline OR tanker OR refinery"
+)
 import time
 
 time.sleep(5)
