@@ -195,7 +195,7 @@ def run():
         import hashlib
 
         signal_id = hashlib.md5(
-            (s["signal"] + location).encode()
+            f"{s['signal']}_{location}_{datetime.now(UTC).hour}".encode()
         ).hexdigest()
 
         if not already_sent(signal_id):
