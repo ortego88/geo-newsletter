@@ -121,6 +121,8 @@ def run():
 
     new_articles = []
 
+    articles = articles[:300]
+
     for a in articles:
 
         aid = article_id(a)
@@ -337,9 +339,9 @@ def run():
         for e in c["events"]:
             fingerprint += e["title"][:40]
 
-        cluster_id = hashlib.md5(
-            (c["cluster"] + datetime.now().strftime("%Y-%m-%d-%H")).encode()
-        ).hexdigest()
+        fingerprint += datetime.now().strftime("%Y-%m-%d-%H")
+
+        cluster_id = hashlib.md5(fingerprint.encode()).hexdigest()
         
         if already_sent(cluster_id):
             continue

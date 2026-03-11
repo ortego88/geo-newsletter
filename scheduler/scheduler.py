@@ -19,7 +19,7 @@ def realtime():
     print("Running realtime alerts:", datetime.now(UTC))
     run()
 
-scheduler.add_job(realtime, "interval", minutes=5)
+scheduler.add_job(realtime, "interval", minutes=10)
 
 scheduler.add_job(run_morning_digest, "cron", hour=9)
 
