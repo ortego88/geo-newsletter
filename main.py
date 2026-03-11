@@ -142,23 +142,23 @@ def run():
 
     for s in signals:
 
-        if s["mentions"] >= 4:
+        if s["mentions"] < 3:
             continue
+
+        example_text = " ".join(s.get("examples", []))
+
+        location = "Unknown (Global)"
+
+        loc_data = detect_location(example_text)
+
+        if loc_data:
+            location = f"{loc_data.get('location','Unknown')} ({loc_data.get('region','Global')})"
 
         log_signal(
             s["signal"],
             location,
             "osint"
         )
-
-        example_text = " ".join(s.get("examples", []))
-
-        location = "Unknown (Global)"
-
-        loc_data = detect_location(text)
-
-        if loc_data:
-            location = f"{loc_data.get('location','Unknown')} ({loc_data.get('region','Global')})"
 
         message = (
             f"⚠️ Early OSINT signal detected\n\n"
