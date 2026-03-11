@@ -138,13 +138,17 @@ def run():
 
     print("New articles:", len(articles))
 
-    signals = detect_early_signals(articles)
+    signals = detect_early_signals(
+        recent_articles + osint_posts
+    )
+
+    print("SIGNALS DETECTED:", len(signals))
 
     from experiment.signal_logger import log_signal
 
     for s in signals:
 
-        if s["mentions"] < 3:
+        if s["mentions"] < 2:
             continue
 
         example_text = " ".join(s.get("examples", []))
@@ -168,6 +172,8 @@ def run():
             location,
             s["mentions"]
         )
+
+        print("SIGNAL:", s["signal"], s["mentions"])
 
         message = (
             f"⚠️ Early OSINT signal detected\n\n"
