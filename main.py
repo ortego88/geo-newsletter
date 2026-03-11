@@ -186,7 +186,9 @@ def run():
 
         import hashlib
 
-        signal_id = hashlib.md5(s["signal"].encode()).hexdigest()
+        signal_id = hashlib.md5(
+            (s["signal"] + location).encode()
+        ).hexdigest()
 
         if not already_sent(signal_id):
             send_telegram(message)
@@ -330,8 +332,15 @@ def run():
 
     for c in clusters:
 
-        cluster_id = hashlib.md5(c["cluster"].encode()).hexdigest()
+        fingerprint = c["cluster"]
 
+        for e in c["events"]:
+            fingerprint += e["title"][:40]
+
+        cluster_id = hashlib.md5(
+            (c["cluster"] + datetime.now().strftime("%Y-%m-%d-%H")).encode()
+        ).hexdigest()
+        
         if already_sent(cluster_id):
             continue
 
