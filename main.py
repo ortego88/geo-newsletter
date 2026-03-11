@@ -153,8 +153,12 @@ def run():
 
         example_text = " ".join(s.get("examples", []))
 
-        loc_data = detect_location(example_text)
-        location = f"{loc_data['location']} ({loc_data['region']})"
+        location = "Unknown (Global)"
+
+        loc_data = detect_location(text)
+
+        if loc_data:
+            location = f"{loc_data.get('location','Unknown')} ({loc_data.get('region','Global')})"
 
         message = (
             f"⚠️ Early OSINT signal detected\n\n"

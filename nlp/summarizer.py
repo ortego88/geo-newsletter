@@ -13,7 +13,7 @@ def clean_text(text):
     text = text.replace("\n", " ")
 
     # espacios extra
-    text = re.sub("\s+", " ", text)
+    text = re.sub(r"\s+", " ", text)
 
     return text.strip()
 
