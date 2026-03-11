@@ -160,6 +160,13 @@ def run():
             "osint"
         )
 
+        print(
+            "EARLY SIGNAL:",
+            s["signal"],
+            location,
+            s["mentions"]
+        )
+
         message = (
             f"⚠️ Early OSINT signal detected\n\n"
             f"Signal: {s['signal']}\n"
