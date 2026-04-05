@@ -1,0 +1,15 @@
+# Phase 1 Dependencies
+
+This file includes the required packages for Python 3.13 compatible dependencies for Phase 1.
+
+- numpy
+- pandas
+- requests
+- flask
+
+# Installation
+
+To install the dependencies, run:
+```
+pip install -r requirements-phase1.txt
+```
