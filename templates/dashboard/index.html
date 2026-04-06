@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0">
+    <div class="px-6 py-5 border-b border-slate-800">
+      <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
+      <p class="text-slate-500 text-xs mt-1">Área privada</p>
+    </div>
+
+    <nav class="flex-1 px-4 py-6 space-y-1">
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
+        <span>📊</span> Dashboard
+      </a>
+      <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        <span>⚙️</span> Configuración
+      </a>
+      <a href="/pricing" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        <span>💳</span> Suscripción
+      </a>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-slate-800">
+      <div class="px-3 py-2 mb-2">
+        <p class="text-white text-sm font-medium">{{ current_user.name }}</p>
+        <p class="text-slate-500 text-xs">{{ current_user.email }}</p>
+      </div>
+      <a href="/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        <span>🚪</span> Cerrar sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-auto">
+
+    <!-- Top bar -->
+    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between">
+      <h1 class="text-white font-bold text-xl">Dashboard</h1>
+      <div class="flex items-center gap-3">
+        {% if sub %}
+          {% if sub.status == 'trial' %}
+            <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+              🔔 Período de prueba activo
+            </span>
+          {% elif sub.status == 'active' %}
+            <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+              ✅ Plan {{ plans[sub.plan].name }}
+            </span>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="px-8 py-6">
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="mb-4 p-3 rounded-lg text-sm
+            {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+            {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+            {% else %}bg-amber-500/10 border border-amber-500/30 text-amber-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <!-- Trial/subscription banner -->
+      {% if sub and sub.status == 'trial' %}
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 mb-6 flex items-center justify-between">
+          <div>
+            <p class="text-amber-400 font-semibold">⏳ Período de prueba activo</p>
+            <p class="text-slate-400 text-sm mt-1">
+              {% if sub.trial_ends_at %}
+                Tu prueba gratuita finaliza el {{ sub.trial_ends_at[:10] }}.
+              {% endif %}
+              Añade tu método de pago para no perder el acceso.
+            </p>
+          </div>
+          <a href="/checkout/trial" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0">
+            Activar plan
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Stats row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Plan activo</p>
+          <p class="text-white font-bold text-xl">
+            {% if sub %}{{ plans[sub.plan].name }}{% else %}—{% endif %}
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Activos</p>
+          <p class="text-white font-bold text-xl">
+            {% if sub and sub.selected_assets and sub.selected_assets != [''] %}
+              {{ sub.selected_assets|length }}
+            {% else %}
+              0
+            {% endif %}
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Alertas hoy</p>
+          <p class="text-white font-bold text-xl">{{ alerts|length if alerts else 0 }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Alertas máx./día</p>
+          <p class="text-white font-bold text-xl">
+            {% if plan_config %}
+              {% if plan_config.max_daily_alerts == -1 %}∞{% else %}{{ plan_config.max_daily_alerts }}{% endif %}
+            {% else %}—{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Pro: real-time dashboard / Basic/Premium: limited view -->
+      {% if plan_config and plan_config.dashboard_access %}
+        <div class="bg-slate-800 border border-emerald-500/30 rounded-2xl p-6 mb-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h2 class="text-white font-bold">Dashboard en tiempo real</h2>
+            <span class="text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">PRO</span>
+          </div>
+          <p class="text-slate-400 text-sm">El dashboard completo con gráficos en tiempo real está disponible aquí.</p>
+          <a href="/api/stats" class="inline-block mt-3 text-emerald-400 hover:text-emerald-300 text-sm transition">Ver estadísticas API →</a>
+        </div>
+      {% else %}
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-white font-bold">Dashboard en tiempo real</h2>
+            <span class="text-slate-500 text-xs bg-slate-700 px-2 py-0.5 rounded-full">Solo plan Profesional</span>
+          </div>
+          <p class="text-slate-400 text-sm mb-4">Accede al dashboard en tiempo real con gráficos, mapa de calor geopolítico y API key personal.</p>
+          <a href="/pricing" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition">
+            Actualizar a Profesional →
+          </a>
+        </div>
+      {% endif %}
+
+      <!-- Recent alerts table -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+          <h2 class="font-bold text-white">Alertas recientes</h2>
+          <span class="text-slate-500 text-xs">Últimas {{ alerts|length if alerts else 0 }} señales</span>
+        </div>
+        {% if alerts %}
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-700 bg-slate-900/50">
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Activo</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Dirección</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Confianza</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Fecha</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Análisis</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                {% for alert in alerts %}
+                  <tr class="hover:bg-slate-700/30 transition">
+                    <td class="px-6 py-4 font-semibold text-white">{{ alert[0] or '—' }}</td>
+                    <td class="px-6 py-4">
+                      {% if alert[1] in ('up', 'bullish', 'positive', 'alza') %}
+                        <span class="text-emerald-400">📈 Alza</span>
+                      {% elif alert[1] in ('down', 'bearish', 'negative', 'baja') %}
+                        <span class="text-red-400">📉 Baja</span>
+                      {% else %}
+                        <span class="text-slate-400">➡️ Lateral</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-300">
+                      {% if alert[2] %}
+                        <div class="flex items-center gap-2">
+                          <div class="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full
+                              {% if alert[2] >= 70 %}bg-emerald-500
+                              {% elif alert[2] >= 40 %}bg-amber-500
+                              {% else %}bg-red-500{% endif %}"
+                              style="width: {{ alert[2] }}%"></div>
+                          </div>
+                          <span class="text-xs">{{ alert[2] }}%</span>
+                        </div>
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-500 text-xs">{{ alert[3][:16] if alert[3] else '—' }}</td>
+                    <td class="px-6 py-4 text-slate-400 text-xs max-w-xs truncate">{{ alert[4][:80] if alert[4] else '—' }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="px-6 py-12 text-center">
+            <div class="text-4xl mb-3">📡</div>
+            <p class="text-slate-400">Aún no hay alertas. El pipeline analiza nuevos eventos cada 10 minutos.</p>
+            <a href="/dashboard/settings" class="inline-block mt-4 text-emerald-400 hover:text-emerald-300 text-sm transition">
+              Configura tus activos →
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
