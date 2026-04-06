@@ -134,7 +134,7 @@
           <h2 class="font-bold text-white mb-4">Idioma de las alertas</h2>
           <div class="flex flex-wrap gap-3">
             {% set available_langs = plan_config.languages %}
-            {% set all_langs = [('es', '🇪🇸 Español'), ('en', '🇬🇧 English'), ('fr', '🇫🇷 Français'), ('de', '🇩🇪 Deutsch'), ('it', '🇮🇹 Italiano'), ('pt', '🇵🇹 Português'), ('zh', '🇨🇳 中文'), ('ar', '🇸🇦 العربية')] %}
+            {% set all_langs = [('es', '🇪🇸 Español'), ('en', '🇬🇧 English')] %}
             {% for lang_code, lang_name in all_langs %}
               {% set is_available = lang_code in available_langs %}
               <label class="flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition
@@ -246,9 +246,7 @@
 
 <script>
   var DASH_LANG_META = {
-    es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }, fr: { flag: '🇫🇷' },
-    de: { flag: '🇩🇪' }, it: { flag: '🇮🇹' }, pt: { flag: '🇵🇹' },
-    zh: { flag: '🇨🇳' }, ar: { flag: '🇸🇦' }
+    es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }
   };
   var dashCurrentLang = '{{ current_user.language or "es" }}';
 
@@ -317,7 +315,9 @@
           });
         } else {
           this.checked = false;
-          showToast(`Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
+          showToast(dashCurrentLang === 'en'
+            ? `Your plan allows up to ${MAX_ASSETS} assets. Upgrade to Pro to access all of them.`
+            : `Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
         }
       }
     });
