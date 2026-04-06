@@ -14,6 +14,56 @@ from src.services.real_price_fetcher import RealPriceFetcher
 logger = logging.getLogger("prediction_validator")
 
 
+def _send_validation_telegram(result: dict, stats: dict | None = None):
+    """Envía a Telegram el resultado de una validación de predicción."""
+    try:
+        from src.services.telegram_sender import send_telegram
+    except Exception as e:
+        logger.error(f"Error importando telegram_sender: {e}")
+        return
+
+    outcome = result.get("outcome", "unknown")
+    asset = result.get("asset", "?")
+    direction = result.get("direction", "neutral")
+    actual_change = result.get("actual_change", 0.0)
+    price_at = result.get("price_at_prediction", 0.0)
+    price_now = result.get("price_at_validation", 0.0)
+    title = result.get("title", "")[:80]
+
+    outcome_emoji = "✅" if outcome == "correct" else "❌"
+    outcome_label = "CORRECTA" if outcome == "correct" else "INCORRECTA"
+    change_emoji = "📈" if actual_change > 0 else ("📉" if actual_change < 0 else "➡️")
+    dir_label_map = {
+        "up": "ALZA ↑", "bullish": "ALZA ↑", "positive": "ALZA ↑", "alza": "ALZA ↑",
+        "down": "BAJA ↓", "bearish": "BAJA ↓", "negative": "BAJA ↓", "baja": "BAJA ↓",
+        "neutral": "NEUTRAL ↔",
+    }
+    dir_label = dir_label_map.get(direction.lower(), direction.upper())
+
+    lines = [
+        f"📊 *RESULTADO DE PREDICCIÓN*",
+        f"",
+        f"📌 {title}",
+        f"",
+        f"• Activo: *{asset}*",
+        f"• Dirección predicha: *{dir_label}*",
+        f"• Precio en alerta: *{price_at:.4g}*",
+        f"• Precio actual: *{price_now:.4g}*",
+        f"• Cambio real: *{change_emoji} {actual_change:+.2f}%*",
+        f"",
+        f"{outcome_emoji} Predicción: *{outcome_label}*",
+    ]
+
+    if stats and stats.get("total", 0) > 0:
+        lines += [
+            f"",
+            f"🎯 Precisión acumulada: *{stats['accuracy_pct']}%* ({stats['correct']}/{stats['total']})",
+        ]
+
+    message = "\n".join(lines)
+    send_telegram(message)
+
+
 class PredictionValidatorScheduler:
     def __init__(
         self,
@@ -76,6 +126,9 @@ class PredictionValidatorScheduler:
                     f"{asset} cambio real: {result['actual_change']:+.2f}% | "
                     f"predicho: {result['predicted_change']:+.1f}%"
                 )
+                # Enviar resultado a Telegram
+                stats = self.tracker.get_accuracy_stats()
+                _send_validation_telegram(result, stats)
 
         if validated_count:
             stats = self.tracker.get_accuracy_stats()
