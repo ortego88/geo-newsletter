@@ -1,0 +1,189 @@
+"""
+Dashboard web para geo-newsletter.
+Ejecutar con: python dashboard.py
+Abrir en: http://localhost:5000
+"""
+import json
+import os
+import threading
+import time
+from collections import deque
+from datetime import datetime
+from pathlib import Path
+
+from flask import Flask, Response, jsonify, render_template, request
+
+from src.services.prediction_tracker import PredictionTracker
+
+app = Flask(__name__)
+
+DB_PATH = "data/predictions.db"
+LOG_PATH = "data/scheduler.log"
+DEDUP_PATH = "data/seen_articles.txt"
+
+tracker = PredictionTracker(db_path=DB_PATH)
+
+# Buffer circular de logs en memoria (últimas 500 líneas)
+log_buffer = deque(maxlen=500)
+_pipeline_running = False
+_last_run = None
+_last_run_count = 0
+
+
+def tail_log_file(path: str, n: int = 200) -> list:
+    """Lee las últimas N líneas del archivo de log."""
+    try:
+        p = Path(path)
+        if not p.exists():
+            return ["(Sin logs aún — arranca run_scheduler.py para ver logs)"]
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        return [line.rstrip() for line in lines[-n:]]
+    except Exception as e:
+        return [f"Error leyendo log: {e}"]
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/api/stats")
+def api_stats():
+    stats = tracker.get_accuracy_stats()
+    return jsonify({
+        "total": stats.get("total", 0),
+        "correct": stats.get("correct", 0),
+        "incorrect": stats.get("incorrect", 0),
+        "accuracy_pct": stats.get("accuracy_pct", 0.0),
+        "last_run": _last_run,
+        "last_run_count": _last_run_count,
+        "pipeline_running": _pipeline_running,
+    })
+
+
+@app.route("/api/predictions")
+def api_predictions():
+    limit = int(request.args.get("limit", 50))
+    preds = tracker.get_recent_predictions(limit=limit)
+    return jsonify(preds)
+
+
+@app.route("/api/logs")
+def api_logs():
+    n = int(request.args.get("n", 200))
+    lines = tail_log_file(LOG_PATH, n)
+    return jsonify({"lines": lines, "count": len(lines)})
+
+
+@app.route("/api/status")
+def api_status():
+    dedup_exists = Path(DEDUP_PATH).exists()
+    dedup_count = 0
+    if dedup_exists:
+        try:
+            with open(DEDUP_PATH, encoding="utf-8", errors="replace") as f:
+                dedup_count = sum(1 for _ in f)
+        except Exception:
+            pass
+    db_exists = Path(DB_PATH).exists()
+
+    # Comprobar si el scheduler está activo (log modificado en los últimos 15 min)
+    log_path = Path(LOG_PATH)
+    scheduler_active = False
+    if log_path.exists():
+        age_seconds = time.time() - log_path.stat().st_mtime
+        scheduler_active = age_seconds < 900  # 15 minutos
+
+    return jsonify({
+        "scheduler_log_exists": log_path.exists(),
+        "scheduler_active": scheduler_active,
+        "dedup_file_exists": dedup_exists,
+        "dedup_articles_seen": dedup_count,
+        "db_exists": db_exists,
+        "pipeline_running": _pipeline_running,
+        "last_run": _last_run,
+        "timestamp": datetime.now().isoformat(),
+    })
+
+
+@app.route("/api/run-pipeline", methods=["POST"])
+def api_run_pipeline():
+    global _pipeline_running, _last_run, _last_run_count
+
+    if _pipeline_running:
+        return jsonify({"status": "already_running", "message": "Pipeline ya en ejecución"}), 409
+
+    def _run():
+        global _pipeline_running, _last_run, _last_run_count
+        _pipeline_running = True
+        try:
+            from src.services.pipeline_v2 import AnalysisPipeline
+            pl = AnalysisPipeline(db_path=DB_PATH)
+            events = pl.run(minutes=120, min_score=30)
+            _last_run_count = len(events) if events else 0
+            _last_run = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            _last_run = f"ERROR: {e}"
+        finally:
+            _pipeline_running = False
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    return jsonify({"status": "started", "message": "Pipeline iniciado en segundo plano"})
+
+
+@app.route("/api/reset-dedup", methods=["POST"])
+def api_reset_dedup():
+    try:
+        p = Path(DEDUP_PATH)
+        if p.exists():
+            p.unlink()
+        return jsonify({
+            "status": "ok",
+            "message": "Deduplicador reseteado. El próximo ciclo procesará todas las noticias como nuevas.",
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/stream/logs")
+def stream_logs():
+    """SSE endpoint para streaming de logs en tiempo real."""
+    def generate():
+        last_size = 0
+        while True:
+            try:
+                p = Path(LOG_PATH)
+                if p.exists():
+                    current_size = p.stat().st_size
+                    if current_size != last_size:
+                        with open(LOG_PATH, "r", encoding="utf-8", errors="replace") as f:
+                            f.seek(last_size)
+                            new_lines = f.read()
+                        last_size = current_size
+                        for line in new_lines.splitlines():
+                            if line.strip():
+                                yield f"data: {json.dumps(line)}\n\n"
+            except Exception:
+                pass
+            time.sleep(2)
+
+    return Response(
+        generate(),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("  🌍 GEO-NEWSLETTER DASHBOARD")
+    print("=" * 60)
+    print(f"  Abre en tu navegador: http://localhost:5000")
+    print(f"  Base de datos:        {DB_PATH}")
+    print(f"  Log del scheduler:    {LOG_PATH}")
+    print("=" * 60)
+    os.makedirs("data", exist_ok=True)
+    os.makedirs("templates", exist_ok=True)
+    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
