@@ -27,17 +27,33 @@ def index():
 
     # Get recent alerts from predictions DB
     alerts = []
+    accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0}
     try:
         pred_db_path = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
         conn2 = _sq.connect(pred_db_path)
         c2 = conn2.cursor()
         c2.execute(
-            """SELECT asset, direction, confidence, created_at, reasoning
+            """SELECT asset, direction, confidence, predicted_at, reasoning,
+                      outcome, price_at_prediction, price_at_validation
                FROM predictions
-               ORDER BY created_at DESC
+               ORDER BY predicted_at DESC
                LIMIT 20"""
         )
         alerts = c2.fetchall()
+        # Fetch accuracy stats
+        c2.execute(
+            "SELECT outcome FROM predictions WHERE outcome != 'pending' AND outcome IS NOT NULL"
+        )
+        outcomes = c2.fetchall()
+        if outcomes:
+            total = len(outcomes)
+            correct = sum(1 for r in outcomes if r[0] == "correct")
+            accuracy_stats = {
+                "total": total,
+                "correct": correct,
+                "incorrect": total - correct,
+                "accuracy_pct": round(correct / total * 100, 1) if total > 0 else 0.0,
+            }
         conn2.close()
     except Exception:
         pass
@@ -48,6 +64,7 @@ def index():
         plan_config=plan_config,
         plans=PLANS,
         alerts=alerts,
+        accuracy_stats=accuracy_stats,
         available_assets=AVAILABLE_ASSETS,
     )
 

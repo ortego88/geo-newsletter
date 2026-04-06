@@ -134,6 +134,34 @@
         </div>
       </div>
 
+      <!-- Prediction accuracy stats -->
+      {% if accuracy_stats and accuracy_stats.total > 0 %}
+      <div class="bg-slate-800 border border-emerald-500/20 rounded-2xl p-6 mb-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span>🎯</span>
+          <h2 class="text-white font-bold" data-i18n="dash.prediction_accuracy">Precisión de predicciones</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.accuracy">Precisión</p>
+            <p class="text-emerald-400 font-bold text-2xl">{{ accuracy_stats.accuracy_pct }}%</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.total_validated">Total validadas</p>
+            <p class="text-white font-bold text-2xl">{{ accuracy_stats.total }}</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.correct">Correctas</p>
+            <p class="text-emerald-400 font-bold text-2xl">✅ {{ accuracy_stats.correct }}</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.incorrect">Incorrectas</p>
+            <p class="text-red-400 font-bold text-2xl">❌ {{ accuracy_stats.incorrect }}</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Pro: real-time dashboard / Basic/Premium: limited view -->
       {% if plan_config and plan_config.dashboard_access %}
         <div class="bg-slate-800 border border-emerald-500/30 rounded-2xl p-6 mb-6">
@@ -172,6 +200,8 @@
                   <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
                   <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dirección</th>
                   <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_confidence">Confianza</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Resultado</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_prices">Precios</th>
                   <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha</th>
                   <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_analysis">Análisis</th>
                 </tr>
@@ -201,6 +231,30 @@
                           </div>
                           <span class="text-xs">{{ alert[2] }}%</span>
                         </div>
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                      {% if alert[5] == 'correct' %}
+                        <span class="text-emerald-400 font-semibold">✅ <span data-i18n="dash.outcome_correct">Correcta</span></span>
+                      {% elif alert[5] == 'incorrect' %}
+                        <span class="text-red-400 font-semibold">❌ <span data-i18n="dash.outcome_incorrect">Incorrecta</span></span>
+                      {% else %}
+                        <span class="text-amber-400">⏳ <span data-i18n="dash.outcome_pending">Pendiente</span></span>
+                      {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-slate-400 text-xs">
+                      {% if alert[6] %}
+                        <div>{{ "%.4g"|format(alert[6]) }}</div>
+                        {% if alert[7] %}
+                          <div>→ {{ "%.4g"|format(alert[7]) }}
+                            {% set change = ((alert[7] - alert[6]) / alert[6] * 100) %}
+                            <span class="{% if change > 0 %}text-emerald-400{% elif change < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+                              ({{ "%+.2f"|format(change) }}%)
+                            </span>
+                          </div>
+                        {% endif %}
                       {% else %}
                         —
                       {% endif %}
@@ -315,7 +369,17 @@
       "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
       "cookies.policy_link": "Política de cookies",
       "cookies.essential_btn": "Solo esenciales",
-      "cookies.accept_btn": "Aceptar todas"
+      "cookies.accept_btn": "Aceptar todas",
+      "dash.prediction_accuracy": "Precisión de predicciones",
+      "dash.accuracy": "Precisión",
+      "dash.total_validated": "Total validadas",
+      "dash.correct": "Correctas",
+      "dash.incorrect": "Incorrectas",
+      "dash.col_outcome": "Resultado",
+      "dash.col_prices": "Precios",
+      "dash.outcome_correct": "Correcta",
+      "dash.outcome_incorrect": "Incorrecta",
+      "dash.outcome_pending": "Pendiente"
     },
     en: {
       "dash.private_area": "Private area",
@@ -345,7 +409,17 @@
       "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
       "cookies.policy_link": "Cookie policy",
       "cookies.essential_btn": "Essential only",
-      "cookies.accept_btn": "Accept all"
+      "cookies.accept_btn": "Accept all",
+      "dash.prediction_accuracy": "Prediction accuracy",
+      "dash.accuracy": "Accuracy",
+      "dash.total_validated": "Total validated",
+      "dash.correct": "Correct",
+      "dash.incorrect": "Incorrect",
+      "dash.col_outcome": "Outcome",
+      "dash.col_prices": "Prices",
+      "dash.outcome_correct": "Correct",
+      "dash.outcome_incorrect": "Incorrect",
+      "dash.outcome_pending": "Pending"
     }
   };
 
