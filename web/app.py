@@ -51,4 +51,8 @@ def create_app():
 
     app.register_blueprint(main_bp)
 
+    @app.context_processor
+    def inject_cookiebot():
+        return dict(cookiebot_id=os.environ.get('COOKIEBOT_ID', ''))
+
     return app
