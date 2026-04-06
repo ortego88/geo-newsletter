@@ -12,6 +12,17 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 
+def get_subscribed_assets() -> set:
+    """
+    Lee TELEGRAM_ALERT_ASSETS del entorno.
+    Si está vacío → retorna set vacío (significa "todos").
+    """
+    raw = os.getenv("TELEGRAM_ALERT_ASSETS", "").strip()
+    if not raw:
+        return set()
+    return {a.strip().upper() for a in raw.split(",") if a.strip()}
+
+
 def send_telegram(message: str) -> bool:
     """Envía un mensaje a Telegram. Retorna True si tuvo éxito."""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:

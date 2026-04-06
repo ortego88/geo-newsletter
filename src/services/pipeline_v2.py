@@ -273,5 +273,12 @@ class AnalysisPipeline:
         for i, event in enumerate(analyzed, 1):
             event["rank"] = i
 
+        # Paso 7: Resolver conflictos de señales contradictorias
+        logger.info("⚖️  PASO 7: Resolviendo conflictos de señal...")
+        from src.services.signal_resolver import resolve_signals
+        pre_count = len(analyzed)
+        analyzed = resolve_signals(analyzed)
+        logger.info(f"   ✅ {pre_count} → {len(analyzed)} eventos tras resolución")
+
         logger.info("✅ PIPELINE COMPLETADO")
         return analyzed
