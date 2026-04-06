@@ -53,7 +53,11 @@ def register():
         if User.get_by_email(email):
             flash("Ya existe una cuenta con ese email", "error")
             return render_template("auth/register.html")
-        user = User.create(email, password, name)
+        VALID_LANGS = {'es', 'en', 'fr', 'de', 'it', 'pt', 'zh', 'ar'}
+        preferred_lang = request.form.get("preferred_lang", "es").strip()
+        if preferred_lang not in VALID_LANGS:
+            preferred_lang = 'es'
+        user = User.create(email, password, name, language=preferred_lang)
         login_user(user, remember=True)
         flash(
             "Cuenta creada. Tienes 7 días de prueba gratuita. "

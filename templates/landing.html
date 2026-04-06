@@ -26,10 +26,21 @@
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       <span class="text-emerald-400 font-bold text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
       <div class="flex items-center gap-4">
-        <a href="#precios" class="text-sm text-slate-400 hover:text-white transition">Precios</a>
-        <a href="#faq" class="text-sm text-slate-400 hover:text-white transition">FAQ</a>
-        <a href="/login" class="text-sm text-slate-300 hover:text-white transition">Iniciar sesión</a>
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+        <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
+        <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
+        <a href="/login" class="text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+        <!-- Language selector in nav -->
+        <div class="relative" id="lang-menu-wrapper">
+          <button onclick="toggleLangMenu()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="lang-btn">
+            <span id="lang-flag">🇪🇸</span>
+            <span id="lang-code" class="font-semibold uppercase">ES</span>
+            <span class="text-xs text-slate-600">▾</span>
+          </button>
+          <div id="lang-dropdown" class="hidden absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
+            <!-- items injected by JS -->
+          </div>
+        </div>
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
           Empezar gratis
         </a>
       </div>
@@ -41,47 +52,47 @@
     <div class="max-w-4xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm px-4 py-1.5 rounded-full mb-8">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        Alertas en tiempo real · Más de 12 activos · IA en constante aprendizaje
+        <span data-i18n="hero.badge">Alertas en tiempo real · Más de 12 activos · IA en constante aprendizaje</span>
       </div>
       <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
-        Alertas geopolíticas con <span class="text-emerald-400">IA</span><br>
-        para traders en <span class="text-emerald-400">tiempo real</span>
+        <span data-i18n="hero.h1_part1">Alertas geopolíticas con</span> <span class="text-emerald-400" data-i18n="hero.h1_ai">IA</span><br>
+        <span data-i18n="hero.h1_part2">para traders en</span> <span class="text-emerald-400" data-i18n="hero.h1_rt">tiempo real</span>
       </h1>
-      <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
+      <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10" data-i18n="hero.subtitle">
         Nuestro modelo de inteligencia artificial monitoriza eventos geopolíticos globales, los analiza y te envía señales de trading instantáneas en Telegram o WhatsApp. Un sistema que aprende cada día para ofrecerte predicciones más precisas.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20">
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary">
           🚀 Empezar gratis — 7 días
         </a>
-        <a href="#precios" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition">
+        <a href="#precios" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition" data-i18n="hero.cta_secondary">
           Ver precios →
         </a>
       </div>
-      <p class="mt-4 text-sm text-slate-500">Sin compromiso · Cancela cuando quieras · No se cobra hasta el día 8</p>
+      <p class="mt-4 text-sm text-slate-500" data-i18n="hero.disclaimer">Sin compromiso · Cancela cuando quieras · No se cobra hasta el día 8</p>
     </div>
   </section>
 
   <!-- FEATURES -->
   <section class="py-20 px-6 bg-slate-800/30">
     <div class="max-w-5xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-4">¿Por qué GEO-NEWSLETTER?</h2>
-      <p class="text-center text-slate-400 mb-12 max-w-2xl mx-auto">La primera plataforma de alertas de trading impulsada por inteligencia artificial que aprende continuamente de los mercados y la geopolítica global.</p>
+      <h2 class="text-3xl font-bold text-center text-white mb-4" data-i18n="features.title">¿Por qué GEO-NEWSLETTER?</h2>
+      <p class="text-center text-slate-400 mb-12 max-w-2xl mx-auto" data-i18n="features.subtitle">La primera plataforma de alertas de trading impulsada por inteligencia artificial que aprende continuamente de los mercados y la geopolítica global.</p>
       <div class="grid md:grid-cols-3 gap-8">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
           <div class="text-4xl mb-4">🌍</div>
-          <h3 class="text-xl font-bold text-white mb-3">Cobertura global</h3>
-          <p class="text-slate-400">Monitorizamos más de 50 fuentes de noticias geopolíticas en tiempo real: conflictos armados, sanciones económicas, acuerdos comerciales, elecciones y crisis energéticas.</p>
+          <h3 class="text-xl font-bold text-white mb-3" data-i18n="features.global.title">Cobertura global</h3>
+          <p class="text-slate-400" data-i18n="features.global.desc">Monitorizamos más de 50 fuentes de noticias geopolíticas en tiempo real: conflictos armados, sanciones económicas, acuerdos comerciales, elecciones y crisis energéticas.</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
           <div class="text-4xl mb-4">🤖</div>
-          <h3 class="text-xl font-bold text-white mb-3">IA que aprende cada día</h3>
-          <p class="text-slate-400">Nuestro modelo de inteligencia artificial analiza cada evento con GPT de última generación y se entrena continuamente con nuevos datos. Cuantos más eventos procesa, más preciso y fiable se vuelve en sus predicciones sobre activos financieros.</p>
+          <h3 class="text-xl font-bold text-white mb-3" data-i18n="features.ai.title">IA que aprende cada día</h3>
+          <p class="text-slate-400" data-i18n="features.ai.desc">Nuestro modelo de inteligencia artificial analiza cada evento con GPT de última generación y se entrena continuamente con nuevos datos. Cuantos más eventos procesa, más preciso y fiable se vuelve en sus predicciones sobre activos financieros.</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
           <div class="text-4xl mb-4">⚡</div>
-          <h3 class="text-xl font-bold text-white mb-3">Alertas instantáneas</h3>
-          <p class="text-slate-400">Recibe en Telegram o WhatsApp el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en español.</p>
+          <h3 class="text-xl font-bold text-white mb-3" data-i18n="features.alerts.title">Alertas instantáneas</h3>
+          <p class="text-slate-400" data-i18n="features.alerts.desc">Recibe en Telegram o WhatsApp el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en español.</p>
         </div>
       </div>
     </div>
@@ -94,26 +105,26 @@
         <div class="md:flex items-center gap-12">
           <div class="text-6xl mb-8 md:mb-0 text-center md:text-left">🧠</div>
           <div>
-            <span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest">Inteligencia Artificial</span>
-            <h2 class="text-3xl font-bold text-white mb-4">Un modelo que nunca deja de aprender</h2>
-            <p class="text-slate-400 mb-4">
+            <span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest" data-i18n="ai.label">Inteligencia Artificial</span>
+            <h2 class="text-3xl font-bold text-white mb-4" data-i18n="ai.title">Un modelo que nunca deja de aprender</h2>
+            <p class="text-slate-400 mb-4" data-i18n="ai.p1">
               GEO-NEWSLETTER no es un simple agregador de noticias. Es un sistema de inteligencia artificial especializado en el análisis del impacto geopolítico en los mercados financieros. Nuestro modelo está entrenado con miles de eventos históricos y sus correlaciones reales con movimientos de precio en divisas, materias primas, índices y criptomonedas.
             </p>
-            <p class="text-slate-400 mb-6">
+            <p class="text-slate-400 mb-6" data-i18n="ai.p2">
               Cada alerta que generamos retroalimenta nuestro sistema: el modelo aprende de los aciertos y errores, mejora su capacidad de contextualizar eventos y refina continuamente sus predicciones. A diferencia de las herramientas estáticas, GEO-NEWSLETTER evoluciona con el mercado.
             </p>
             <div class="grid sm:grid-cols-3 gap-4 text-center">
               <div class="bg-slate-700/50 rounded-xl p-4">
                 <p class="text-2xl font-extrabold text-emerald-400">50+</p>
-                <p class="text-slate-400 text-sm mt-1">Fuentes monitorizadas</p>
+                <p class="text-slate-400 text-sm mt-1" data-i18n="ai.stat1">Fuentes monitorizadas</p>
               </div>
               <div class="bg-slate-700/50 rounded-xl p-4">
                 <p class="text-2xl font-extrabold text-emerald-400">24/7</p>
-                <p class="text-slate-400 text-sm mt-1">Análisis continuo con IA</p>
+                <p class="text-slate-400 text-sm mt-1" data-i18n="ai.stat2">Análisis continuo con IA</p>
               </div>
               <div class="bg-slate-700/50 rounded-xl p-4">
                 <p class="text-2xl font-extrabold text-emerald-400">10 min</p>
-                <p class="text-slate-400 text-sm mt-1">Ciclo de actualización</p>
+                <p class="text-slate-400 text-sm mt-1" data-i18n="ai.stat3">Ciclo de actualización</p>
               </div>
             </div>
           </div>
@@ -125,18 +136,18 @@
   <!-- PRICING -->
   <section id="precios" class="py-20 px-6 bg-slate-800/30">
     <div class="max-w-5xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-4">Planes y precios</h2>
-      <p class="text-center text-slate-400 mb-10">Todos los planes incluyen 7 días de prueba gratuita</p>
+      <h2 class="text-3xl font-bold text-center text-white mb-4" data-i18n="pricing.title">Planes y precios</h2>
+      <p class="text-center text-slate-400 mb-10" data-i18n="pricing.subtitle">Todos los planes incluyen 7 días de prueba gratuita</p>
 
       <!-- Toggle Mensual / Anual -->
       <div class="flex justify-center mb-10">
         <div class="inline-flex items-center bg-slate-800 border border-slate-700 rounded-full p-1 gap-1">
           <button id="btn-monthly" onclick="setPricing('monthly')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white">
+            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white" data-i18n="pricing.monthly_btn">
             Mensual
           </button>
           <button id="btn-annual" onclick="setPricing('annual')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white">
+            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white" data-i18n="pricing.annual_btn">
             Anual <span class="ml-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">-50%</span>
           </button>
         </div>
@@ -163,7 +174,7 @@
               <span class="line-through text-slate-500 text-sm">24,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-50%</span>
             </div>
-            <p id="price-basic-annual-sub" class="hidden text-slate-500 text-sm mt-1">149,99€ facturado anualmente</p>
+            <p id="price-basic-annual-sub" class="hidden text-slate-500 text-sm mt-1">149,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN</li>
@@ -172,7 +183,7 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial últimas 24h</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-3.5-turbo</li>
           </ul>
-          <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+          <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba
           </a>
         </div>
@@ -180,7 +191,7 @@
         <!-- Premium (most popular) -->
         <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-8 flex flex-col relative shadow-xl shadow-emerald-500/10">
           <div class="absolute -top-4 left-1/2 -translate-x-1/2">
-            <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full">⭐ MÁS POPULAR</span>
+            <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full" data-i18n="pricing.most_popular">⭐ MÁS POPULAR</span>
           </div>
           <div class="mb-6">
             <h3 class="text-xl font-bold text-white mb-1">{{ plans.premium.name }}</h3>
@@ -199,7 +210,7 @@
               <span class="line-through text-slate-500 text-sm">59,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-58%</span>
             </div>
-            <p id="price-premium-annual-sub" class="hidden text-slate-500 text-sm mt-1">299,99€ facturado anualmente</p>
+            <p id="price-premium-annual-sub" class="hidden text-slate-500 text-sm mt-1">299,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN, FR, DE</li>
@@ -211,7 +222,7 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas vía Telegram y WhatsApp</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-4o</li>
           </ul>
-          <a href="/register" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition">
+          <a href="/register" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba
           </a>
         </div>
@@ -223,7 +234,7 @@
             <!-- Precio mensual -->
             <div id="price-pro-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">59,99€</span>
-              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="text-slate-400 text-sm" data-i18n="pricing.per_month">/mes</span>
               <span class="line-through text-slate-500 text-sm">99,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-40%</span>
             </div>
@@ -231,11 +242,11 @@
             <!-- Precio anual -->
             <div id="price-pro-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">49,99€</span>
-              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="text-slate-400 text-sm" data-i18n="pricing.per_month">/mes</span>
               <span class="line-through text-slate-500 text-sm">99,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-50%</span>
             </div>
-            <p id="price-pro-annual-sub" class="hidden text-slate-500 text-sm mt-1">599,99€ facturado anualmente</p>
+            <p id="price-pro-annual-sub" class="hidden text-slate-500 text-sm mt-1">599,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Todos los idiomas</li>
@@ -249,7 +260,7 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas vía Telegram y WhatsApp</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-5.2</li>
           </ul>
-          <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+          <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba
           </a>
         </div>
@@ -260,7 +271,7 @@
   <!-- TESTIMONIALS -->
   <section class="py-20 px-6">
     <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-12">Lo que dicen nuestros usuarios</h2>
+      <h2 class="text-3xl font-bold text-center text-white mb-12" data-i18n="testimonials.title">Lo que dicen nuestros usuarios</h2>
       <div class="grid md:grid-cols-3 gap-6">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
           <div class="text-emerald-400 text-2xl mb-3">★★★★★</div>
@@ -302,49 +313,49 @@
   <!-- FAQ -->
   <section id="faq" class="py-20 px-6 bg-slate-800/30">
     <div class="max-w-2xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-12">Preguntas frecuentes</h2>
+      <h2 class="text-3xl font-bold text-center text-white mb-12" data-i18n="faq.title">Preguntas frecuentes</h2>
       <div class="space-y-4">
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            ¿Necesito tarjeta de crédito para la prueba gratuita?
+            <span data-i18n="faq.q1">¿Necesito tarjeta de crédito para la prueba gratuita?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm">Sí, pedimos los datos de pago al registrarte, pero no se realizará ningún cargo hasta que finalice el período de prueba de 7 días. Puedes cancelar en cualquier momento antes de que termine.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a1">Sí, pedimos los datos de pago al registrarte, pero no se realizará ningún cargo hasta que finalice el período de prueba de 7 días. Puedes cancelar en cualquier momento antes de que termine.</p>
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            ¿Cómo recibo las alertas en Telegram o WhatsApp?
+            <span data-i18n="faq.q2">¿Cómo recibo las alertas en Telegram o WhatsApp?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm">Para Telegram, introduce tu Chat ID en el área de configuración (puedes obtenerlo con @userinfobot). Para WhatsApp, disponible en los planes Premium y Pro, te enviaremos un enlace de vinculación tras el registro.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a2">Para Telegram, introduce tu Chat ID en el área de configuración (puedes obtenerlo con @userinfobot). Para WhatsApp, disponible en los planes Premium y Pro, te enviaremos un enlace de vinculación tras el registro.</p>
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            ¿Con qué frecuencia se actualizan las alertas?
+            <span data-i18n="faq.q3">¿Con qué frecuencia se actualizan las alertas?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm">El pipeline de análisis con IA se ejecuta cada 10 minutos. Solo recibirás alertas cuando haya eventos con score ≥ 60/100 que afecten a tus activos seleccionados, evitando el ruido innecesario.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a3">El pipeline de análisis con IA se ejecuta cada 10 minutos. Solo recibirás alertas cuando haya eventos con score ≥ 60/100 que afecten a tus activos seleccionados, evitando el ruido innecesario.</p>
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            ¿Cómo mejora el modelo de IA con el tiempo?
+            <span data-i18n="faq.q4">¿Cómo mejora el modelo de IA con el tiempo?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm">Nuestro sistema de inteligencia artificial se entrena de forma continua con nuevos eventos geopolíticos y sus resultados reales en los mercados. Cada ciclo de análisis aporta datos que refinan los modelos de predicción, mejorando la precisión del score de impacto y la identificación de activos afectados. El modelo está en constante evolución y aprendizaje.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a4">Nuestro sistema de inteligencia artificial se entrena de forma continua con nuevos eventos geopolíticos y sus resultados reales en los mercados. Cada ciclo de análisis aporta datos que refinan los modelos de predicción, mejorando la precisión del score de impacto y la identificación de activos afectados. El modelo está en constante evolución y aprendizaje.</p>
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            ¿Puedo cambiar de plan en cualquier momento?
+            <span data-i18n="faq.q5">¿Puedo cambiar de plan en cualquier momento?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm">Sí, puedes subir o bajar de plan desde el área de suscripción. El cambio se aplica inmediatamente y el precio se prorratea.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a5">Sí, puedes subir o bajar de plan desde el área de suscripción. El cambio se aplica inmediatamente y el precio se prorratea.</p>
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            ¿Esto es asesoramiento financiero?
+            <span data-i18n="faq.q6">¿Esto es asesoramiento financiero?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm">No. Las alertas son análisis automatizados generados por inteligencia artificial a partir de eventos geopolíticos, diseñadas para informar tu toma de decisiones. No constituyen asesoramiento financiero regulado.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a6">No. Las alertas son análisis automatizados generados por inteligencia artificial a partir de eventos geopolíticos, diseñadas para informar tu toma de decisiones. No constituyen asesoramiento financiero regulado.</p>
         </details>
       </div>
     </div>
@@ -353,9 +364,9 @@
   <!-- CTA FINAL -->
   <section class="py-20 px-6 bg-emerald-500/10 border-y border-emerald-500/20">
     <div class="max-w-2xl mx-auto text-center">
-      <h2 class="text-3xl font-bold text-white mb-4">Opera con ventaja geopolítica e inteligencia artificial</h2>
-      <p class="text-slate-400 mb-8">7 días gratis, sin compromiso. Cancela cuando quieras. Únete a los traders que ya usan IA para anticiparse al mercado.</p>
-      <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20">
+      <h2 class="text-3xl font-bold text-white mb-4" data-i18n="cta.title">Opera con ventaja geopolítica e inteligencia artificial</h2>
+      <p class="text-slate-400 mb-8" data-i18n="cta.subtitle">7 días gratis, sin compromiso. Cancela cuando quieras. Únete a los traders que ya usan IA para anticiparse al mercado.</p>
+      <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="cta.button">
         Crear cuenta gratis →
       </a>
     </div>
@@ -364,37 +375,563 @@
   <!-- FOOTER -->
   <footer class="py-10 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
     <p class="mb-3">
-      <span class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</span> · Alertas geopolíticas con IA para traders
+      <span class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</span> · <span data-i18n="footer.tagline">Alertas geopolíticas con IA para traders</span>
     </p>
     <div class="flex justify-center gap-6">
-      <a href="/pricing" class="hover:text-slate-300 transition">Precios</a>
-      <a href="/login" class="hover:text-slate-300 transition">Iniciar sesión</a>
-      <a href="/register" class="hover:text-slate-300 transition">Registrarse</a>
+      <a href="/pricing" class="hover:text-slate-300 transition" data-i18n="nav.pricing">Precios</a>
+      <a href="/login" class="hover:text-slate-300 transition" data-i18n="nav.login">Iniciar sesión</a>
+      <a href="/register" class="hover:text-slate-300 transition" data-i18n="nav.start_free">Registrarse</a>
     </div>
-    <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto">GEO-NEWSLETTER utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.</p>
-    <p class="mt-3 text-xs text-slate-600">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
+    <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto" data-i18n="footer.ai_desc">GEO-NEWSLETTER utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.</p>
+    <p class="mt-3 text-xs text-slate-600" data-i18n="footer.disclaimer">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
   </footer>
 
   <script>
+    // ── Pricing toggle ──────────────────────────────────────────────────
     function setPricing(mode) {
-      const isAnnual = mode === 'annual';
-
-      // Toggle buttons
+      var isAnnual = mode === 'annual';
       document.getElementById('btn-monthly').className = isAnnual
         ? 'px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white'
         : 'px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white';
       document.getElementById('btn-annual').className = isAnnual
         ? 'px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white'
         : 'px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white';
-
-      // Show/hide price blocks
-      ['basic', 'premium', 'pro'].forEach(plan => {
-        document.getElementById(`price-${plan}-monthly`).classList.toggle('hidden', isAnnual);
-        document.getElementById(`price-${plan}-monthly-sub`).classList.toggle('hidden', isAnnual);
-        document.getElementById(`price-${plan}-annual`).classList.toggle('hidden', !isAnnual);
-        document.getElementById(`price-${plan}-annual-sub`).classList.toggle('hidden', !isAnnual);
+      ['basic', 'premium', 'pro'].forEach(function(plan) {
+        document.getElementById('price-' + plan + '-monthly').classList.toggle('hidden', isAnnual);
+        document.getElementById('price-' + plan + '-monthly-sub').classList.toggle('hidden', isAnnual);
+        document.getElementById('price-' + plan + '-annual').classList.toggle('hidden', !isAnnual);
+        document.getElementById('price-' + plan + '-annual-sub').classList.toggle('hidden', !isAnnual);
       });
     }
+
+    // ── Language system ─────────────────────────────────────────────────
+    var LANG_META = {
+      es: { flag: '🇪🇸', label: 'Español' },
+      en: { flag: '🇬🇧', label: 'English' },
+      fr: { flag: '🇫🇷', label: 'Français' },
+      de: { flag: '🇩🇪', label: 'Deutsch' },
+      it: { flag: '🇮🇹', label: 'Italiano' },
+      pt: { flag: '🇵🇹', label: 'Português' },
+      zh: { flag: '🇨🇳', label: '中文' },
+      ar: { flag: '🇸🇦', label: 'العربية' }
+    };
+
+    var currentLang = 'es';
+
+    var TRANSLATIONS = {
+      es: {
+        "nav.pricing": "Precios",
+        "nav.faq": "FAQ",
+        "nav.login": "Iniciar sesión",
+        "nav.start_free": "Empezar gratis",
+        "hero.badge": "Alertas en tiempo real · Más de 12 activos · IA en constante aprendizaje",
+        "hero.h1_part1": "Alertas geopolíticas con",
+        "hero.h1_ai": "IA",
+        "hero.h1_part2": "para traders en",
+        "hero.h1_rt": "tiempo real",
+        "hero.subtitle": "Nuestro modelo de inteligencia artificial monitoriza eventos geopolíticos globales, los analiza y te envía señales de trading instantáneas en Telegram o WhatsApp. Un sistema que aprende cada día para ofrecerte predicciones más precisas.",
+        "hero.cta_primary": "🚀 Empezar gratis — 7 días",
+        "hero.cta_secondary": "Ver precios →",
+        "hero.disclaimer": "Sin compromiso · Cancela cuando quieras · No se cobra hasta el día 8",
+        "features.title": "¿Por qué GEO-NEWSLETTER?",
+        "features.subtitle": "La primera plataforma de alertas de trading impulsada por inteligencia artificial que aprende continuamente de los mercados y la geopolítica global.",
+        "features.global.title": "Cobertura global",
+        "features.global.desc": "Monitorizamos más de 50 fuentes de noticias geopolíticas en tiempo real: conflictos armados, sanciones económicas, acuerdos comerciales, elecciones y crisis energéticas.",
+        "features.ai.title": "IA que aprende cada día",
+        "features.ai.desc": "Nuestro modelo de inteligencia artificial analiza cada evento con GPT de última generación y se entrena continuamente con nuevos datos. Cuantos más eventos procesa, más preciso y fiable se vuelve en sus predicciones sobre activos financieros.",
+        "features.alerts.title": "Alertas instantáneas",
+        "features.alerts.desc": "Recibe en Telegram o WhatsApp el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en español.",
+        "ai.label": "Inteligencia Artificial",
+        "ai.title": "Un modelo que nunca deja de aprender",
+        "ai.p1": "GEO-NEWSLETTER no es un simple agregador de noticias. Es un sistema de inteligencia artificial especializado en el análisis del impacto geopolítico en los mercados financieros. Nuestro modelo está entrenado con miles de eventos históricos y sus correlaciones reales con movimientos de precio en divisas, materias primas, índices y criptomonedas.",
+        "ai.p2": "Cada alerta que generamos retroalimenta nuestro sistema: el modelo aprende de los aciertos y errores, mejora su capacidad de contextualizar eventos y refina continuamente sus predicciones. A diferencia de las herramientas estáticas, GEO-NEWSLETTER evoluciona con el mercado.",
+        "ai.stat1": "Fuentes monitorizadas",
+        "ai.stat2": "Análisis continuo con IA",
+        "ai.stat3": "Ciclo de actualización",
+        "pricing.title": "Planes y precios",
+        "pricing.subtitle": "Todos los planes incluyen 7 días de prueba gratuita",
+        "pricing.monthly_btn": "Mensual",
+        "pricing.annual_btn": "Anual",
+        "pricing.per_month": "/mes",
+        "pricing.billed_annually": "facturado anualmente",
+        "pricing.start_trial": "Empezar prueba",
+        "pricing.most_popular": "⭐ MÁS POPULAR",
+        "testimonials.title": "Lo que dicen nuestros usuarios",
+        "faq.title": "Preguntas frecuentes",
+        "faq.q1": "¿Necesito tarjeta de crédito para la prueba gratuita?",
+        "faq.a1": "Sí, pedimos los datos de pago al registrarte, pero no se realizará ningún cargo hasta que finalice el período de prueba de 7 días. Puedes cancelar en cualquier momento antes de que termine.",
+        "faq.q2": "¿Cómo recibo las alertas en Telegram o WhatsApp?",
+        "faq.a2": "Para Telegram, introduce tu Chat ID en el área de configuración (puedes obtenerlo con @userinfobot). Para WhatsApp, disponible en los planes Premium y Pro, te enviaremos un enlace de vinculación tras el registro.",
+        "faq.q3": "¿Con qué frecuencia se actualizan las alertas?",
+        "faq.a3": "El pipeline de análisis con IA se ejecuta cada 10 minutos. Solo recibirás alertas cuando haya eventos con score ≥ 60/100 que afecten a tus activos seleccionados, evitando el ruido innecesario.",
+        "faq.q4": "¿Cómo mejora el modelo de IA con el tiempo?",
+        "faq.a4": "Nuestro sistema de inteligencia artificial se entrena de forma continua con nuevos eventos geopolíticos y sus resultados reales en los mercados. Cada ciclo de análisis aporta datos que refinan los modelos de predicción, mejorando la precisión del score de impacto y la identificación de activos afectados. El modelo está en constante evolución y aprendizaje.",
+        "faq.q5": "¿Puedo cambiar de plan en cualquier momento?",
+        "faq.a5": "Sí, puedes subir o bajar de plan desde el área de suscripción. El cambio se aplica inmediatamente y el precio se prorratea.",
+        "faq.q6": "¿Esto es asesoramiento financiero?",
+        "faq.a6": "No. Las alertas son análisis automatizados generados por inteligencia artificial a partir de eventos geopolíticos, diseñadas para informar tu toma de decisiones. No constituyen asesoramiento financiero regulado.",
+        "cta.title": "Opera con ventaja geopolítica e inteligencia artificial",
+        "cta.subtitle": "7 días gratis, sin compromiso. Cancela cuando quieras. Únete a los traders que ya usan IA para anticiparse al mercado.",
+        "cta.button": "Crear cuenta gratis →",
+        "footer.tagline": "Alertas geopolíticas con IA para traders",
+        "footer.ai_desc": "GEO-NEWSLETTER utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.",
+        "footer.disclaimer": "Las alertas son meramente informativas y no constituyen asesoramiento financiero."
+      },
+      en: {
+        "nav.pricing": "Pricing",
+        "nav.faq": "FAQ",
+        "nav.login": "Log in",
+        "nav.start_free": "Start free",
+        "hero.badge": "Real-time alerts · 12+ assets · AI in continuous learning",
+        "hero.h1_part1": "Geopolitical alerts with",
+        "hero.h1_ai": "AI",
+        "hero.h1_part2": "for traders in",
+        "hero.h1_rt": "real time",
+        "hero.subtitle": "Our artificial intelligence model monitors global geopolitical events, analyzes them and sends you instant trading signals via Telegram or WhatsApp. A system that learns every day to offer you more accurate predictions.",
+        "hero.cta_primary": "🚀 Start free — 7 days",
+        "hero.cta_secondary": "See pricing →",
+        "hero.disclaimer": "No commitment · Cancel anytime · No charge until day 8",
+        "features.title": "Why GEO-NEWSLETTER?",
+        "features.subtitle": "The first AI-powered trading alert platform that continuously learns from markets and global geopolitics.",
+        "features.global.title": "Global coverage",
+        "features.global.desc": "We monitor more than 50 sources of geopolitical news in real time: armed conflicts, economic sanctions, trade agreements, elections and energy crises.",
+        "features.ai.title": "AI that learns every day",
+        "features.ai.desc": "Our artificial intelligence model analyzes each event with the latest generation GPT and is continuously trained with new data. The more events it processes, the more accurate and reliable its predictions about financial assets become.",
+        "features.alerts.title": "Instant alerts",
+        "features.alerts.desc": "Receive on Telegram or WhatsApp the affected asset, the direction of the expected movement, the impact score (0-100) and the full reasoning in your language.",
+        "ai.label": "Artificial Intelligence",
+        "ai.title": "A model that never stops learning",
+        "ai.p1": "GEO-NEWSLETTER is not a simple news aggregator. It is an artificial intelligence system specialized in analyzing the geopolitical impact on financial markets. Our model is trained on thousands of historical events and their real correlations with price movements in currencies, commodities, indices and cryptocurrencies.",
+        "ai.p2": "Every alert we generate feeds back into our system: the model learns from successes and mistakes, improves its ability to contextualize events and continuously refines its predictions. Unlike static tools, GEO-NEWSLETTER evolves with the market.",
+        "ai.stat1": "Monitored sources",
+        "ai.stat2": "Continuous AI analysis",
+        "ai.stat3": "Update cycle",
+        "pricing.title": "Plans & pricing",
+        "pricing.subtitle": "All plans include a 7-day free trial",
+        "pricing.monthly_btn": "Monthly",
+        "pricing.annual_btn": "Annual",
+        "pricing.per_month": "/mo",
+        "pricing.billed_annually": "billed annually",
+        "pricing.start_trial": "Start trial",
+        "pricing.most_popular": "⭐ MOST POPULAR",
+        "testimonials.title": "What our users say",
+        "faq.title": "Frequently asked questions",
+        "faq.q1": "Do I need a credit card for the free trial?",
+        "faq.a1": "Yes, we ask for payment details when you register, but no charge will be made until the 7-day trial period ends. You can cancel at any time before it ends.",
+        "faq.q2": "How do I receive alerts on Telegram or WhatsApp?",
+        "faq.a2": "For Telegram, enter your Chat ID in the settings area (you can get it with @userinfobot). For WhatsApp, available on Premium and Pro plans, we will send you a link after registration.",
+        "faq.q3": "How often are alerts updated?",
+        "faq.a3": "The AI analysis pipeline runs every 10 minutes. You will only receive alerts when there are events with a score ≥ 60/100 that affect your selected assets, avoiding unnecessary noise.",
+        "faq.q4": "How does the AI model improve over time?",
+        "faq.a4": "Our artificial intelligence system is continuously trained with new geopolitical events and their real results in the markets. Each analysis cycle contributes data that refines the prediction models, improving the accuracy of the impact score and the identification of affected assets. The model is in constant evolution and learning.",
+        "faq.q5": "Can I change plans at any time?",
+        "faq.a5": "Yes, you can upgrade or downgrade your plan from the subscription area. The change is applied immediately and the price is prorated.",
+        "faq.q6": "Is this financial advice?",
+        "faq.a6": "No. The alerts are automated analyses generated by artificial intelligence from geopolitical events, designed to inform your decision-making. They do not constitute regulated financial advice.",
+        "cta.title": "Trade with geopolitical advantage and artificial intelligence",
+        "cta.subtitle": "7 days free, no commitment. Cancel whenever you want. Join traders already using AI to anticipate the market.",
+        "cta.button": "Create free account →",
+        "footer.tagline": "Geopolitical alerts with AI for traders",
+        "footer.ai_desc": "GEO-NEWSLETTER uses the latest generation GPT artificial intelligence models to analyze geopolitical events and their impact on financial markets. The model is continuously trained and improved.",
+        "footer.disclaimer": "Alerts are informational only and do not constitute financial advice."
+      },
+      fr: {
+        "nav.pricing": "Tarifs",
+        "nav.faq": "FAQ",
+        "nav.login": "Connexion",
+        "nav.start_free": "Commencer gratuitement",
+        "hero.badge": "Alertes en temps réel · Plus de 12 actifs · IA en apprentissage continu",
+        "hero.h1_part1": "Alertes géopolitiques avec",
+        "hero.h1_ai": "IA",
+        "hero.h1_part2": "pour les traders en",
+        "hero.h1_rt": "temps réel",
+        "hero.subtitle": "Notre modèle d'intelligence artificielle surveille les événements géopolitiques mondiaux, les analyse et vous envoie des signaux de trading instantanés sur Telegram ou WhatsApp. Un système qui apprend chaque jour pour vous offrir des prédictions plus précises.",
+        "hero.cta_primary": "🚀 Commencer gratuitement — 7 jours",
+        "hero.cta_secondary": "Voir les tarifs →",
+        "hero.disclaimer": "Sans engagement · Annulez quand vous voulez · Pas de frais avant le jour 8",
+        "features.title": "Pourquoi GEO-NEWSLETTER?",
+        "features.subtitle": "La première plateforme d'alertes de trading alimentée par l'intelligence artificielle qui apprend continuellement des marchés et de la géopolitique mondiale.",
+        "features.global.title": "Couverture mondiale",
+        "features.global.desc": "Nous surveillons plus de 50 sources d'actualités géopolitiques en temps réel : conflits armés, sanctions économiques, accords commerciaux, élections et crises énergétiques.",
+        "features.ai.title": "IA qui apprend chaque jour",
+        "features.ai.desc": "Notre modèle d'intelligence artificielle analyse chaque événement avec le GPT de dernière génération et est continuellement entraîné avec de nouvelles données. Plus il traite d'événements, plus ses prédictions sur les actifs financiers deviennent précises et fiables.",
+        "features.alerts.title": "Alertes instantanées",
+        "features.alerts.desc": "Recevez sur Telegram ou WhatsApp l'actif concerné, la direction du mouvement attendu, le score d'impact (0-100) et le raisonnement complet dans votre langue.",
+        "ai.label": "Intelligence Artificielle",
+        "ai.title": "Un modèle qui n'arrête jamais d'apprendre",
+        "ai.p1": "GEO-NEWSLETTER n'est pas un simple agrégateur de nouvelles. C'est un système d'intelligence artificielle spécialisé dans l'analyse de l'impact géopolitique sur les marchés financiers. Notre modèle est entraîné sur des milliers d'événements historiques et leurs corrélations réelles avec les mouvements de prix en devises, matières premières, indices et cryptomonnaies.",
+        "ai.p2": "Chaque alerte que nous générons alimente notre système : le modèle apprend des succès et des erreurs, améliore sa capacité à contextualiser les événements et affine continuellement ses prédictions. Contrairement aux outils statiques, GEO-NEWSLETTER évolue avec le marché.",
+        "ai.stat1": "Sources surveillées",
+        "ai.stat2": "Analyse IA continue",
+        "ai.stat3": "Cycle de mise à jour",
+        "pricing.title": "Plans et tarifs",
+        "pricing.subtitle": "Tous les plans incluent 7 jours d'essai gratuit",
+        "pricing.monthly_btn": "Mensuel",
+        "pricing.annual_btn": "Annuel",
+        "pricing.per_month": "/mois",
+        "pricing.billed_annually": "facturé annuellement",
+        "pricing.start_trial": "Commencer l'essai",
+        "pricing.most_popular": "⭐ LE PLUS POPULAIRE",
+        "testimonials.title": "Ce que disent nos utilisateurs",
+        "faq.title": "Questions fréquentes",
+        "faq.q1": "Ai-je besoin d'une carte de crédit pour l'essai gratuit?",
+        "faq.a1": "Oui, nous demandons des informations de paiement lors de votre inscription, mais aucun frais ne sera facturé jusqu'à la fin de la période d'essai de 7 jours. Vous pouvez annuler à tout moment avant la fin.",
+        "faq.q2": "Comment recevoir les alertes sur Telegram ou WhatsApp?",
+        "faq.a2": "Pour Telegram, entrez votre Chat ID dans la zone de configuration (vous pouvez l'obtenir avec @userinfobot). Pour WhatsApp, disponible sur les plans Premium et Pro, nous vous enverrons un lien après l'inscription.",
+        "faq.q3": "À quelle fréquence les alertes sont-elles mises à jour?",
+        "faq.a3": "Le pipeline d'analyse IA s'exécute toutes les 10 minutes. Vous ne recevrez des alertes que lorsqu'il y a des événements avec un score ≥ 60/100 affectant vos actifs sélectionnés, évitant le bruit inutile.",
+        "faq.q4": "Comment le modèle IA s'améliore-t-il avec le temps?",
+        "faq.a4": "Notre système d'intelligence artificielle est continuellement entraîné avec de nouveaux événements géopolitiques et leurs résultats réels sur les marchés. Chaque cycle d'analyse apporte des données qui affinent les modèles de prédiction, améliorant la précision du score d'impact et l'identification des actifs affectés. Le modèle est en constante évolution et apprentissage.",
+        "faq.q5": "Puis-je changer de plan à tout moment?",
+        "faq.a5": "Oui, vous pouvez passer à un plan supérieur ou inférieur depuis la zone d'abonnement. Le changement est appliqué immédiatement et le prix est calculé au prorata.",
+        "faq.q6": "Est-ce un conseil financier?",
+        "faq.a6": "Non. Les alertes sont des analyses automatisées générées par l'intelligence artificielle à partir d'événements géopolitiques, conçues pour informer votre prise de décision. Elles ne constituent pas un conseil financier réglementé.",
+        "cta.title": "Tradez avec un avantage géopolitique et l'intelligence artificielle",
+        "cta.subtitle": "7 jours gratuits, sans engagement. Annulez quand vous voulez. Rejoignez les traders qui utilisent déjà l'IA pour anticiper le marché.",
+        "cta.button": "Créer un compte gratuit →",
+        "footer.tagline": "Alertes géopolitiques avec IA pour les traders",
+        "footer.ai_desc": "GEO-NEWSLETTER utilise les modèles d'intelligence artificielle GPT de dernière génération pour analyser les événements géopolitiques et leur impact sur les marchés financiers. Le modèle est continuellement entraîné et amélioré.",
+        "footer.disclaimer": "Les alertes sont purement informatives et ne constituent pas un conseil financier."
+      },
+      de: {
+        "nav.pricing": "Preise",
+        "nav.faq": "FAQ",
+        "nav.login": "Anmelden",
+        "nav.start_free": "Kostenlos starten",
+        "hero.badge": "Echtzeit-Alerts · Über 12 Assets · KI in ständigem Lernen",
+        "hero.h1_part1": "Geopolitische Alerts mit",
+        "hero.h1_ai": "KI",
+        "hero.h1_part2": "für Trader in",
+        "hero.h1_rt": "Echtzeit",
+        "hero.subtitle": "Unser KI-Modell überwacht globale geopolitische Ereignisse, analysiert sie und sendet Ihnen sofortige Trading-Signale per Telegram oder WhatsApp. Ein System, das jeden Tag lernt, um Ihnen genauere Vorhersagen zu bieten.",
+        "hero.cta_primary": "🚀 Kostenlos starten — 7 Tage",
+        "hero.cta_secondary": "Preise ansehen →",
+        "hero.disclaimer": "Keine Verpflichtung · Jederzeit kündbar · Keine Gebühr bis Tag 8",
+        "features.title": "Warum GEO-NEWSLETTER?",
+        "features.subtitle": "Die erste KI-gestützte Trading-Alert-Plattform, die kontinuierlich von Märkten und globaler Geopolitik lernt.",
+        "features.global.title": "Globale Abdeckung",
+        "features.global.desc": "Wir überwachen mehr als 50 geopolitische Nachrichtenquellen in Echtzeit: bewaffnete Konflikte, Wirtschaftssanktionen, Handelsabkommen, Wahlen und Energiekrisen.",
+        "features.ai.title": "KI, die jeden Tag lernt",
+        "features.ai.desc": "Unser KI-Modell analysiert jedes Ereignis mit dem neuesten GPT und wird kontinuierlich mit neuen Daten trainiert. Je mehr Ereignisse es verarbeitet, desto genauer und zuverlässiger werden seine Vorhersagen über Finanzassets.",
+        "features.alerts.title": "Sofortige Alerts",
+        "features.alerts.desc": "Erhalten Sie auf Telegram oder WhatsApp das betroffene Asset, die Richtung der erwarteten Bewegung, den Impact-Score (0-100) und die vollständige Begründung in Ihrer Sprache.",
+        "ai.label": "Künstliche Intelligenz",
+        "ai.title": "Ein Modell, das nie aufhört zu lernen",
+        "ai.p1": "GEO-NEWSLETTER ist kein einfacher Nachrichtenaggregator. Es ist ein KI-System, das auf die Analyse der geopolitischen Auswirkungen auf die Finanzmärkte spezialisiert ist. Unser Modell ist auf Tausenden historischer Ereignisse und ihren realen Korrelationen mit Preisbewegungen in Währungen, Rohstoffen, Indizes und Kryptowährungen trainiert.",
+        "ai.p2": "Jeder Alert, den wir generieren, fließt in unser System zurück: Das Modell lernt aus Erfolgen und Fehlern, verbessert seine Fähigkeit, Ereignisse zu kontextualisieren und verfeinert kontinuierlich seine Vorhersagen. Im Gegensatz zu statischen Tools entwickelt sich GEO-NEWSLETTER mit dem Markt.",
+        "ai.stat1": "Überwachte Quellen",
+        "ai.stat2": "Kontinuierliche KI-Analyse",
+        "ai.stat3": "Aktualisierungszyklus",
+        "pricing.title": "Pläne & Preise",
+        "pricing.subtitle": "Alle Pläne beinhalten 7 Tage kostenlose Testphase",
+        "pricing.monthly_btn": "Monatlich",
+        "pricing.annual_btn": "Jährlich",
+        "pricing.per_month": "/Monat",
+        "pricing.billed_annually": "jährlich abgerechnet",
+        "pricing.start_trial": "Test starten",
+        "pricing.most_popular": "⭐ AM BELIEBTESTEN",
+        "testimonials.title": "Was unsere Nutzer sagen",
+        "faq.title": "Häufig gestellte Fragen",
+        "faq.q1": "Brauche ich eine Kreditkarte für die kostenlose Testphase?",
+        "faq.a1": "Ja, wir fragen bei der Registrierung nach Zahlungsdaten, aber es werden keine Gebühren erhoben, bis die 7-tägige Testphase endet. Sie können jederzeit vor dem Ende kündigen.",
+        "faq.q2": "Wie empfange ich Alerts auf Telegram oder WhatsApp?",
+        "faq.a2": "Für Telegram geben Sie Ihre Chat-ID im Konfigurationsbereich ein (Sie erhalten sie mit @userinfobot). Für WhatsApp, verfügbar in Premium- und Pro-Plänen, senden wir Ihnen nach der Registrierung einen Link.",
+        "faq.q3": "Wie oft werden Alerts aktualisiert?",
+        "faq.a3": "Die KI-Analyse-Pipeline läuft alle 10 Minuten. Sie erhalten nur Alerts, wenn es Ereignisse mit einem Score ≥ 60/100 gibt, die Ihre ausgewählten Assets betreffen, um unnötiges Rauschen zu vermeiden.",
+        "faq.q4": "Wie verbessert sich das KI-Modell mit der Zeit?",
+        "faq.a4": "Unser KI-System wird kontinuierlich mit neuen geopolitischen Ereignissen und ihren realen Ergebnissen auf den Märkten trainiert. Jeder Analysezyklus liefert Daten, die die Vorhersagemodelle verfeinern und die Genauigkeit des Impact-Scores und die Identifikation betroffener Assets verbessern. Das Modell befindet sich in ständiger Weiterentwicklung und Lernen.",
+        "faq.q5": "Kann ich jederzeit den Plan wechseln?",
+        "faq.a5": "Ja, Sie können Ihren Plan im Abonnementbereich upgraden oder downgraden. Die Änderung wird sofort angewendet und der Preis wird anteilig berechnet.",
+        "faq.q6": "Ist das eine Finanzberatung?",
+        "faq.a6": "Nein. Die Alerts sind automatisierte Analysen, die von künstlicher Intelligenz aus geopolitischen Ereignissen generiert werden und zur Information Ihrer Entscheidungsfindung dienen. Sie stellen keine regulierte Finanzberatung dar.",
+        "cta.title": "Handeln Sie mit geopolitischem Vorteil und künstlicher Intelligenz",
+        "cta.subtitle": "7 Tage kostenlos, ohne Verpflichtung. Kündigen Sie wann immer Sie möchten. Schließen Sie sich Tradern an, die bereits KI nutzen, um den Markt zu antizipieren.",
+        "cta.button": "Kostenloses Konto erstellen →",
+        "footer.tagline": "Geopolitische Alerts mit KI für Trader",
+        "footer.ai_desc": "GEO-NEWSLETTER verwendet die neuesten GPT-KI-Modelle zur Analyse geopolitischer Ereignisse und ihrer Auswirkungen auf die Finanzmärkte. Das Modell wird kontinuierlich trainiert und verbessert.",
+        "footer.disclaimer": "Alerts sind rein informativ und stellen keine Finanzberatung dar."
+      },
+      it: {
+        "nav.pricing": "Prezzi",
+        "nav.faq": "FAQ",
+        "nav.login": "Accedi",
+        "nav.start_free": "Inizia gratis",
+        "hero.badge": "Avvisi in tempo reale · Oltre 12 asset · IA in apprendimento continuo",
+        "hero.h1_part1": "Avvisi geopolitici con",
+        "hero.h1_ai": "IA",
+        "hero.h1_part2": "per i trader in",
+        "hero.h1_rt": "tempo reale",
+        "hero.subtitle": "Il nostro modello di intelligenza artificiale monitora gli eventi geopolitici globali, li analizza e ti invia segnali di trading istantanei su Telegram o WhatsApp. Un sistema che impara ogni giorno per offrirti previsioni più precise.",
+        "hero.cta_primary": "🚀 Inizia gratis — 7 giorni",
+        "hero.cta_secondary": "Vedi i prezzi →",
+        "hero.disclaimer": "Senza impegno · Cancella quando vuoi · Nessun addebito fino al giorno 8",
+        "features.title": "Perché GEO-NEWSLETTER?",
+        "features.subtitle": "La prima piattaforma di avvisi di trading basata sull'intelligenza artificiale che apprende continuamente dai mercati e dalla geopolitica globale.",
+        "features.global.title": "Copertura globale",
+        "features.global.desc": "Monitoriamo più di 50 fonti di notizie geopolitiche in tempo reale: conflitti armati, sanzioni economiche, accordi commerciali, elezioni e crisi energetiche.",
+        "features.ai.title": "IA che impara ogni giorno",
+        "features.ai.desc": "Il nostro modello di intelligenza artificiale analizza ogni evento con il GPT di ultima generazione ed è continuamente addestrato con nuovi dati. Più eventi elabora, più accurate e affidabili diventano le sue previsioni sugli asset finanziari.",
+        "features.alerts.title": "Avvisi istantanei",
+        "features.alerts.desc": "Ricevi su Telegram o WhatsApp l'asset interessato, la direzione del movimento atteso, il punteggio di impatto (0-100) e il ragionamento completo nella tua lingua.",
+        "ai.label": "Intelligenza Artificiale",
+        "ai.title": "Un modello che non smette mai di imparare",
+        "ai.p1": "GEO-NEWSLETTER non è un semplice aggregatore di notizie. È un sistema di intelligenza artificiale specializzato nell'analisi dell'impatto geopolitico sui mercati finanziari. Il nostro modello è addestrato su migliaia di eventi storici e le loro correlazioni reali con i movimenti di prezzo in valute, materie prime, indici e criptovalute.",
+        "ai.p2": "Ogni avviso che generiamo alimenta il nostro sistema: il modello impara dai successi e dagli errori, migliora la sua capacità di contestualizzare gli eventi e raffina continuamente le sue previsioni. A differenza degli strumenti statici, GEO-NEWSLETTER evolve con il mercato.",
+        "ai.stat1": "Fonti monitorate",
+        "ai.stat2": "Analisi IA continua",
+        "ai.stat3": "Ciclo di aggiornamento",
+        "pricing.title": "Piani e prezzi",
+        "pricing.subtitle": "Tutti i piani includono 7 giorni di prova gratuita",
+        "pricing.monthly_btn": "Mensile",
+        "pricing.annual_btn": "Annuale",
+        "pricing.per_month": "/mese",
+        "pricing.billed_annually": "fatturato annualmente",
+        "pricing.start_trial": "Inizia prova",
+        "pricing.most_popular": "⭐ PIÙ POPOLARE",
+        "testimonials.title": "Cosa dicono i nostri utenti",
+        "faq.title": "Domande frequenti",
+        "faq.q1": "Ho bisogno di una carta di credito per la prova gratuita?",
+        "faq.a1": "Sì, chiediamo i dati di pagamento al momento della registrazione, ma non verrà addebitato nulla fino alla fine del periodo di prova di 7 giorni. Puoi annullare in qualsiasi momento prima della fine.",
+        "faq.q2": "Come ricevo gli avvisi su Telegram o WhatsApp?",
+        "faq.a2": "Per Telegram, inserisci il tuo Chat ID nell'area di configurazione (puoi ottenerlo con @userinfobot). Per WhatsApp, disponibile nei piani Premium e Pro, ti invieremo un link dopo la registrazione.",
+        "faq.q3": "Con quale frequenza vengono aggiornati gli avvisi?",
+        "faq.a3": "La pipeline di analisi IA viene eseguita ogni 10 minuti. Riceverai avvisi solo quando ci sono eventi con punteggio ≥ 60/100 che riguardano i tuoi asset selezionati, evitando il rumore inutile.",
+        "faq.q4": "Come migliora il modello IA nel tempo?",
+        "faq.a4": "Il nostro sistema di intelligenza artificiale viene continuamente addestrato con nuovi eventi geopolitici e i loro risultati reali nei mercati. Ogni ciclo di analisi apporta dati che affinano i modelli di previsione, migliorando la precisione del punteggio di impatto e l'identificazione degli asset interessati. Il modello è in costante evoluzione e apprendimento.",
+        "faq.q5": "Posso cambiare piano in qualsiasi momento?",
+        "faq.a5": "Sì, puoi passare a un piano superiore o inferiore dall'area di abbonamento. La modifica viene applicata immediatamente e il prezzo viene calcolato proporzionalmente.",
+        "faq.q6": "Questo è un consiglio finanziario?",
+        "faq.a6": "No. Gli avvisi sono analisi automatizzate generate dall'intelligenza artificiale da eventi geopolitici, progettate per informare il processo decisionale. Non costituiscono consulenza finanziaria regolamentata.",
+        "cta.title": "Opera con vantaggio geopolitico e intelligenza artificiale",
+        "cta.subtitle": "7 giorni gratis, senza impegno. Annulla quando vuoi. Unisciti ai trader che già usano l'IA per anticipare il mercato.",
+        "cta.button": "Crea account gratuito →",
+        "footer.tagline": "Avvisi geopolitici con IA per i trader",
+        "footer.ai_desc": "GEO-NEWSLETTER utilizza i modelli di intelligenza artificiale GPT di ultima generazione per analizzare gli eventi geopolitici e il loro impatto sui mercati finanziari. Il modello viene continuamente addestrato e migliorato.",
+        "footer.disclaimer": "Gli avvisi sono puramente informativi e non costituiscono consulenza finanziaria."
+      },
+      pt: {
+        "nav.pricing": "Preços",
+        "nav.faq": "FAQ",
+        "nav.login": "Entrar",
+        "nav.start_free": "Começar grátis",
+        "hero.badge": "Alertas em tempo real · Mais de 12 ativos · IA em aprendizado contínuo",
+        "hero.h1_part1": "Alertas geopolíticos com",
+        "hero.h1_ai": "IA",
+        "hero.h1_part2": "para traders em",
+        "hero.h1_rt": "tempo real",
+        "hero.subtitle": "Nosso modelo de inteligência artificial monitora eventos geopolíticos globais, os analisa e envia sinais de negociação instantâneos pelo Telegram ou WhatsApp. Um sistema que aprende todos os dias para oferecer previsões mais precisas.",
+        "hero.cta_primary": "🚀 Começar grátis — 7 dias",
+        "hero.cta_secondary": "Ver preços →",
+        "hero.disclaimer": "Sem compromisso · Cancele quando quiser · Sem cobrança até o dia 8",
+        "features.title": "Por que GEO-NEWSLETTER?",
+        "features.subtitle": "A primeira plataforma de alertas de trading impulsionada por inteligência artificial que aprende continuamente com os mercados e a geopolítica global.",
+        "features.global.title": "Cobertura global",
+        "features.global.desc": "Monitoramos mais de 50 fontes de notícias geopolíticas em tempo real: conflitos armados, sanções econômicas, acordos comerciais, eleições e crises energéticas.",
+        "features.ai.title": "IA que aprende todos os dias",
+        "features.ai.desc": "Nosso modelo de inteligência artificial analisa cada evento com o GPT de última geração e é continuamente treinado com novos dados. Quanto mais eventos processa, mais precisas e confiáveis se tornam suas previsões sobre ativos financeiros.",
+        "features.alerts.title": "Alertas instantâneos",
+        "features.alerts.desc": "Receba pelo Telegram ou WhatsApp o ativo afetado, a direção do movimento esperado, o score de impacto (0-100) e o raciocínio completo no seu idioma.",
+        "ai.label": "Inteligência Artificial",
+        "ai.title": "Um modelo que nunca para de aprender",
+        "ai.p1": "GEO-NEWSLETTER não é um simples agregador de notícias. É um sistema de inteligência artificial especializado na análise do impacto geopolítico nos mercados financeiros. Nosso modelo é treinado em milhares de eventos históricos e suas correlações reais com movimentos de preços em moedas, commodities, índices e criptomoedas.",
+        "ai.p2": "Cada alerta que geramos alimenta nosso sistema: o modelo aprende com os acertos e erros, melhora sua capacidade de contextualizar eventos e refina continuamente suas previsões. Ao contrário das ferramentas estáticas, a GEO-NEWSLETTER evolui com o mercado.",
+        "ai.stat1": "Fontes monitoradas",
+        "ai.stat2": "Análise IA contínua",
+        "ai.stat3": "Ciclo de atualização",
+        "pricing.title": "Planos e preços",
+        "pricing.subtitle": "Todos os planos incluem 7 dias de teste gratuito",
+        "pricing.monthly_btn": "Mensal",
+        "pricing.annual_btn": "Anual",
+        "pricing.per_month": "/mês",
+        "pricing.billed_annually": "cobrado anualmente",
+        "pricing.start_trial": "Iniciar teste",
+        "pricing.most_popular": "⭐ MAIS POPULAR",
+        "testimonials.title": "O que dizem nossos usuários",
+        "faq.title": "Perguntas frequentes",
+        "faq.q1": "Preciso de cartão de crédito para o teste gratuito?",
+        "faq.a1": "Sim, pedimos dados de pagamento ao se registrar, mas nenhuma cobrança será feita até o final do período de teste de 7 dias. Você pode cancelar a qualquer momento antes do final.",
+        "faq.q2": "Como recebo alertas no Telegram ou WhatsApp?",
+        "faq.a2": "Para o Telegram, insira seu Chat ID na área de configuração (você pode obtê-lo com @userinfobot). Para o WhatsApp, disponível nos planos Premium e Pro, enviaremos um link após o registro.",
+        "faq.q3": "Com que frequência os alertas são atualizados?",
+        "faq.a3": "O pipeline de análise de IA é executado a cada 10 minutos. Você só receberá alertas quando houver eventos com score ≥ 60/100 que afetam seus ativos selecionados, evitando ruído desnecessário.",
+        "faq.q4": "Como o modelo de IA melhora com o tempo?",
+        "faq.a4": "Nosso sistema de inteligência artificial é continuamente treinado com novos eventos geopolíticos e seus resultados reais nos mercados. Cada ciclo de análise contribui com dados que refinam os modelos de previsão, melhorando a precisão do score de impacto e a identificação de ativos afetados. O modelo está em constante evolução e aprendizado.",
+        "faq.q5": "Posso mudar de plano a qualquer momento?",
+        "faq.a5": "Sim, você pode fazer upgrade ou downgrade do seu plano na área de assinatura. A mudança é aplicada imediatamente e o preço é calculado proporcionalmente.",
+        "faq.q6": "Isso é aconselhamento financeiro?",
+        "faq.a6": "Não. Os alertas são análises automatizadas geradas por inteligência artificial a partir de eventos geopolíticos, destinadas a informar sua tomada de decisão. Não constituem aconselhamento financeiro regulamentado.",
+        "cta.title": "Opere com vantagem geopolítica e inteligência artificial",
+        "cta.subtitle": "7 dias grátis, sem compromisso. Cancele quando quiser. Junte-se aos traders que já usam IA para antecipar o mercado.",
+        "cta.button": "Criar conta gratuita →",
+        "footer.tagline": "Alertas geopolíticos com IA para traders",
+        "footer.ai_desc": "GEO-NEWSLETTER usa os modelos de inteligência artificial GPT de última geração para analisar eventos geopolíticos e seu impacto nos mercados financeiros. O modelo é continuamente treinado e melhorado.",
+        "footer.disclaimer": "Os alertas são meramente informativos e não constituem aconselhamento financeiro."
+      },
+      zh: {
+        "nav.pricing": "定价",
+        "nav.faq": "常见问题",
+        "nav.login": "登录",
+        "nav.start_free": "免费开始",
+        "hero.badge": "实时警报 · 超过12种资产 · AI持续学习",
+        "hero.h1_part1": "地缘政治警报与",
+        "hero.h1_ai": "AI",
+        "hero.h1_part2": "为交易者提供",
+        "hero.h1_rt": "实时信号",
+        "hero.subtitle": "我们的人工智能模型监控全球地缘政治事件，对其进行分析，并通过Telegram或WhatsApp向您发送即时交易信号。一个每天学习的系统，为您提供更精准的预测。",
+        "hero.cta_primary": "🚀 免费开始 — 7天",
+        "hero.cta_secondary": "查看定价 →",
+        "hero.disclaimer": "无需承诺 · 随时取消 · 第8天前不收费",
+        "features.title": "为什么选择GEO-NEWSLETTER?",
+        "features.subtitle": "第一个由人工智能驱动的交易警报平台，不断从市场和全球地缘政治中学习。",
+        "features.global.title": "全球覆盖",
+        "features.global.desc": "我们实时监控超过50个地缘政治新闻来源：武装冲突、经济制裁、贸易协议、选举和能源危机。",
+        "features.ai.title": "每天学习的AI",
+        "features.ai.desc": "我们的人工智能模型使用最新一代GPT分析每个事件，并持续用新数据进行训练。处理的事件越多，对金融资产的预测就越准确可靠。",
+        "features.alerts.title": "即时警报",
+        "features.alerts.desc": "在Telegram或WhatsApp上接收受影响的资产、预期运动方向、影响评分（0-100）和您语言的完整推理。",
+        "ai.label": "人工智能",
+        "ai.title": "一个永不停止学习的模型",
+        "ai.p1": "GEO-NEWSLETTER不是简单的新闻聚合器。它是一个专门分析地缘政治对金融市场影响的人工智能系统。我们的模型经过数千个历史事件及其与货币、大宗商品、指数和加密货币价格变动的真实相关性训练。",
+        "ai.p2": "我们生成的每个警报都会反馈到我们的系统中：模型从成功和错误中学习，提高其将事件置于背景中的能力，并不断完善其预测。与静态工具不同，GEO-NEWSLETTER随市场演进。",
+        "ai.stat1": "监控来源",
+        "ai.stat2": "持续AI分析",
+        "ai.stat3": "更新周期",
+        "pricing.title": "计划与定价",
+        "pricing.subtitle": "所有计划均包含7天免费试用",
+        "pricing.monthly_btn": "月付",
+        "pricing.annual_btn": "年付",
+        "pricing.per_month": "/月",
+        "pricing.billed_annually": "按年计费",
+        "pricing.start_trial": "开始试用",
+        "pricing.most_popular": "⭐ 最受欢迎",
+        "testimonials.title": "用户评价",
+        "faq.title": "常见问题",
+        "faq.q1": "免费试用需要信用卡吗?",
+        "faq.a1": "是的，注册时我们需要支付信息，但在7天试用期结束之前不会收取任何费用。您可以在结束前随时取消。",
+        "faq.q2": "如何在Telegram或WhatsApp上接收警报?",
+        "faq.a2": "对于Telegram，在配置区域输入您的Chat ID（可以通过@userinfobot获取）。对于WhatsApp，在高级和专业计划中可用，注册后我们将向您发送链接。",
+        "faq.q3": "警报更新频率如何?",
+        "faq.a3": "AI分析管道每10分钟运行一次。只有当影响您选择资产的事件评分≥60/100时，您才会收到警报，避免不必要的噪音。",
+        "faq.q4": "AI模型如何随时间改进?",
+        "faq.a4": "我们的人工智能系统不断用新的地缘政治事件及其在市场上的真实结果进行训练。每个分析周期都提供数据来完善预测模型，提高影响评分的准确性和受影响资产的识别。该模型处于持续进化和学习中。",
+        "faq.q5": "我可以随时更改计划吗?",
+        "faq.a5": "是的，您可以从订阅区域升级或降级您的计划。更改立即生效，价格按比例计算。",
+        "faq.q6": "这是金融建议吗?",
+        "faq.a6": "不是。这些警报是由人工智能根据地缘政治事件生成的自动化分析，旨在为您的决策提供信息。它们不构成受监管的金融建议。",
+        "cta.title": "以地缘政治优势和人工智能进行交易",
+        "cta.subtitle": "7天免费，无需承诺。随时取消。加入已经使用AI预测市场的交易者。",
+        "cta.button": "创建免费账户 →",
+        "footer.tagline": "为交易者提供AI地缘政治警报",
+        "footer.ai_desc": "GEO-NEWSLETTER使用最新一代GPT人工智能模型分析地缘政治事件及其对金融市场的影响。该模型持续训练和改进。",
+        "footer.disclaimer": "警报仅供参考，不构成金融建议。"
+      },
+      ar: {
+        "nav.pricing": "الأسعار",
+        "nav.faq": "الأسئلة الشائعة",
+        "nav.login": "تسجيل الدخول",
+        "nav.start_free": "ابدأ مجاناً",
+        "hero.badge": "تنبيهات فورية · أكثر من 12 أصل · ذكاء اصطناعي في تعلم مستمر",
+        "hero.h1_part1": "تنبيهات جيوسياسية مع",
+        "hero.h1_ai": "الذكاء الاصطناعي",
+        "hero.h1_part2": "للمتداولين في",
+        "hero.h1_rt": "الوقت الفعلي",
+        "hero.subtitle": "يراقب نموذج الذكاء الاصطناعي لدينا الأحداث الجيوسياسية العالمية ويحللها ويرسل لك إشارات تداول فورية عبر Telegram أو WhatsApp. نظام يتعلم كل يوم لتقديم توقعات أكثر دقة.",
+        "hero.cta_primary": "🚀 ابدأ مجاناً — 7 أيام",
+        "hero.cta_secondary": "عرض الأسعار →",
+        "hero.disclaimer": "بلا التزام · إلغاء في أي وقت · لا رسوم حتى اليوم 8",
+        "features.title": "لماذا GEO-NEWSLETTER؟",
+        "features.subtitle": "أول منصة تنبيهات تداول مدعومة بالذكاء الاصطناعي تتعلم باستمرار من الأسواق والجيوسياسة العالمية.",
+        "features.global.title": "تغطية عالمية",
+        "features.global.desc": "نراقب أكثر من 50 مصدراً للأخبار الجيوسياسية في الوقت الفعلي: النزاعات المسلحة، والعقوبات الاقتصادية، واتفاقيات التجارة، والانتخابات، وأزمات الطاقة.",
+        "features.ai.title": "ذكاء اصطناعي يتعلم كل يوم",
+        "features.ai.desc": "يحلل نموذج الذكاء الاصطناعي لدينا كل حدث باستخدام أحدث جيل من GPT ويتدرب باستمرار على بيانات جديدة. كلما زادت الأحداث التي يعالجها، أصبحت توقعاته حول الأصول المالية أكثر دقة وموثوقية.",
+        "features.alerts.title": "تنبيهات فورية",
+        "features.alerts.desc": "احصل على Telegram أو WhatsApp على الأصل المتأثر، واتجاه الحركة المتوقعة، ودرجة التأثير (0-100) والتفكير الكامل بلغتك.",
+        "ai.label": "الذكاء الاصطناعي",
+        "ai.title": "نموذج لا يتوقف أبداً عن التعلم",
+        "ai.p1": "GEO-NEWSLETTER ليس مجرد مجمّع أخبار. إنه نظام ذكاء اصطناعي متخصص في تحليل التأثير الجيوسياسي على الأسواق المالية. تم تدريب نموذجنا على آلاف الأحداث التاريخية وارتباطاتها الحقيقية مع تحركات الأسعار في العملات والسلع والمؤشرات والعملات المشفرة.",
+        "ai.p2": "كل تنبيه نولّده يُغذّي نظامنا مرة أخرى: يتعلم النموذج من النجاحات والأخطاء، ويحسّن قدرته على وضع الأحداث في سياقها، ويصقل توقعاته باستمرار. على عكس الأدوات الثابتة، تتطور GEO-NEWSLETTER مع السوق.",
+        "ai.stat1": "المصادر المراقبة",
+        "ai.stat2": "تحليل ذكاء اصطناعي مستمر",
+        "ai.stat3": "دورة التحديث",
+        "pricing.title": "الخطط والأسعار",
+        "pricing.subtitle": "جميع الخطط تشمل 7 أيام تجريبية مجانية",
+        "pricing.monthly_btn": "شهري",
+        "pricing.annual_btn": "سنوي",
+        "pricing.per_month": "/شهر",
+        "pricing.billed_annually": "يُفوتر سنوياً",
+        "pricing.start_trial": "بدء التجربة",
+        "pricing.most_popular": "⭐ الأكثر شعبية",
+        "testimonials.title": "ما يقوله مستخدمونا",
+        "faq.title": "الأسئلة الشائعة",
+        "faq.q1": "هل أحتاج إلى بطاقة ائتمان للتجربة المجانية؟",
+        "faq.a1": "نعم، نطلب بيانات الدفع عند التسجيل، لكن لن يتم إجراء أي رسوم حتى نهاية فترة التجربة المجانية لمدة 7 أيام. يمكنك الإلغاء في أي وقت قبل النهاية.",
+        "faq.q2": "كيف أتلقى التنبيهات على Telegram أو WhatsApp؟",
+        "faq.a2": "لـ Telegram، أدخل معرف الدردشة الخاص بك في منطقة الإعدادات (يمكنك الحصول عليه من @userinfobot). لـ WhatsApp، المتاح في خطط Premium وPro، سنرسل لك رابطاً بعد التسجيل.",
+        "faq.q3": "كم مرة يتم تحديث التنبيهات؟",
+        "faq.a3": "يعمل خط أنابيب تحليل الذكاء الاصطناعي كل 10 دقائق. ستتلقى تنبيهات فقط عندما تكون هناك أحداث بدرجة ≥ 60/100 تؤثر على أصولك المختارة، مما يتجنب الضوضاء غير الضرورية.",
+        "faq.q4": "كيف يتحسن نموذج الذكاء الاصطناعي مع مرور الوقت؟",
+        "faq.a4": "يتدرب نظام الذكاء الاصطناعي لدينا باستمرار على أحداث جيوسياسية جديدة ونتائجها الحقيقية في الأسواق. كل دورة تحليل تساهم ببيانات تصقّل نماذج التنبؤ، مما يحسّن دقة درجة التأثير وتحديد الأصول المتأثرة. النموذج في تطور وتعلم مستمر.",
+        "faq.q5": "هل يمكنني تغيير الخطة في أي وقت؟",
+        "faq.a5": "نعم، يمكنك ترقية خطتك أو تخفيضها من منطقة الاشتراك. يتم تطبيق التغيير فوراً ويتم احتساب السعر بالتناسب.",
+        "faq.q6": "هل هذه نصيحة مالية؟",
+        "faq.a6": "لا. التنبيهات هي تحليلات آلية تولّدها الذكاء الاصطناعي من الأحداث الجيوسياسية، مصممة لإعلام قراراتك. لا تشكّل نصيحة مالية منظّمة.",
+        "cta.title": "تداول بميزة جيوسياسية وذكاء اصطناعي",
+        "cta.subtitle": "7 أيام مجاناً، بلا التزام. ألغِ متى تشاء. انضم إلى المتداولين الذين يستخدمون الذكاء الاصطناعي بالفعل لتوقع السوق.",
+        "cta.button": "إنشاء حساب مجاني →",
+        "footer.tagline": "تنبيهات جيوسياسية بالذكاء الاصطناعي للمتداولين",
+        "footer.ai_desc": "تستخدم GEO-NEWSLETTER أحدث نماذج الذكاء الاصطناعي GPT لتحليل الأحداث الجيوسياسية وتأثيرها على الأسواق المالية. يتم تدريب النموذج وتحسينه باستمرار.",
+        "footer.disclaimer": "التنبيهات لأغراض إعلامية فقط ولا تشكّل نصيحة مالية."
+      }
+    };
+
+    function applyLang(lang) {
+      var t = TRANSLATIONS[lang] || TRANSLATIONS['es'];
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+      });
+      document.getElementById('lang-flag').textContent = LANG_META[lang].flag;
+      document.getElementById('lang-code').textContent = lang.toUpperCase();
+      document.documentElement.lang = lang;
+      document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      localStorage.setItem('geo_lang', lang);
+      currentLang = lang;
+    }
+
+    function toggleLangMenu() {
+      var dd = document.getElementById('lang-dropdown');
+      if (dd.classList.contains('hidden')) {
+        // Build items
+        dd.innerHTML = '';
+        Object.keys(LANG_META).forEach(function(code) {
+          var item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition' + (code === currentLang ? ' text-emerald-400 font-semibold' : '');
+          item.innerHTML = '<span>' + LANG_META[code].flag + '</span><span class="uppercase font-semibold">' + code.toUpperCase() + '</span><span class="text-slate-500">' + LANG_META[code].label + '</span>';
+          item.onclick = function() { applyLang(code); dd.classList.add('hidden'); };
+          dd.appendChild(item);
+        });
+        dd.classList.remove('hidden');
+      } else {
+        dd.classList.add('hidden');
+      }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      var wrapper = document.getElementById('lang-menu-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        var dd = document.getElementById('lang-dropdown');
+        if (dd) dd.classList.add('hidden');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var lang = localStorage.getItem('geo_lang') || 'es';
+      if (!TRANSLATIONS[lang]) lang = 'es';
+      applyLang(lang);
+    });
   </script>
 </body>
 </html>

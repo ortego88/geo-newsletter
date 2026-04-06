@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from web.models import PLANS, AVAILABLE_ASSETS, get_conn
 import os
@@ -101,3 +101,21 @@ def settings():
         available_assets=AVAILABLE_ASSETS,
         locked_symbols=locked_symbols,
     )
+
+
+@dashboard_bp.route("/dashboard/set-language", methods=["POST"])
+@login_required
+def set_language():
+    data = request.get_json(silent=True) or {}
+    lang = data.get("language", "es")
+    VALID = {'es', 'en', 'fr', 'de', 'it', 'pt', 'zh', 'ar'}
+    if lang not in VALID:
+        lang = 'es'
+    conn = get_conn()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE users SET language=? WHERE id=?", (lang, current_user.id))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "language": lang})
