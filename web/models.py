@@ -32,7 +32,7 @@ PLANS = {
         "discount_pct": 50,
         "max_assets": 3,
         "max_daily_alerts": 10,
-        "languages": ["es", "en", "fr", "de"],
+        "languages": ["es", "en"],
         "dashboard_access": False,
         "api_access": False,
         "history_days": 7,
@@ -45,7 +45,7 @@ PLANS = {
         "discount_pct": 40,
         "max_assets": -1,  # unlimited
         "max_daily_alerts": -1,  # unlimited
-        "languages": ["es", "en", "fr", "de", "it", "pt", "zh", "ar"],
+        "languages": ["es", "en"],
         "dashboard_access": True,
         "api_access": True,
         "history_days": 30,
