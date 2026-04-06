@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import feedparser
 
+from src.services.content_filter import is_entertainment_noise
 from src.services.deduplicator import Deduplicator
 from src.services.gpt_analyzer import EventAnalyzer
 from src.services.prediction_tracker import PredictionTracker
@@ -120,10 +121,13 @@ EVENT_TAXONOMY = {
 
 def _score_event(article: dict) -> tuple[int, str]:
     """Devuelve (score, category) basado en la taxonomía."""
-    text = (
-        (article.get("title") or "") + " " +
-        (article.get("description") or article.get("summary") or "")
-    ).lower()
+    title = article.get("title") or ""
+    description = article.get("description") or article.get("summary") or ""
+
+    if is_entertainment_noise(title, description):
+        return 0, "FILTERED"
+
+    text = (title + " " + description).lower()
 
     best_score = 0
     best_category = "GENERAL"
@@ -209,6 +213,9 @@ class AnalysisPipeline:
         scored = []
         for article in articles:
             score, category = _score_event(article)
+            if category == "FILTERED":
+                logger.info(f"   🚫 Filtrado (entretenimiento): {article.get('title', '')[:60]}")
+                continue
             if score >= min_score:
                 article["score"] = score
                 article["category"] = category
