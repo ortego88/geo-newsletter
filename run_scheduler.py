@@ -2,22 +2,30 @@
 run_scheduler.py — Punto de entrada principal para producción.
 
 Ejecuta el pipeline de análisis cada 10 minutos y valida predicciones cada hora.
+Incluye un servidor Flask mínimo para el health-check de Railway en $PORT.
 
 Uso:
     python run_scheduler.py
 """
 
 import logging
+import os
 import sys
+import threading
 import time
 from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, jsonify
 
 from src.services.pipeline_v2 import AnalysisPipeline
 from src.services.prediction_tracker import PredictionTracker
 from src.services.prediction_validator_scheduler import PredictionValidatorScheduler
 from src.services.alert_formatter import format_alert
+from src.services.telegram_sender import send_telegram
+
+# Telegram's maximum message length
+TELEGRAM_MAX_MESSAGE_LENGTH = 4096
 
 # --- Configuración de logging ---
 logging.basicConfig(
@@ -29,6 +37,20 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger("scheduler")
+
+# --- Flask health-check server ---
+health_app = Flask(__name__)
+
+
+@health_app.route("/health")
+@health_app.route("/")
+def health():
+    return jsonify({"status": "ok"}), 200
+
+
+def _start_health_server():
+    port = int(os.getenv("PORT", 8080))
+    health_app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 # --- Instancias globales ---
 pipeline = AnalysisPipeline(db_path="data/predictions.db")
@@ -58,6 +80,8 @@ def run_pipeline_cycle():
             alert_text = format_alert(event, analysis)
             print(alert_text)
             print()
+            # Enviar alerta a Telegram (truncar a 4096 caracteres)
+            send_telegram(alert_text[:TELEGRAM_MAX_MESSAGE_LENGTH])
 
         stats = tracker.get_accuracy_stats()
         logger.info(
@@ -92,6 +116,10 @@ def print_banner():
 
 def main():
     print_banner()
+
+    # Iniciar servidor de health-check en hilo daemon
+    health_thread = threading.Thread(target=_start_health_server, daemon=True, name="health-server")
+    health_thread.start()
 
     # Iniciar el validador de predicciones (tiene su propio scheduler interno)
     validator.start()
