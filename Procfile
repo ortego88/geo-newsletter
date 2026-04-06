@@ -1,1 +1,1 @@
-worker: python run_scheduler.py
+web: python run_scheduler.py

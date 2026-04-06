@@ -24,6 +24,7 @@ en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_
 feedfinder2==0.0.4
 feedparser==6.0.12
 filelock==3.25.0
+flask>=2.0
 folium==0.20.0
 geographiclib==2.1
 geopy==2.4.1
