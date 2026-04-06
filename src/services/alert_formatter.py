@@ -337,3 +337,144 @@ def format_alert(event: dict, analysis: dict) -> str:
     lines.append(f"⏰ {timestamp}")
 
     return "\n".join(lines)
+
+
+def format_telegram_alert(event: dict, analysis: dict) -> str:
+    """
+    Genera un mensaje compacto para Telegram en texto plano.
+    El título, la fuente y el reasoning se incluyen sin truncado adicional más allá
+    de los 150 caracteres del reasoning; el tamaño total es típicamente ~300-500 chars.
+    """
+    fetcher = AssetPriceFetcher()
+
+    title = event.get("title", "Sin título")
+    score = event.get("score", event.get("impact_score", 0))
+    category = event.get("category", "geopolítico").upper()
+    sources = event.get("sources", [])
+    if isinstance(sources, str):
+        sources = [sources]
+    source_text = (sources[0][:40] if sources else "Desconocido")
+    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    direction = analysis.get("direction", "neutral")
+    impact_pct = analysis.get("market_impact_percent", 0)
+
+    if direction in ("up", "bullish", "positive", "alza"):
+        impact_pct = abs(impact_pct)
+        direction_icon = "📈"
+        direction_label = f"Subida esperada: +{impact_pct}%"
+    elif direction in ("down", "bearish", "negative", "baja"):
+        impact_pct = -abs(impact_pct)
+        direction_icon = "📉"
+        direction_label = f"Bajada esperada: {impact_pct}%"
+    else:
+        impact_pct = 0
+        direction_icon = "➡️"
+        direction_label = "Lateral"
+
+    timeframe = analysis.get("timeframe", "desconocido")
+    timeframe_es = {
+        "hours": "horas",
+        "days": "días",
+        "hours to days": "horas a días",
+        "days to weeks": "días a semanas",
+        "weeks": "semanas",
+        "immediate": "inmediato",
+    }.get(timeframe, timeframe)
+
+    confidence = analysis.get("confidence", 0)
+    reasoning = (analysis.get("reasoning", "") or "")[:150]
+    affected_assets = analysis.get("most_affected_assets", [])
+
+    if score >= 80:
+        criticality = "CRÍTICA"
+        alert_icon = "🔴"
+    elif score >= 60:
+        criticality = "ALTA"
+        alert_icon = "🟠"
+    elif score >= 40:
+        criticality = "MEDIA"
+        alert_icon = "🟡"
+    else:
+        criticality = "BAJA"
+        alert_icon = "🟢"
+
+    lines = []
+    lines.append(f"{alert_icon} {category} — score {score}/100")
+    lines.append("")
+    lines.append(f"📍 {title}")
+    lines.append("")
+    lines.append(f"{direction_icon} {direction_label}")
+
+    # Primary asset line
+    if affected_assets:
+        asset = affected_assets[0].upper()
+        icon = ASSET_ICONS.get(asset, "💹")
+        name = ASSET_NAMES.get(asset, asset)
+        price_str = fetcher.get_formatted_price(asset)
+        lines.append(f"🎯 Activo: {icon} {name} ({price_str})")
+
+    lines.append(f"⏳ Plazo: {timeframe_es}")
+
+    if confidence >= 60:
+        lines.append(f"🔮 Confianza: {confidence}%")
+
+    if reasoning:
+        lines.append("")
+        lines.append(f"💡 {reasoning}")
+
+    lines.append("")
+    lines.append(f"📰 {source_text}")
+    lines.append(f"⏰ {timestamp}")
+
+    return "\n".join(lines)
+
+
+def format_cycle_summary(events: list) -> str:
+    """
+    Genera un mensaje resumen compacto cuando hay múltiples eventos en un ciclo.
+    Si solo hay 1 evento, el llamador debe usar format_telegram_alert en su lugar.
+    Muestra máximo 5 eventos.
+    """
+    count = len(events)
+    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    lines = []
+    lines.append(f"🌍 GEO-NEWSLETTER — {count} eventos detectados")
+    lines.append("")
+
+    for i, event in enumerate(events[:5], start=1):
+        score = event.get("score", event.get("impact_score", 0))
+        title = event.get("title", "Sin título")
+        analysis = event.get("analysis") or {}
+        direction = analysis.get("direction", "neutral")
+        impact_pct = analysis.get("market_impact_percent", 0)
+        affected_assets = analysis.get("most_affected_assets", [])
+
+        if score >= 80:
+            icon = "🔴"
+        elif score >= 60:
+            icon = "🟠"
+        elif score >= 40:
+            icon = "🟡"
+        else:
+            icon = "🟢"
+
+        if direction in ("up", "bullish", "positive", "alza"):
+            dir_str = f"+{abs(impact_pct)}%"
+            asset_str = affected_assets[0].upper() if affected_assets else ""
+        elif direction in ("down", "bearish", "negative", "baja"):
+            dir_str = f"-{abs(impact_pct)}%"
+            asset_str = affected_assets[0].upper() if affected_assets else ""
+        else:
+            dir_str = "→0%"
+            asset_str = affected_assets[0].upper() if affected_assets else ""
+
+        asset_part = f"{asset_str} {dir_str}" if asset_str else dir_str
+        title_short = title[:45]
+        lines.append(f"{i}. {icon} {asset_part} | {title_short}")
+
+    lines.append("")
+    lines.append(f"⏰ {timestamp}")
+
+    return "\n".join(lines)
