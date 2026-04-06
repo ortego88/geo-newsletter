@@ -39,6 +39,7 @@
       {% endwith %}
 
       <form method="POST" action="/register" class="space-y-5">
+        <input type="hidden" name="preferred_lang" id="preferred_lang_input" value="es">
         <div>
           <label class="block text-sm font-medium text-slate-300 mb-1.5">Nombre completo</label>
           <input type="text" name="name" required autocomplete="name"
@@ -83,5 +84,18 @@
     </p>
   </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var lang = localStorage.getItem('geo_lang') || 'es';
+  var input = document.getElementById('preferred_lang_input');
+  if (input) input.value = lang;
+  var form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function() {
+      if (input) input.value = localStorage.getItem('geo_lang') || 'es';
+    });
+  }
+});
+</script>
 </body>
 </html>

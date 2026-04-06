@@ -43,8 +43,17 @@
   <!-- MAIN -->
   <main class="flex-1 overflow-auto">
 
-    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4">
+    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between">
       <h1 class="text-white font-bold text-xl">Configuración</h1>
+      <!-- Compact lang switcher -->
+      <div class="relative" id="dash-lang-wrapper">
+        <button onclick="toggleDashLang()" class="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700" id="dash-lang-btn">
+          <span id="dash-lang-flag">🇪🇸</span>
+          <span id="dash-lang-code" class="text-xs font-semibold uppercase">ES</span>
+        </button>
+        <div id="dash-lang-dropdown" class="hidden absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[120px]">
+        </div>
+      </div>
     </div>
 
     <div class="px-8 py-6 max-w-3xl">
@@ -184,6 +193,63 @@
     </div>
   </main>
 </div>
+
+<script>
+  var DASH_LANG_META = {
+    es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }, fr: { flag: '🇫🇷' },
+    de: { flag: '🇩🇪' }, it: { flag: '🇮🇹' }, pt: { flag: '🇵🇹' },
+    zh: { flag: '🇨🇳' }, ar: { flag: '🇸🇦' }
+  };
+  var dashCurrentLang = '{{ current_user.language or "es" }}';
+
+  function setDashLang(lang) {
+    if (!DASH_LANG_META[lang]) lang = 'es';
+    document.getElementById('dash-lang-flag').textContent = DASH_LANG_META[lang].flag;
+    document.getElementById('dash-lang-code').textContent = lang.toUpperCase();
+    localStorage.setItem('geo_lang', lang);
+    dashCurrentLang = lang;
+    fetch('/dashboard/set-language', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({language: lang})
+    });
+  }
+
+  function toggleDashLang() {
+    var dd = document.getElementById('dash-lang-dropdown');
+    if (dd.classList.contains('hidden')) {
+      dd.innerHTML = '';
+      Object.keys(DASH_LANG_META).forEach(function(code) {
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'w-full flex items-center gap-2 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition' + (code === dashCurrentLang ? ' text-emerald-400 font-semibold' : '');
+        item.innerHTML = '<span>' + DASH_LANG_META[code].flag + '</span><span class="uppercase font-semibold">' + code.toUpperCase() + '</span>';
+        item.onclick = function() { setDashLang(code); dd.classList.add('hidden'); };
+        dd.appendChild(item);
+      });
+      dd.classList.remove('hidden');
+    } else {
+      dd.classList.add('hidden');
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    var wrapper = document.getElementById('dash-lang-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      var dd = document.getElementById('dash-lang-dropdown');
+      if (dd) dd.classList.add('hidden');
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var storedLang = localStorage.getItem('geo_lang') || dashCurrentLang;
+    if (DASH_LANG_META[storedLang]) {
+      document.getElementById('dash-lang-flag').textContent = DASH_LANG_META[storedLang].flag;
+      document.getElementById('dash-lang-code').textContent = storedLang.toUpperCase();
+      dashCurrentLang = storedLang;
+    }
+  });
+</script>
 
 </body>
 </html>

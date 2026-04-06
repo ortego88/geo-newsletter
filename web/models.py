@@ -198,13 +198,13 @@ class User(UserMixin):
         return User(row) if row else None
 
     @staticmethod
-    def create(email, password, name):
+    def create(email, password, name, language='es'):
         conn = get_conn()
         c = conn.cursor()
         pw_hash = generate_password_hash(password)
         c.execute(
-            "INSERT INTO users (email,password_hash,name) VALUES (?,?,?)",
-            (email, pw_hash, name)
+            "INSERT INTO users (email,password_hash,name,language) VALUES (?,?,?,?)",
+            (email, pw_hash, name, language)
         )
         user_id = c.lastrowid
         # Create trial subscription
