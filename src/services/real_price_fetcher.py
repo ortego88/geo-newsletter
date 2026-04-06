@@ -68,6 +68,10 @@ YAHOO_TICKERS = {
     "NVDA": "NVDA",
     "JPM": "JPM",
     "XOM": "XOM",
+    # Bonos del Tesoro USA
+    "US10Y": "^TNX",
+    "US2Y": "^IRX",
+    "BONDS": "^TNX",
     # ETFs legacy
     "GLD": "GLD",
     "SLV": "SLV",

@@ -1,1 +1,1 @@
-worker: python -m scheduler.scheduler
+web: python run_all.py
