@@ -22,10 +22,10 @@ Analiza el siguiente evento y devuelve ÚNICAMENTE un JSON válido con esta estr
   "timeframe": "<immediate|hours|hours to days|days|days to weeks|weeks>",
   "confidence": <número entre 0 y 100>,
   "most_affected_assets": ["<ASSET1>", "<ASSET2>", "<ASSET3>"],
-  "reasoning": "<explicación en español de máximo 200 caracteres>"
+  "reasoning": "<explicación en español de máximo 300 caracteres>"
 }}
 
-Activos válidos: BTC, ETH, XRP, SOL, WTI_OIL, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, INDU, CCMP, FTSE, DAX, AAPL, GOOGL, MSFT
+Activos válidos: BTC, ETH, XRP, SOL, WTI_OIL, BRENT, BRENT_OIL, GOLD, SILVER, NATURAL_GAS, SPX, INDU, CCMP, FTSE, DAX, AAPL, GOOGL, MSFT
 
 Evento: {title}
 Descripción: {description}
@@ -86,7 +86,7 @@ def _validate_analysis(data: dict) -> dict:
         assets = []
     assets = [str(a).upper() for a in assets[:5]]
 
-    reasoning = str(data.get("reasoning", ""))[:200]
+    reasoning = str(data.get("reasoning", ""))[:300]
 
     return {
         "market_impact_percent": round(impact, 1),
@@ -138,7 +138,7 @@ def _fallback_analysis(event: dict) -> dict:
         "timeframe": "hours to days",
         "confidence": min(70, 40 + score // 5),
         "most_affected_assets": assets,
-        "reasoning": f"Análisis basado en palabras clave. Severidad: {score}/100.",
+        "reasoning": "Análisis automático basado en scoring de taxonomía. Impacto moderado esperado según el tipo de evento y zona geográfica.",
     }
 
 

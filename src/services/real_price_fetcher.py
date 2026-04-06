@@ -1,8 +1,7 @@
 """
 Fetcher de precios reales para activos financieros.
 - Crypto: CoinGecko free API
-- Acciones/Índices: yfinance
-- Commodities sin API: devuelve None (usa fallback mock)
+- Acciones/Índices/Commodities: yfinance (incluye futuros de materias primas)
 - Caché en memoria con TTL de 60 segundos
 """
 
@@ -29,15 +28,9 @@ CRYPTO_IDS = {
     "AVAX": "avalanche-2",
 }
 
-STOCK_TICKERS = {
-    "AAPL": "AAPL",
-    "GOOGL": "GOOGL",
-    "GOOG": "GOOG",
-    "MSFT": "MSFT",
-    "AMZN": "AMZN",
-    "TSLA": "TSLA",
-    "META": "META",
-    "NVDA": "NVDA",
+# Todos los activos accesibles via yfinance (acciones, índices y futuros de commodities)
+YAHOO_TICKERS = {
+    # Índices
     "SPX": "^GSPC",
     "SP500": "^GSPC",
     "S&P500": "^GSPC",
@@ -47,10 +40,35 @@ STOCK_TICKERS = {
     "NASDAQ": "^IXIC",
     "FTSE": "^FTSE",
     "DAX": "^GDAXI",
+    "CAC": "^FCHI",
+    "IBEX35": "^IBEX",
+    "IBEX": "^IBEX",
+    "N225": "^N225",
     "NIKKEI": "^N225",
     "HSI": "^HSI",
-    "IBEX": "^IBEX",
-    "CAC": "^FCHI",
+    # Commodities via futuros
+    "WTI_OIL": "CL=F",
+    "WTI": "CL=F",
+    "BRENT_OIL": "BZ=F",
+    "BRENT": "BZ=F",
+    "NATURAL_GAS": "NG=F",
+    "GOLD": "GC=F",
+    "SILVER": "SI=F",
+    "COPPER": "HG=F",
+    "WHEAT": "ZW=F",
+    "CORN": "ZC=F",
+    # Acciones
+    "AAPL": "AAPL",
+    "GOOGL": "GOOGL",
+    "GOOG": "GOOG",
+    "MSFT": "MSFT",
+    "AMZN": "AMZN",
+    "TSLA": "TSLA",
+    "META": "META",
+    "NVDA": "NVDA",
+    "JPM": "JPM",
+    "XOM": "XOM",
+    # ETFs legacy
     "GLD": "GLD",
     "SLV": "SLV",
     "USO": "USO",
@@ -93,8 +111,8 @@ def _fetch_crypto_price(asset: str):
 
 
 def _fetch_stock_price(asset: str):
-    """Obtiene precio de acción/índice desde yfinance."""
-    ticker_symbol = STOCK_TICKERS.get(asset.upper())
+    """Obtiene precio de acción/índice/futuro de commodity desde yfinance."""
+    ticker_symbol = YAHOO_TICKERS.get(asset.upper())
     if not ticker_symbol:
         return None
     try:
@@ -117,6 +135,7 @@ def get_price(asset: str):
     """
     Devuelve el precio actual del activo, o None si no se puede obtener.
     Usa caché de 60 segundos para evitar llamadas excesivas a la API.
+    Orden de búsqueda: CRYPTO_IDS → YAHOO_TICKERS → None.
     """
     asset_upper = asset.upper()
 
@@ -128,9 +147,8 @@ def get_price(asset: str):
 
     if asset_upper in CRYPTO_IDS:
         price = _fetch_crypto_price(asset_upper)
-    elif asset_upper in STOCK_TICKERS:
+    elif asset_upper in YAHOO_TICKERS:
         price = _fetch_stock_price(asset_upper)
-    # Para commodities (WTI_OIL, BRENT, GOLD, etc.) sin API gratuita → None
 
     if price is not None:
         _set_cached(asset_upper, price)
