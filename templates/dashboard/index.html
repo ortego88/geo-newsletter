@@ -349,12 +349,33 @@
     }
   };
 
+  function updateCookieBannerLang() {
+    var lang = typeof dashCurrentLang !== 'undefined' ? dashCurrentLang : 'es';
+    var isEn = lang === 'en';
+    var el = function(id) { return document.getElementById(id); };
+    if (el('cookie-title')) el('cookie-title').textContent = isEn ? '🍪 We use cookies' : '🍪 Usamos cookies';
+    if (el('cookie-desc')) {
+      el('cookie-desc').textContent = isEn
+        ? 'We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones. '
+        : 'Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales. ';
+      var link = document.createElement('a');
+      link.href = '/privacy';
+      link.className = 'text-emerald-400 hover:underline ml-1';
+      link.id = 'cookie-policy-link';
+      link.textContent = isEn ? 'Cookie policy' : 'Política de cookies';
+      el('cookie-desc').appendChild(link);
+    }
+    if (el('cookie-essential-btn')) el('cookie-essential-btn').textContent = isEn ? 'Essential only' : 'Solo esenciales';
+    if (el('cookie-accept-btn')) el('cookie-accept-btn').textContent = isEn ? 'Accept all' : 'Aceptar todas';
+  }
+
   function applyDashLang(lang) {
     var t = DASH_TRANSLATIONS[lang] || DASH_TRANSLATIONS['es'];
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
       if (t[key]) el.textContent = t[key];
     });
+    updateCookieBannerLang();
   }
 
   // Cookie consent
@@ -391,21 +412,21 @@
 <div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[200] bg-slate-950 border-t border-slate-700 shadow-xl">
   <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="flex-1 min-w-0">
-      <p class="text-white font-semibold text-sm mb-1" id="cookie-title" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-white font-semibold text-sm mb-1" id="cookie-title">🍪 Usamos cookies</p>
       <p class="text-slate-400 text-xs leading-relaxed" id="cookie-desc">
-        <span data-i18n="cookies.desc">Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.</span>
-        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" id="cookie-policy-link" data-i18n="cookies.policy_link">Política de cookies</a>
+        Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" id="cookie-policy-link">Política de cookies</a>
       </p>
     </div>
     <div class="flex gap-3 shrink-0">
       <button onclick="cookieConsent('essential')"
         id="cookie-essential-btn"
-        class="text-sm text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-4 py-2 rounded-lg transition whitespace-nowrap" data-i18n="cookies.essential_btn">
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-4 py-2 rounded-lg transition whitespace-nowrap">
         Solo esenciales
       </button>
       <button onclick="cookieConsent('all')"
         id="cookie-accept-btn"
-        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap" data-i18n="cookies.accept_btn">
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
         Aceptar todas
       </button>
     </div>
