@@ -39,8 +39,8 @@ def tail_log_file(path: str, n: int = 200) -> list:
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
         return [line.rstrip() for line in lines[-n:]]
-    except Exception as e:
-        return [f"Error leyendo log: {e}"]
+    except Exception:
+        return ["(Error leyendo el archivo de log)"]
 
 
 @app.route("/")
@@ -123,8 +123,8 @@ def api_run_pipeline():
             events = pl.run(minutes=120, min_score=30)
             _last_run_count = len(events) if events else 0
             _last_run = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        except Exception as e:
-            _last_run = f"ERROR: {e}"
+        except Exception:
+            _last_run = "ERROR: fallo en el pipeline (ver logs)"
         finally:
             _pipeline_running = False
 
@@ -143,8 +143,8 @@ def api_reset_dedup():
             "status": "ok",
             "message": "Deduplicador reseteado. El próximo ciclo procesará todas las noticias como nuevas.",
         })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception:
+        return jsonify({"status": "error", "message": "No se pudo resetear el deduplicador"}), 500
 
 
 @app.route("/stream/logs")
