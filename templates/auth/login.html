@@ -68,58 +68,7 @@
     </p>
   </div>
 
-<!-- Cookie Consent Banner -->
-<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[200] bg-slate-950 border-t border-slate-700 shadow-xl">
-  <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div class="flex-1 min-w-0">
-      <p class="text-white font-semibold text-sm mb-1" id="cookie-title">🍪 Usamos cookies / We use cookies</p>
-      <p class="text-slate-400 text-xs leading-relaxed" id="cookie-desc">
-        Utilizamos cookies para mejorar tu experiencia.
-        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" id="cookie-policy-link">Política de cookies / Cookie policy</a>
-      </p>
-    </div>
-    <div class="flex gap-3 shrink-0">
-      <button onclick="cookieConsent('essential')"
-        id="cookie-essential-btn"
-        class="text-sm text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-4 py-2 rounded-lg transition whitespace-nowrap">
-        Solo esenciales / Essential only
-      </button>
-      <button onclick="cookieConsent('all')"
-        id="cookie-accept-btn"
-        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
-        Aceptar todas / Accept all
-      </button>
-    </div>
-  </div>
-</div>
-
-<script>
-function cookieConsent(level) {
-  localStorage.setItem('geo_cookie_consent', level);
-  document.getElementById('cookie-banner').classList.add('hidden');
-  if (level === 'all') loadGTM();
-}
-function initCookieBanner() {
-  var consent = localStorage.getItem('geo_cookie_consent');
-  if (!consent) {
-    var banner = document.getElementById('cookie-banner');
-    if (banner) banner.classList.remove('hidden');
-  } else if (consent === 'all') {
-    loadGTM();
-  }
-  typeof updateCookieBannerLang === 'function' && updateCookieBannerLang();
-}
-var GTM_ID = 'GTM-P5XZX4DR';
-function loadGTM() {
-  if (window._gtmLoaded) return;
-  window._gtmLoaded = true;
-  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-P5XZX4DR');
-}
-document.addEventListener('DOMContentLoaded', initCookieBanner);
-</script>
+{% include 'partials/cookie_banner.html' %}
+<script src="/static/js/cookie-consent.js"></script>
 </body>
 </html>
