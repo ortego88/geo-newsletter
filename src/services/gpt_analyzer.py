@@ -20,39 +20,86 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 # Prompt del sistema para análisis de eventos
-SYSTEM_PROMPT = """Eres un analista financiero experto especializado en el impacto de eventos geopolíticos en mercados financieros.
-Tu tarea es analizar noticias y determinar su impacto en los mercados.
+SYSTEM_PROMPT = """You are an expert quantitative financial analyst specializing in geopolitical event impact on markets.
 
-REGLAS CRÍTICAS SOBRE ACTIVOS:
-- Noticias sobre bonos del tesoro/treasury yields → activos: ["US10Y", "SPX", "GOLD"]
-- Noticias sobre petróleo/energía → activos: ["WTI", "BRENT", "XOM"]
-- Noticias sobre criptomonedas → activos: ["BTC", "ETH"]
-- Noticias sobre índices/bolsa general → activos: ["SPX", "NASDAQ", "DAX"]
-- Noticias sobre empresas tech → activos: ["NASDAQ", "AAPL", "MSFT", "NVDA"]
-- Noticias sobre geopolítica/guerra → activos: ["GOLD", "WTI", "SPX"]
-- Noticias sobre inflación/fed → activos: ["GOLD", "SPX", "US10Y"]
-- Noticias sobre commodities agrícolas → activos: ["WHEAT", "CORN"]
-- NUNCA asignes BTC a noticias sobre bonos, treasury, yields, acciones tradicionales o índices bursátiles
-- NUNCA asignes más de 4 activos
-- Usa SOLO estos símbolos: BTC, ETH, XRP, SOL, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, NASDAQ, DAX, FTSE, IBEX, AAPL, MSFT, NVDA, AMZN, TSLA, META, JPM, XOM, US10Y
+ASSET ASSIGNMENT RULES (strict priority order):
+1. News about a specific COMPANY (Apple, JPMorgan, Tesla, Nvidia, etc.) → use that company's ticker FIRST, then the relevant index
+   - JPMorgan/Jamie Dimon/banks → ["JPM", "SPX", "US10Y"]
+   - Apple/iPhone → ["AAPL", "NASDAQ"]
+   - Tesla/Elon Musk (re: Tesla) → ["TSLA", "NASDAQ"]
+   - Nvidia/AI chips → ["NVDA", "NASDAQ"]
+   - Oil majors (ExxonMobil, Shell, BP) → ["XOM", "WTI", "BRENT"]
 
-Responde ÚNICAMENTE con JSON válido, sin explicaciones adicionales."""
+2. News about COMMODITIES:
+   - Oil/crude/OPEC/refinery/petroleum/pipeline → ["WTI", "BRENT", "XOM"]
+   - Gold/safe haven/fear → ["GOLD", "SILVER"]
+   - Natural gas/LNG → ["NATURAL_GAS", "WTI"]
+   - Agricultural → ["WHEAT", "CORN"]
 
-ANALYSIS_PROMPT_TEMPLATE = """Analiza este evento de mercado/geopolítico:
+3. News about CRYPTO:
+   - Bitcoin/BTC/crypto broadly → ["BTC", "ETH"]
+   - Ethereum/DeFi specifically → ["ETH", "BTC"]
+   - NEVER assign BTC to stock market, bond or macro news
 
-Título: {title}
-Descripción: {description}
-Categoría: {category}
-Puntuación de severidad: {score}/100
+4. News about MACRO / CENTRAL BANKS:
+   - Fed/interest rates/inflation → ["US10Y", "SPX", "GOLD"]
+   - Treasury yields/bonds → ["US10Y", "SPX"]
+   - Recession/GDP/unemployment → ["SPX", "US10Y", "GOLD"]
 
-Responde con este JSON exacto:
+5. News about GEOPOLITICS / MILITARY:
+   - War/conflict in oil-producing region → ["WTI", "BRENT", "GOLD"]
+   - War/conflict NOT oil-related → ["GOLD", "SPX"]
+   - Strait/chokepoint disruption → ["WTI", "BRENT", "NATURAL_GAS"]
+   - Sanctions/tariffs/trade war → ["SPX", "NASDAQ", "US10Y"]
+
+6. News about STOCK INDICES broadly:
+   - Global markets/Wall Street/S&P → ["SPX", "NASDAQ"]
+   - European markets → ["DAX", "FTSE", "IBEX"]
+
+IMPACT CALIBRATION (market_impact_percent):
+- CEO letter/statement/outlook → ±1 to ±3%
+- Central bank meeting/decision → ±1 to ±4%
+- Earnings miss/beat → ±3 to ±8%
+- Trade deal/tariff announcement → ±2 to ±5%
+- Military attack on oil infrastructure → ±5 to ±12%
+- Major war escalation → ±3 to ±8%
+- Chokepoint/strait disruption → ±5 to ±15%
+- Geopolitical tension (no direct impact) → ±1 to ±3%
+- Default: ±2 to ±5%
+- NEVER use round numbers like exactly 10, 15, -10, -15
+
+CONFIDENCE CALIBRATION (0-100):
+- 85-95: Direct, unambiguous impact. Confirmed event (e.g. "OPEC cuts production by 1M barrels")
+- 70-84: Clear impact but some uncertainty about magnitude
+- 50-69: Indirect impact or event is a warning/prediction/analysis (e.g. CEO letter)
+- 30-49: Speculative, indirect or contradictory signals
+- Use 55-65 for opinion pieces, CEO letters, analyst forecasts
+
+ALLOWED SYMBOLS ONLY: BTC, ETH, XRP, SOL, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, NASDAQ, DAX, FTSE, IBEX, AAPL, MSFT, NVDA, AMZN, TSLA, META, JPM, XOM, US10Y, WHEAT, CORN
+
+Respond ONLY with valid JSON, no explanations."""
+
+ANALYSIS_PROMPT_TEMPLATE = """Analyze this market/geopolitical event and determine its financial impact:
+
+Title: {title}
+Description: {description}
+Category: {category}
+Severity score: {score}/100
+
+Instructions:
+- Identify the PRIMARY subject: is it about a company, commodity, macro policy, or geopolitical event?
+- Assign assets based on the PRIMARY subject (not secondary effects)
+- Use realistic impact percentages (most events are ±1-5%, not ±10-15%)
+- Set confidence based on how direct and confirmed the impact is
+
+Respond with this exact JSON:
 {{
   "direction": "up|down|neutral",
-  "market_impact_percent": <número entre -20 y 20>,
+  "market_impact_percent": <realistic number, avoid round numbers like 10 or 15>,
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
-  "confidence": <número entre 0 y 100>,
-  "most_affected_assets": [<lista de 2-4 símbolos del listado permitido>],
-  "reasoning": "<explicación breve en inglés de max 200 caracteres>"
+  "confidence": <calibrated 0-100, most events 50-75>,
+  "most_affected_assets": [<2-3 symbols, primary subject first>],
+  "reasoning": "<one sentence max 150 chars explaining PRIMARY subject and direction>"
 }}"""
 
 
@@ -127,12 +174,28 @@ def _parse_json_response(text: str) -> dict | None:
 
 def _validate_analysis(data: dict) -> dict:
     """Valida y normaliza el análisis devuelto por el modelo de IA."""
-    impact = float(data.get("market_impact_percent", 5))
-    impact = max(-20, min(20, impact))
+    _MAX_IMPACT = 15.0
+    _MAX_MODERATE_IMPACT = 8.0  # cap for events with score < 80
+    _MODERATE_SCORE_THRESHOLD = 80
+    _LOW_IMPACT_THRESHOLD = 3.0
+    _HIGH_CONFIDENCE_THRESHOLD = 75.0
+    _CAPPED_CONFIDENCE = 70.0
+
+    impact = float(data.get("market_impact_percent", 2))
+    score = data.get("_event_score", 50)  # passed through if available
+    impact = max(-_MAX_IMPACT, min(_MAX_IMPACT, impact))
+    # Prevent over-inflated impacts for moderate events
+    if abs(impact) > _MAX_MODERATE_IMPACT and score < _MODERATE_SCORE_THRESHOLD:
+        impact = _MAX_MODERATE_IMPACT if impact > 0 else -_MAX_MODERATE_IMPACT
 
     direction = data.get("direction", "neutral")
     if direction not in ("up", "down", "neutral"):
         direction = "neutral"
+    # Auto-fix direction/impact sign mismatch
+    if direction == "up" and impact < 0:
+        impact = abs(impact)
+    elif direction == "down" and impact > 0:
+        impact = -abs(impact)
 
     timeframe = data.get("timeframe", "hours")
     valid_timeframes = ("immediate", "hours", "hours to days", "days", "days to weeks", "weeks")
@@ -141,11 +204,14 @@ def _validate_analysis(data: dict) -> dict:
 
     confidence = float(data.get("confidence", 50))
     confidence = max(0, min(100, confidence))
+    # Cap confidence for indirect events (impact < 3%)
+    if abs(impact) < _LOW_IMPACT_THRESHOLD and confidence > _HIGH_CONFIDENCE_THRESHOLD:
+        confidence = _CAPPED_CONFIDENCE
 
     assets = data.get("most_affected_assets", [])
     if not isinstance(assets, list):
         assets = []
-    assets = [str(a).upper() for a in assets[:4]]
+    assets = [str(a).upper() for a in assets[:3]]  # max 3, not 4
 
     reasoning = str(data.get("reasoning", ""))[:300]
 
@@ -161,6 +227,13 @@ def _validate_analysis(data: dict) -> dict:
 
 def _fallback_analysis(event: dict) -> dict:
     """Análisis de fallback basado en palabras clave cuando ningún modelo de IA está disponible."""
+    _BASE_IMPACT = 2.0
+    _MAX_MULTIPLIER_IMPACT = 6.0
+    _HIT_MULTIPLIER = 1.5
+    _MAX_FALLBACK_CONFIDENCE = 60
+    _BASE_CONFIDENCE = 30
+    _SCORE_DIVISOR = 6
+
     title = (event.get("title") or "").lower()
     desc = (event.get("description") or event.get("summary") or "").lower()
     text = f"{title} {desc}"
@@ -177,13 +250,13 @@ def _fallback_analysis(event: dict) -> dict:
 
     if bear_hits > bull_hits:
         direction = "down"
-        impact = -min(15, 5 + bear_hits * 2)
+        impact = -(_BASE_IMPACT + min(_MAX_MULTIPLIER_IMPACT, bear_hits * _HIT_MULTIPLIER))
     elif bull_hits > bear_hits:
         direction = "up"
-        impact = min(15, 5 + bull_hits * 2)
+        impact = _BASE_IMPACT + min(_MAX_MULTIPLIER_IMPACT, bull_hits * _HIT_MULTIPLIER)
     else:
         direction = "up" if score > 70 else "neutral"
-        impact = 5.0 if score > 70 else 2.0
+        impact = 2.0 if score > 70 else 1.0
 
     # Activos por categoría
     if "energy" in category or "oil" in category:
@@ -199,7 +272,7 @@ def _fallback_analysis(event: dict) -> dict:
         "market_impact_percent": round(impact, 1),
         "direction": direction,
         "timeframe": "hours to days",
-        "confidence": min(70, 40 + score // 5),
+        "confidence": min(_MAX_FALLBACK_CONFIDENCE, _BASE_CONFIDENCE + score // _SCORE_DIVISOR),
         "most_affected_assets": assets,
         "reasoning": "Análisis automático basado en scoring de taxonomía. Impacto moderado esperado según el tipo de evento y zona geográfica.",
     }
@@ -232,6 +305,7 @@ def analyze_event(event: dict) -> dict:
         result = _call_ollama(prompt)
 
     if result:
+        result["_event_score"] = score  # inject score for validation
         return _validate_analysis(result)
 
     logger.warning("Modelo de IA no disponible, usando análisis de fallback")
