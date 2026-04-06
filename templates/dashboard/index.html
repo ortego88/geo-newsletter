@@ -245,7 +245,7 @@
                       {% endif %}
                     </td>
                     <td class="px-6 py-4 text-slate-400 text-xs">
-                      {% if alert[6] %}
+                      {% if alert[6] and alert[6] != 0 %}
                         <div>{{ "%.4g"|format(alert[6]) }}</div>
                         {% if alert[7] %}
                           <div>→ {{ "%.4g"|format(alert[7]) }}

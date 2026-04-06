@@ -42,7 +42,7 @@ def index():
         alerts = c2.fetchall()
         # Fetch accuracy stats
         c2.execute(
-            "SELECT outcome FROM predictions WHERE outcome != 'pending' AND outcome IS NOT NULL"
+            "SELECT outcome FROM predictions WHERE outcome IN ('correct', 'incorrect')"
         )
         outcomes = c2.fetchall()
         if outcomes:
