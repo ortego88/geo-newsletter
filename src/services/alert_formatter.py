@@ -7,6 +7,8 @@ y cae al mock solo si el precio real no está disponible.
 import logging
 from datetime import datetime
 
+import pytz
+
 from src.services.real_price_fetcher import RealPriceFetcher
 
 try:
@@ -15,6 +17,13 @@ except Exception:
     TitleTranslator = None
 
 logger = logging.getLogger("alert_formatter")
+
+_MADRID_TZ = pytz.timezone("Europe/Madrid")
+
+
+def _now_madrid():
+    return datetime.now(_MADRID_TZ)
+
 
 # --- Precios mock de fallback ---
 MOCK_PRICES = {
@@ -178,6 +187,16 @@ def translate_reasoning(text: str) -> str:
     return result[:300]
 
 
+def _translate_title(title: str) -> str:
+    """Traduce un título al español usando TitleTranslator si está disponible."""
+    if TitleTranslator is not None:
+        try:
+            return TitleTranslator.translate(title)
+        except Exception as e:
+            logger.debug(f"Error traduciendo título: {e}")
+    return title
+
+
 class AssetPriceFetcher:
     """
     Obtiene precios de activos.
@@ -225,20 +244,14 @@ def format_alert(event: dict, analysis: dict) -> str:
     """
     fetcher = AssetPriceFetcher()
 
-    title = event.get("title", "Sin título")
-    # Traducir el título al español si hay un translator disponible
-    if TitleTranslator is not None:
-        try:
-            title = TitleTranslator.translate(title)
-        except Exception as e:
-            logger.debug(f"Error traduciendo título: {e}")
+    title = _translate_title(event.get("title", "Sin título"))
     score = event.get("score", event.get("impact_score", 0))
     category = event.get("category", "geopolítico").upper()
     sources = event.get("sources", [])
     if isinstance(sources, str):
         sources = [sources]
     source_text = ", ".join(sources[:3]) if sources else "Desconocido"
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+    timestamp = _now_madrid().strftime("%d/%m/%Y %H:%M")
 
     direction = analysis.get("direction", "neutral")
     impact_pct = analysis.get("market_impact_percent", 0)
@@ -347,14 +360,14 @@ def format_telegram_alert(event: dict, analysis: dict) -> str:
     """
     fetcher = AssetPriceFetcher()
 
-    title = event.get("title", "Sin título")
+    title = _translate_title(event.get("title", "Sin título"))
     score = event.get("score", event.get("impact_score", 0))
     category = event.get("category", "geopolítico").upper()
     sources = event.get("sources", [])
     if isinstance(sources, str):
         sources = [sources]
     source_text = (sources[0][:40] if sources else "Desconocido")
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+    timestamp = _now_madrid().strftime("%d/%m/%Y %H:%M")
 
     direction = analysis.get("direction", "neutral")
     impact_pct = analysis.get("market_impact_percent", 0)
@@ -437,7 +450,7 @@ def format_cycle_summary(events: list) -> str:
     Muestra máximo 5 eventos.
     """
     count = len(events)
-    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+    timestamp = _now_madrid().strftime("%d/%m/%Y %H:%M")
 
     lines = []
     lines.append(f"🌍 GEO-NEWSLETTER — {count} eventos detectados")
@@ -445,7 +458,7 @@ def format_cycle_summary(events: list) -> str:
 
     for i, event in enumerate(events[:5], start=1):
         score = event.get("score", event.get("impact_score", 0))
-        title = event.get("title", "Sin título")
+        title = _translate_title(event.get("title", "Sin título"))
         analysis = event.get("analysis") or {}
         direction = analysis.get("direction", "neutral")
         impact_pct = analysis.get("market_impact_percent", 0)
