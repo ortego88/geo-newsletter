@@ -5,7 +5,10 @@ Cae a un diccionario de términos financieros/geopolíticos si la API falla.
 """
 
 import logging
+import re
 import urllib.parse
+
+import requests as _requests
 
 logger = logging.getLogger("translator")
 
@@ -92,6 +95,12 @@ _FALLBACK_DICT = {
     "Trump": "Trump",
 }
 
+# Pre-compilar patrones para mejorar rendimiento en _fallback_translate
+_FALLBACK_PATTERNS = [
+    (re.compile(re.escape(en), re.IGNORECASE), es)
+    for en, es in _FALLBACK_DICT.items()
+]
+
 
 class TitleTranslator:
     """Traduce títulos de noticias de inglés a español."""
@@ -106,14 +115,13 @@ class TitleTranslator:
             return title
 
         try:
-            import requests
             encoded = urllib.parse.quote(title)
             url = f"https://api.mymemory.translated.net/get?q={encoded}&langpair=en|es"
-            resp = requests.get(url, timeout=5)
+            resp = _requests.get(url, timeout=5)
             resp.raise_for_status()
             data = resp.json()
             translated = data.get("responseData", {}).get("translatedText", "")
-            if translated and translated.upper() != title.upper():
+            if translated:
                 return translated
         except Exception as e:
             logger.debug(f"MyMemory API error para título: {e}")
@@ -122,10 +130,8 @@ class TitleTranslator:
 
     @staticmethod
     def _fallback_translate(title: str) -> str:
-        """Traducción por diccionario de términos comunes."""
+        """Traducción por diccionario de términos comunes usando patrones pre-compilados."""
         result = title
-        for en, es in _FALLBACK_DICT.items():
-            # Reemplazar ignorando mayúsculas/minúsculas pero conservando estructura
-            import re
-            result = re.sub(re.escape(en), es, result, flags=re.IGNORECASE)
+        for pattern, es in _FALLBACK_PATTERNS:
+            result = pattern.sub(es, result)
         return result

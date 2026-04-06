@@ -11,9 +11,8 @@ from src.services.real_price_fetcher import RealPriceFetcher
 
 try:
     from src.services.translator import TitleTranslator
-    _title_translator = TitleTranslator()
 except Exception:
-    _title_translator = None
+    TitleTranslator = None
 
 logger = logging.getLogger("alert_formatter")
 
@@ -219,9 +218,9 @@ def format_alert(event: dict, analysis: dict) -> str:
 
     title = event.get("title", "Sin título")
     # Traducir el título al español si hay un translator disponible
-    if _title_translator is not None:
+    if TitleTranslator is not None:
         try:
-            title = _title_translator.translate(title)
+            title = TitleTranslator.translate(title)
         except Exception as e:
             logger.debug(f"Error traduciendo título: {e}")
     score = event.get("score", event.get("impact_score", 0))
@@ -240,6 +239,8 @@ def format_alert(event: dict, analysis: dict) -> str:
         impact_pct = abs(impact_pct)
     elif direction in ("down", "bearish", "negative", "baja"):
         impact_pct = -abs(impact_pct)
+    else:
+        impact_pct = 0
     timeframe = analysis.get("timeframe", "desconocido")
     confidence = analysis.get("confidence", 0)
     reasoning = translate_reasoning(analysis.get("reasoning", ""))
