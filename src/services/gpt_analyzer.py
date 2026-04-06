@@ -47,6 +47,11 @@ ASSET ASSIGNMENT RULES (strict priority order):
    - Recession/GDP/unemployment → ["SPX", "US10Y", "GOLD"]
 
 5. News about GEOPOLITICS / MILITARY:
+   - News about Iran/Middle East tensions/war → ["WTI", "BRENT", "GOLD"] (oil FIRST because Iran is a major producer)
+   - News about Russia/Ukraine conflict → ["NATURAL_GAS", "GOLD", "WHEAT"]
+   - News mentioning "market volatility" as secondary effect → use the PRIMARY subject's assets, not GOLD
+   - News with "optimism", "peace", "ceasefire" in oil-producing regions → ["WTI", "BRENT"] direction=down
+   - If title contains analyst opinion words (Says, According to, Warns, Forecasts) → use confidence 50-65
    - War/conflict in oil-producing region → ["WTI", "BRENT", "GOLD"]
    - War/conflict NOT oil-related → ["GOLD", "SPX"]
    - Strait/chokepoint disruption → ["WTI", "BRENT", "NATURAL_GAS"]
@@ -87,6 +92,7 @@ Category: {category}
 Severity score: {score}/100
 
 Instructions:
+- If the title contains attribution words like "Says", "According to", "Warns" — this is an analyst opinion, cap confidence at 65
 - Identify the PRIMARY subject: is it about a company, commodity, macro policy, or geopolitical event?
 - Assign assets based on the PRIMARY subject (not secondary effects)
 - Use realistic impact percentages (most events are ±1-5%, not ±10-15%)
