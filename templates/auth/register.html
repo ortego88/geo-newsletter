@@ -135,6 +135,7 @@ function loadGTM() {
   'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
   })(window,document,'script','dataLayer','GTM-P5XZX4DR');
 }
+document.addEventListener('DOMContentLoaded', function() {
   var lang = localStorage.getItem('geo_lang') || 'es';
   var input = document.getElementById('preferred_lang_input');
   if (input) input.value = lang;
