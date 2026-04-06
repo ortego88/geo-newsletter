@@ -647,6 +647,40 @@
       document.documentElement.dir = 'ltr';
       localStorage.setItem('geo_lang', lang);
       currentLang = lang;
+      updateCookieBannerLang();
+    }
+
+    function updateCookieBannerLang() {
+      var lang = typeof currentLang !== 'undefined' ? currentLang : 'es';
+      var texts = {
+        es: {
+          title: '🍪 Usamos cookies',
+          desc: 'Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico.',
+          policy: 'Política de cookies',
+          essential: 'Solo esenciales',
+          accept: 'Aceptar todas'
+        },
+        en: {
+          title: '🍪 We use cookies',
+          desc: 'We use our own and third-party cookies to improve your experience and analyse traffic.',
+          policy: 'Cookie policy',
+          essential: 'Essential only',
+          accept: 'Accept all'
+        }
+      };
+      var t = texts[lang] || texts['es'];
+      var el = function(id) { return document.getElementById(id); };
+      if (el('cookie-title')) el('cookie-title').textContent = t.title;
+      if (el('cookie-desc')) {
+        el('cookie-desc').textContent = t.desc + ' ';
+        var link = document.createElement('a');
+        link.href = '/privacy';
+        link.className = 'text-emerald-400 hover:underline ml-1';
+        link.textContent = t.policy;
+        el('cookie-desc').appendChild(link);
+      }
+      if (el('cookie-essential-btn')) el('cookie-essential-btn').textContent = t.essential;
+      if (el('cookie-accept-btn')) el('cookie-accept-btn').textContent = t.accept;
     }
 
     function toggleLangMenu() {
@@ -694,12 +728,15 @@
     function initCookieBanner() {
       var consent = localStorage.getItem('geo_cookie_consent');
       if (!consent) {
-        document.getElementById('cookie-banner').classList.remove('hidden');
+        var banner = document.getElementById('cookie-banner');
+        if (banner) banner.classList.remove('hidden');
       } else if (consent === 'all') {
         loadGTM();
       }
+      typeof updateCookieBannerLang === 'function' && updateCookieBannerLang();
     }
 
+    var GTM_ID = 'GTM-P5XZX4DR';
     function loadGTM() {
       if (window._gtmLoaded) return;
       window._gtmLoaded = true;
@@ -707,27 +744,29 @@
       new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
       j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-      })(window,document,'script','dataLayer','GTM-XXXXXXX');
+      })(window,document,'script','dataLayer','GTM-P5XZX4DR');
     }
   </script>
 
 <!-- Cookie Consent Banner -->
-<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[100] bg-slate-900 border-t border-slate-700 shadow-xl">
+<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[200] bg-slate-950 border-t border-slate-700 shadow-xl">
   <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-    <div class="flex-1">
-      <p class="text-white font-semibold text-sm mb-1" data-i18n="cookies.title">🍪 Usamos cookies</p>
-      <p class="text-slate-400 text-xs" data-i18n="cookies.desc">
+    <div class="flex-1 min-w-0">
+      <p class="text-white font-semibold text-sm mb-1" id="cookie-title" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-slate-400 text-xs leading-relaxed" id="cookie-desc">
         Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.
-        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" data-i18n="cookies.policy_link">Política de cookies</a>
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" id="cookie-policy-link">Política de cookies</a>
       </p>
     </div>
     <div class="flex gap-3 shrink-0">
       <button onclick="cookieConsent('essential')"
-        class="text-sm text-slate-400 hover:text-white border border-slate-600 px-4 py-2 rounded-lg transition" data-i18n="cookies.essential_btn">
+        id="cookie-essential-btn"
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 px-4 py-2 rounded-lg transition whitespace-nowrap" data-i18n="cookies.essential_btn">
         Solo esenciales
       </button>
       <button onclick="cookieConsent('all')"
-        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition" data-i18n="cookies.accept_btn">
+        id="cookie-accept-btn"
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap" data-i18n="cookies.accept_btn">
         Aceptar todas
       </button>
     </div>
