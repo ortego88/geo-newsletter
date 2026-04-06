@@ -10,9 +10,16 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import pytz
 from flask import Flask, Response, jsonify, render_template, request
 
 from src.services.prediction_tracker import PredictionTracker
+
+_MADRID_TZ = pytz.timezone("Europe/Madrid")
+
+
+def _now_madrid():
+    return datetime.now(_MADRID_TZ)
 
 app = Flask(__name__)
 
@@ -101,7 +108,7 @@ def api_status():
         "db_exists": Path(DB_PATH).exists(),
         "pipeline_running": _pipeline_running,
         "last_run": _last_run,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": _now_madrid().isoformat(),
     })
 
 
@@ -118,9 +125,9 @@ def api_run_pipeline():
         try:
             from src.services.pipeline_v2 import AnalysisPipeline
             pl = AnalysisPipeline(db_path=DB_PATH)
-            events = pl.run(minutes=120, min_score=30)
+            events = pl.run(minutes=360, min_score=30)
             _last_run_count = len(events) if events else 0
-            _last_run = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            _last_run = _now_madrid().strftime("%Y-%m-%d %H:%M:%S")
         except Exception:
             _last_run = "ERROR: Pipeline falló. Revisa los logs."
         finally:

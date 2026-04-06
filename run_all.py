@@ -14,11 +14,19 @@ import threading
 import time
 from datetime import datetime
 
-# Configurar logging PRIMERO
+# Crear directorio data si no existe (Railway tiene filesystem efímero)
+os.makedirs("data", exist_ok=True)
+os.makedirs("templates", exist_ok=True)
+
+# Configurar logging con salida a stdout Y a fichero
+file_handler = logging.FileHandler("data/scheduler.log", encoding="utf-8")
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+    handlers=[logging.StreamHandler(sys.stdout), file_handler],
 )
 logger = logging.getLogger("run_all")
 
@@ -26,10 +34,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from src.services.pipeline_v2 import AnalysisPipeline
 from src.services.prediction_tracker import PredictionTracker
 from src.services.prediction_validator_scheduler import PredictionValidatorScheduler
-
-# Crear directorio data si no existe (Railway tiene filesystem efímero)
-os.makedirs("data", exist_ok=True)
-os.makedirs("templates", exist_ok=True)
 
 DB_PATH = "data/predictions.db"
 
@@ -85,7 +89,7 @@ def run_pipeline_cycle():
     logger.info(f"⏱️  CICLO DE PIPELINE — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 60)
     try:
-        events = pipeline.run(minutes=120, min_score=30)
+        events = pipeline.run(minutes=360, min_score=30)
         if not events:
             logger.info("Sin eventos relevantes en este ciclo.")
             return
