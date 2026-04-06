@@ -5,6 +5,7 @@ y cae al mock solo si el precio real no está disponible.
 """
 
 import logging
+import re
 from datetime import datetime
 
 import pytz
@@ -174,16 +175,95 @@ _EN_ES = {
     "expected": "esperado",
     "This ": "Esto ",
     "The ": "El ",
+    "geopolitical tensions": "tensiones geopolíticas",
+    "oil prices to drop": "caída en los precios del petróleo",
+    "oil prices to rise": "subida en los precios del petróleo",
+    "are causing": "están causando",
+    "is causing": "está causando",
+    "regarding iran": "respecto a Irán",
+    "could cause": "podría causar",
+    "is expected to": "se espera que",
+    "are expected to": "se espera que",
+    "due to": "debido a",
+    "as a result of": "como resultado de",
+    "leading to": "llevando a",
+    "resulting in": "resultando en",
+    "in response to": "en respuesta a",
+    "amid concerns": "ante las preocupaciones",
+    "amid": "en medio de",
+    "pushing": "impulsando",
+    "boosting": "impulsando al alza",
+    "weighing on": "presionando a la baja",
+    "pressuring": "presionando",
+    "safe-haven": "refugio seguro",
+    "safe haven": "refugio seguro",
+    "flight to safety": "huida hacia activos refugio",
+    "risk-off": "aversión al riesgo",
+    "risk off": "aversión al riesgo",
+    "risk-on": "apetito por el riesgo",
+    "risk on": "apetito por el riesgo",
+    "hawkish": "restrictivo",
+    "dovish": "expansivo",
+    "interest rates": "tipos de interés",
+    "trade war": "guerra comercial",
+    "tariffs": "aranceles",
+    "tariff": "arancel",
+    "barrel": "barril",
+    "gold prices": "precio del oro",
+    "bond yields": "rendimientos de los bonos",
+    "treasury yields": "rendimientos del Tesoro",
+    "dollar": "dólar",
+    "recession fears": "temores de recesión",
+    "economic growth": "crecimiento económico",
+    "production cuts": "recortes de producción",
+    "output cuts": "recortes de producción",
+    "supply cuts": "recortes de suministro",
+    "ceasefire deal": "acuerdo de alto el fuego",
+    "peace talks": "negociaciones de paz",
+    "nuclear deal": "acuerdo nuclear",
+    "sanctions relief": "alivio de sanciones",
+    "military escalation": "escalada militar",
+    "drone attack": "ataque con drones",
+    "missile strike": "ataque con misiles",
+    "causing": "causando",
+    "decline": "descenso",
+    "surge": "repunte",
+    "crash": "colapso",
+    "rebound": "rebote",
+    "plunge": "desplome",
+    "soar": "dispararse",
+    "fears": "temores",
+    "concerns": "preocupaciones",
+    "outlook": "perspectivas",
+    "forecast": "previsión",
+    "warning": "advertencia",
+    "agreement": "acuerdo",
+    "threat": "amenaza",
+    "Iran": "Irán",
+    "Russia": "Rusia",
+    "Ukraine": "Ucrania",
+    "Saudi": "Arabia Saudí",
+    "Federal Reserve": "Reserva Federal",
+    "White House": "Casa Blanca",
+    "crude": "petróleo crudo",
+    "drop": "caída",
 }
 
 
 def translate_reasoning(text: str) -> str:
-    """Traducción básica inglés→español para el campo reasoning."""
+    """Traducción básica inglés→español para el campo reasoning (red de seguridad)."""
     if not text:
         return text
     result = text
-    for en, es in _EN_ES.items():
-        result = result.replace(en, es).replace(en.capitalize(), es.capitalize())
+    # Sort by length descending so longer phrases match before shorter substrings
+    sorted_pairs = sorted(_EN_ES.items(), key=lambda x: len(x[0]), reverse=True)
+    for en, es in sorted_pairs:
+        pattern = re.compile(re.escape(en), re.IGNORECASE)
+        result = pattern.sub(es, result)
+    if len(result) > 1:
+        result = result[0].upper() + result[1:]
+    elif result:
+        result = result.upper()
     return result[:300]
 
 
