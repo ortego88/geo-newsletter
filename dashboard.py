@@ -121,8 +121,8 @@ def api_run_pipeline():
             events = pl.run(minutes=120, min_score=30)
             _last_run_count = len(events) if events else 0
             _last_run = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        except Exception as e:
-            _last_run = f"ERROR: {e}"
+        except Exception:
+            _last_run = "ERROR: Pipeline falló. Revisa los logs."
         finally:
             _pipeline_running = False
 
