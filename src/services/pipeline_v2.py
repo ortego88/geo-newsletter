@@ -12,9 +12,27 @@ import feedparser
 from src.services.deduplicator import Deduplicator
 from src.services.gpt_analyzer import EventAnalyzer
 from src.services.prediction_tracker import PredictionTracker
-from src.services.real_price_fetcher import RealPriceFetcher
+from src.services.real_price_fetcher import RealPriceFetcher, CRYPTO_IDS, YAHOO_TICKERS
 
 logger = logging.getLogger("geo-newsletter")
+
+# --- Conjunto de activos válidos conocidos ---
+VALID_ASSETS = set(CRYPTO_IDS.keys()) | set(YAHOO_TICKERS.keys())
+
+# --- Fallback de activo por categoría cuando el modelo inventa tickers ---
+CATEGORY_FALLBACK = {
+    "energía": "WTI_OIL",
+    "energy": "WTI_OIL",
+    "crypto": "BTC",
+    "finance": "SPX",
+    "mercados": "SPX",
+    "financial": "SPX",
+    "commodities": "GOLD",
+    "geopolítica": "SPX",
+    "geopolitical": "SPX",
+    "conflicto": "SPX",
+    "general": "SPX",
+}
 
 # --- Fuentes RSS ---
 RSS_SOURCES = [
@@ -220,6 +238,16 @@ class AnalysisPipeline:
             analysis = event.get("analysis", {})
             assets = analysis.get("most_affected_assets", ["UNKNOWN"])
             primary_asset = assets[0] if assets else "UNKNOWN"
+
+            # Validar el activo primario contra la lista conocida
+            if primary_asset.upper() not in VALID_ASSETS:
+                category = event.get("category", "general").lower()
+                fallback = CATEGORY_FALLBACK.get(category, "SPX")
+                logger.warning(
+                    f"   Activo desconocido '{primary_asset}' → usando fallback '{fallback}' "
+                    f"(categoría: {category})"
+                )
+                primary_asset = fallback
 
             current_price = self.price_fetcher.get_price(primary_asset)
             if current_price is None:

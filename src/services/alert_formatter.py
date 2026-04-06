@@ -9,6 +9,12 @@ from datetime import datetime
 
 from src.services.real_price_fetcher import RealPriceFetcher
 
+try:
+    from src.services.translator import TitleTranslator
+    _title_translator = TitleTranslator()
+except Exception:
+    _title_translator = None
+
 logger = logging.getLogger("alert_formatter")
 
 # --- Precios mock de fallback ---
@@ -116,6 +122,8 @@ _EN_ES = {
     "cryptocurrency": "criptomoneda",
     "bitcoin": "bitcoin",
     "supply disruption": "interrupción de suministro",
+    "could lead": "podría llevar",
+    "will likely": "probablemente",
     "geopolitical": "geopolítico",
     "conflict": "conflicto",
     "sanctions": "sanciones",
@@ -127,19 +135,28 @@ _EN_ES = {
     "investors": "inversores",
     "market": "mercado",
     "increase": "aumento",
-    "decrease": "caída",
+    "decrease": "disminución",
+    "disruption": "disrupción",
+    "supply": "suministro",
+    "demand": "demanda",
+    "region": "región",
+    "decision": "decisión",
+    "suggests": "sugiere",
+    "potentially": "potencialmente",
+    "uncertainty": "incertidumbre",
+    "tensions": "tensiones",
+    "tension": "tensión",
     "rise": "subida",
     "fall": "caída",
-    "uncertainty": "incertidumbre",
     "risk": "riesgo",
-    "demand": "demanda",
-    "supply": "oferta",
     "price": "precio",
     "significant": "significativo",
     "major": "importante",
     "minor": "menor",
     "likely": "probable",
     "expected": "esperado",
+    "This ": "Esto ",
+    "The ": "El ",
 }
 
 
@@ -150,7 +167,7 @@ def translate_reasoning(text: str) -> str:
     result = text
     for en, es in _EN_ES.items():
         result = result.replace(en, es).replace(en.capitalize(), es.capitalize())
-    return result
+    return result[:300]
 
 
 class AssetPriceFetcher:
@@ -201,6 +218,12 @@ def format_alert(event: dict, analysis: dict) -> str:
     fetcher = AssetPriceFetcher()
 
     title = event.get("title", "Sin título")
+    # Traducir el título al español si hay un translator disponible
+    if _title_translator is not None:
+        try:
+            title = _title_translator.translate(title)
+        except Exception as e:
+            logger.debug(f"Error traduciendo título: {e}")
     score = event.get("score", event.get("impact_score", 0))
     category = event.get("category", "geopolítico").upper()
     sources = event.get("sources", [])
@@ -211,6 +234,12 @@ def format_alert(event: dict, analysis: dict) -> str:
 
     direction = analysis.get("direction", "neutral")
     impact_pct = analysis.get("market_impact_percent", 0)
+
+    # Asegurar consistencia entre dirección y signo del impacto
+    if direction in ("up", "bullish", "positive", "alza"):
+        impact_pct = abs(impact_pct)
+    elif direction in ("down", "bearish", "negative", "baja"):
+        impact_pct = -abs(impact_pct)
     timeframe = analysis.get("timeframe", "desconocido")
     confidence = analysis.get("confidence", 0)
     reasoning = translate_reasoning(analysis.get("reasoning", ""))
