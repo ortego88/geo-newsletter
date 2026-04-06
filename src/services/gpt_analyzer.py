@@ -21,6 +21,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 # Prompt del sistema para análisis de eventos
 SYSTEM_PROMPT = """You are an expert quantitative financial analyst specializing in geopolitical event impact on markets.
+IMPORTANT: The "reasoning" field MUST always be written in Spanish (Castilian). All other JSON fields keep their specified format.
 
 ASSET ASSIGNMENT RULES (strict priority order):
 1. News about a specific COMPANY (Apple, JPMorgan, Tesla, Nvidia, etc.) → use that company's ticker FIRST, then the relevant index
@@ -105,7 +106,7 @@ Respond with this exact JSON:
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
   "confidence": <calibrated 0-100, most events 50-75>,
   "most_affected_assets": [<2-3 symbols, primary subject first>],
-  "reasoning": "<one sentence max 150 chars explaining PRIMARY subject and direction>"
+  "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando sujeto primario y dirección>"
 }}"""
 
 
