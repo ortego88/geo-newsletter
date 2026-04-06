@@ -355,15 +355,25 @@
     var el = function(id) { return document.getElementById(id); };
     if (el('cookie-title')) el('cookie-title').textContent = isEn ? '🍪 We use cookies' : '🍪 Usamos cookies';
     if (el('cookie-desc')) {
-      el('cookie-desc').textContent = isEn
-        ? 'We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones. '
-        : 'Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales. ';
-      var link = document.createElement('a');
-      link.href = '/privacy';
-      link.className = 'text-emerald-400 hover:underline ml-1';
-      link.id = 'cookie-policy-link';
-      link.textContent = isEn ? 'Cookie policy' : 'Política de cookies';
-      el('cookie-desc').appendChild(link);
+      var descText = isEn
+        ? 'We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.'
+        : 'Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.';
+      var linkText = isEn ? 'Cookie policy' : 'Política de cookies';
+      var existingLink = el('cookie-desc').querySelector('a');
+      if (existingLink) {
+        existingLink.textContent = linkText;
+        if (el('cookie-desc').firstChild && el('cookie-desc').firstChild.nodeType === 3) {
+          el('cookie-desc').firstChild.textContent = descText + ' ';
+        }
+      } else {
+        el('cookie-desc').textContent = descText + ' ';
+        var link = document.createElement('a');
+        link.href = '/privacy';
+        link.className = 'text-emerald-400 hover:underline ml-1';
+        link.id = 'cookie-policy-link';
+        link.textContent = linkText;
+        el('cookie-desc').appendChild(link);
+      }
     }
     if (el('cookie-essential-btn')) el('cookie-essential-btn').textContent = isEn ? 'Essential only' : 'Solo esenciales';
     if (el('cookie-accept-btn')) el('cookie-accept-btn').textContent = isEn ? 'Accept all' : 'Aceptar todas';
