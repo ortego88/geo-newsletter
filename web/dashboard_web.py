@@ -112,8 +112,10 @@ def set_language():
     if lang not in VALID:
         lang = 'es'
     conn = get_conn()
-    c = conn.cursor()
-    c.execute("UPDATE users SET language=? WHERE id=?", (lang, current_user.id))
-    conn.commit()
-    conn.close()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE users SET language=? WHERE id=?", (lang, current_user.id))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({"ok": True, "language": lang})

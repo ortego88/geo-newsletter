@@ -212,6 +212,8 @@
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({language: lang})
+    }).catch(function() {
+      // Silently ignore network errors; localStorage is still updated
     });
   }
 
