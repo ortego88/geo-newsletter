@@ -43,20 +43,26 @@ validator = PredictionValidatorScheduler(tracker=tracker, interval_minutes=60)
 
 
 def _send_pipeline_alerts(events: list):
-    """Envía alertas de Telegram para los eventos relevantes del ciclo."""
+    """
+    Envía alertas individuales de Telegram para cada evento relevante del ciclo.
+    - Resuelve conflictos de dirección antes de alertar.
+    - Solo envía alertas para activos suscritos (TELEGRAM_ALERT_ASSETS).
+    - Una alerta por evento (sin resumen/digest).
+    """
     token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     if not token:
         logger.info("TELEGRAM_BOT_TOKEN no configurado — alertas desactivadas")
         return
 
     try:
-        from src.services.telegram_sender import send_telegram
-        from src.services.alert_formatter import format_telegram_alert, format_cycle_summary
+        from src.services.telegram_sender import send_telegram, get_subscribed_assets
+        from src.services.alert_formatter import format_telegram_alert
+        from src.services.signal_resolver import resolve_signals
     except Exception as e:
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Filter events with score >= 60 and with analysis
+    # Step 1: filter alertable events (score >= 60 with analysis)
     alertable = [
         e for e in events
         if e.get("score", 0) >= 60 and e.get("analysis")
@@ -66,22 +72,36 @@ def _send_pipeline_alerts(events: list):
         logger.info("Sin eventos con score >= 60 para alertar")
         return
 
-    logger.info(f"📨 Enviando {len(alertable)} alertas a Telegram...")
+    # Step 2: resolve conflicting signals for same asset
+    resolved = resolve_signals(alertable)
+    logger.info(f"📊 Señales resueltas: {len(alertable)} → {len(resolved)} eventos")
 
-    if len(alertable) == 1:
-        event = alertable[0]
+    # Step 3: filter by subscribed assets
+    subscribed = get_subscribed_assets()
+    if subscribed:
+        filtered = []
+        for event in resolved:
+            analysis = event.get("analysis", {})
+            assets = {a.upper() for a in analysis.get("most_affected_assets", [])}
+            if assets & subscribed:  # include event if ANY of its affected assets matches the subscription list
+                filtered.append(event)
+        if not filtered:
+            logger.info(f"Sin eventos para activos suscritos: {subscribed}")
+            return
+        resolved = filtered
+        logger.info(f"📌 Filtrado por suscripción ({subscribed}): {len(resolved)} eventos")
+
+    # Step 4: send one alert per event (no summary)
+    logger.info(f"📨 Enviando {len(resolved)} alertas individuales a Telegram...")
+    sent = 0
+    for event in resolved:
         msg = format_telegram_alert(event, event["analysis"])
-        send_telegram(msg)
-        logger.info(f"✅ Alerta enviada: {event['title'][:60]}")
-    else:
-        summary = format_cycle_summary(alertable[:5])
-        send_telegram(summary)
-        logger.info(f"✅ Resumen enviado ({len(alertable)} eventos)")
+        if send_telegram(msg):
+            sent += 1
+            conflict_tag = " [conflicto resuelto]" if event.get("_conflict_resolved") else ""
+            logger.info(f"✅ Alerta enviada{conflict_tag}: {event.get('title','')[:60]}")
 
-        top = alertable[0]
-        detail = format_telegram_alert(top, top["analysis"])
-        send_telegram(detail)
-        logger.info(f"✅ Detalle enviado: {top['title'][:60]}")
+    logger.info(f"📤 Total enviadas: {sent}/{len(resolved)}")
 
 
 def run_pipeline_cycle():
