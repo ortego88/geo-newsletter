@@ -2,8 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from web.models import User, init_db
+import logging
 
 auth_bp = Blueprint("auth", __name__)
+logger = logging.getLogger("auth")
 
 
 def _is_safe_redirect(url: str) -> bool:
@@ -24,10 +26,16 @@ def login():
         user = User.get_by_email(email)
         if user and user.check_password(password):
             login_user(user, remember=True)
+            logger.info("Login exitoso para %s (id=%s)", email, user.id)
             next_page = request.args.get("next", "")
             if _is_safe_redirect(next_page):
                 return redirect(next_page)
             return redirect(url_for("dashboard_web.index"))
+        logger.warning(
+            "Login fallido para '%s': %s",
+            email,
+            "usuario no encontrado" if not user else "contraseña incorrecta",
+        )
         flash("Email o contraseña incorrectos", "error")
     return render_template("auth/login.html")
 

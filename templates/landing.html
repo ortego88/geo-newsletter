@@ -726,7 +726,7 @@
       var consent = localStorage.getItem('geo_cookie_consent');
       if (!consent) {
         var banner = document.getElementById('cookie-banner');
-        if (banner) banner.classList.remove('hidden');
+        if (banner) { banner.classList.remove('hidden'); banner.style.display = ''; }
       } else if (consent === 'all') {
         loadGTM();
       }
@@ -746,7 +746,7 @@
   </script>
 
 <!-- Cookie Consent Banner -->
-<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[200] bg-slate-950 border-t border-slate-700 shadow-xl">
+<div id="cookie-banner" style="display:none" class="hidden fixed bottom-0 inset-x-0 z-[200] bg-slate-950 border-t border-slate-700 shadow-xl">
   <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
     <div class="flex-1 min-w-0">
       <p class="text-white font-semibold text-sm mb-1" id="cookie-title">🍪 Usamos cookies</p>
