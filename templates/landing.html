@@ -88,26 +88,50 @@
   <section id="precios" class="py-20 px-6">
     <div class="max-w-5xl mx-auto">
       <h2 class="text-3xl font-bold text-center text-white mb-4">Planes y precios</h2>
-      <p class="text-center text-slate-400 mb-12">Todos los planes incluyen 7 días de prueba gratuita</p>
+      <p class="text-center text-slate-400 mb-10">Todos los planes incluyen 7 días de prueba gratuita</p>
+
+      <!-- Toggle Mensual / Anual -->
+      <div class="flex justify-center mb-10">
+        <div class="inline-flex items-center bg-slate-800 border border-slate-700 rounded-full p-1 gap-1">
+          <button id="btn-monthly" onclick="setPricing('monthly')"
+            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white">
+            Mensual
+          </button>
+          <button id="btn-annual" onclick="setPricing('annual')"
+            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white">
+            Anual <span class="ml-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">-20%</span>
+          </button>
+        </div>
+      </div>
+
       <div class="grid md:grid-cols-3 gap-6">
 
         <!-- Basic -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
           <div class="mb-6">
             <h3 class="text-xl font-bold text-white mb-1">{{ plans.basic.name }}</h3>
-            <div class="flex items-baseline gap-2 mt-3">
+            <!-- Precio mensual -->
+            <div id="price-basic-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">{{ plans.basic.price_monthly }}€</span>
               <span class="text-slate-400 text-sm">/mes</span>
               <span class="line-through text-slate-500 text-sm">{{ plans.basic.original_price }}€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.basic.discount_pct }}%</span>
             </div>
-            <p class="text-slate-500 text-sm mt-1">o {{ plans.basic.price_yearly }}€/año</p>
+            <p id="price-basic-monthly-sub" class="text-slate-500 text-sm mt-1">o {{ plans.basic.price_yearly }}€/año</p>
+            <!-- Precio anual -->
+            <div id="price-basic-annual" class="hidden flex items-baseline gap-2 mt-3">
+              <span class="text-3xl font-extrabold text-white price-annual-basic">—</span>
+              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">Ahorra 20%</span>
+            </div>
+            <p id="price-basic-annual-sub" class="hidden text-slate-500 text-sm mt-1">facturado anualmente</p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> 1 activo seleccionable</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hasta 5 alertas diarias</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial últimas 24h</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-3.5-turbo</li>
           </ul>
           <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
             Empezar prueba
@@ -121,13 +145,21 @@
           </div>
           <div class="mb-6">
             <h3 class="text-xl font-bold text-white mb-1">{{ plans.premium.name }}</h3>
-            <div class="flex items-baseline gap-2 mt-3">
+            <!-- Precio mensual -->
+            <div id="price-premium-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">{{ plans.premium.price_monthly }}€</span>
               <span class="text-slate-400 text-sm">/mes</span>
               <span class="line-through text-slate-500 text-sm">{{ plans.premium.original_price }}€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.premium.discount_pct }}%</span>
             </div>
-            <p class="text-slate-500 text-sm mt-1">o {{ plans.premium.price_yearly }}€/año</p>
+            <p id="price-premium-monthly-sub" class="text-slate-500 text-sm mt-1">o {{ plans.premium.price_yearly }}€/año</p>
+            <!-- Precio anual -->
+            <div id="price-premium-annual" class="hidden flex items-baseline gap-2 mt-3">
+              <span class="text-3xl font-extrabold text-white price-annual-premium">—</span>
+              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">Ahorra 20%</span>
+            </div>
+            <p id="price-premium-annual-sub" class="hidden text-slate-500 text-sm mt-1">facturado anualmente</p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN, FR, DE</li>
@@ -136,6 +168,8 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial 7 días</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Estadísticas de precisión</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Resumen semanal por email</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas vía Telegram y WhatsApp</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-4o</li>
           </ul>
           <a href="/register" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition">
             Empezar prueba
@@ -146,13 +180,21 @@
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
           <div class="mb-6">
             <h3 class="text-xl font-bold text-white mb-1">{{ plans.pro.name }}</h3>
-            <div class="flex items-baseline gap-2 mt-3">
+            <!-- Precio mensual -->
+            <div id="price-pro-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">{{ plans.pro.price_monthly }}€</span>
               <span class="text-slate-400 text-sm">/mes</span>
               <span class="line-through text-slate-500 text-sm">{{ plans.pro.original_price }}€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.pro.discount_pct }}%</span>
             </div>
-            <p class="text-slate-500 text-sm mt-1">o {{ plans.pro.price_yearly }}€/año</p>
+            <p id="price-pro-monthly-sub" class="text-slate-500 text-sm mt-1">o {{ plans.pro.price_yearly }}€/año</p>
+            <!-- Precio anual -->
+            <div id="price-pro-annual" class="hidden flex items-baseline gap-2 mt-3">
+              <span class="text-3xl font-extrabold text-white price-annual-pro">—</span>
+              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">Ahorra 20%</span>
+            </div>
+            <p id="price-pro-annual-sub" class="hidden text-slate-500 text-sm mt-1">facturado anualmente</p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Todos los idiomas</li>
@@ -163,6 +205,8 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> API key personal</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Soporte prioritario Telegram</li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> Informes PDF semanales</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas vía Telegram y WhatsApp</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-5.2</li>
           </ul>
           <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
             Empezar prueba
@@ -282,5 +326,26 @@
     <p class="mt-6 text-xs text-slate-600">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
   </footer>
 
+  <script>
+    function setPricing(mode) {
+      const isAnnual = mode === 'annual';
+
+      // Toggle buttons
+      document.getElementById('btn-monthly').className = isAnnual
+        ? 'px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white'
+        : 'px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white';
+      document.getElementById('btn-annual').className = isAnnual
+        ? 'px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white'
+        : 'px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white';
+
+      // Show/hide price blocks
+      ['basic', 'premium', 'pro'].forEach(plan => {
+        document.getElementById(`price-${plan}-monthly`).classList.toggle('hidden', isAnnual);
+        document.getElementById(`price-${plan}-monthly-sub`).classList.toggle('hidden', isAnnual);
+        document.getElementById(`price-${plan}-annual`).classList.toggle('hidden', !isAnnual);
+        document.getElementById(`price-${plan}-annual-sub`).classList.toggle('hidden', !isAnnual);
+      });
+    }
+  </script>
 </body>
 </html>
