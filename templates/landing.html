@@ -28,7 +28,13 @@
       <div class="flex items-center gap-4">
         <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
         <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
-        <a href="/login" class="text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+        {% if current_user.is_authenticated %}
+          <a href="/dashboard" class="text-sm text-slate-300 hover:text-white transition">👤 Área personal</a>
+          <button onclick="document.getElementById('logout-modal').classList.remove('hidden')"
+            class="text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
+        {% else %}
+          <a href="/login" class="text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+        {% endif %}
         <!-- Language selector in nav -->
         <div class="relative" id="lang-menu-wrapper">
           <button onclick="toggleLangMenu()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="lang-btn">
@@ -40,9 +46,11 @@
             <!-- items injected by JS -->
           </div>
         </div>
+        {% if not current_user.is_authenticated %}
         <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
           Empezar gratis
         </a>
+        {% endif %}
       </div>
     </div>
   </nav>
@@ -177,11 +185,12 @@
             <p id="price-basic-annual-sub" class="hidden text-slate-500 text-sm mt-1">149,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> 1 activo seleccionable</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hasta 5 alertas diarias</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial últimas 24h</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-3.5-turbo</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f1">1 activo financiero</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f2">Alertas en Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f3">Análisis con GPT-3.5-turbo</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f4">Idioma: Español / Inglés</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f5">Alertas hasta 5/día</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f6">Historial 1 día</span></li>
           </ul>
           <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba
@@ -213,14 +222,13 @@
             <p id="price-premium-annual-sub" class="hidden text-slate-500 text-sm mt-1">299,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN, FR, DE</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> 3 activos seleccionables</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hasta 10 alertas diarias</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial 7 días</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Estadísticas de precisión</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Resumen semanal por email</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas vía Telegram y WhatsApp</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-4o</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f1">Hasta 3 activos</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f2">Alertas en Telegram y WhatsApp</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f3">Análisis con GPT-4o</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f4">Idiomas: ES, EN, FR, DE</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f5">Alertas hasta 10/día</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f6">Historial 7 días</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f7">Soporte por email</span></li>
           </ul>
           <a href="/register" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba
@@ -249,16 +257,16 @@
             <p id="price-pro-annual-sub" class="hidden text-slate-500 text-sm mt-1">599,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Todos los idiomas</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Todos los activos (sin límite)</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas ilimitadas</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Dashboard en tiempo real</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial 30 días</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> API key personal</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Soporte prioritario Telegram</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Informes PDF semanales</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas vía Telegram y WhatsApp</li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Análisis con GPT-5.2</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f1">Todos los activos (sin límite)</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f2">Alertas ilimitadas</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f3">Alertas en Telegram y WhatsApp</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f4">Análisis con GPT-5.2</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f5">Todos los idiomas (8 idiomas)</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f6">Dashboard en tiempo real</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f7">Historial 30 días</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f8">API key personal</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f9">Soporte prioritario Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f10">Informes PDF semanales</span></li>
           </ul>
           <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba
@@ -386,6 +394,25 @@
     <p class="mt-3 text-xs text-slate-600" data-i18n="footer.disclaimer">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
   </footer>
 
+<!-- Logout confirmation modal -->
+<div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-8 text-center">
+    <div class="text-4xl mb-4">👋</div>
+    <h2 class="text-white font-bold text-xl mb-2" data-i18n="logout.title">¿Cerrar sesión?</h2>
+    <p class="text-slate-400 text-sm mb-6" data-i18n="logout.message">¿Estás seguro de que quieres cerrar sesión?</p>
+    <div class="flex gap-3 justify-center">
+      <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
+        class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="logout.cancel">
+        Cancelar
+      </button>
+      <a href="/logout"
+        class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="logout.confirm">
+        Cerrar sesión
+      </a>
+    </div>
+  </div>
+</div>
+
   <script>
     // ── Pricing toggle ──────────────────────────────────────────────────
     function setPricing(mode) {
@@ -475,7 +502,34 @@
         "cta.button": "Crear cuenta gratis →",
         "footer.tagline": "Alertas geopolíticas con IA para traders",
         "footer.ai_desc": "GEO-NEWSLETTER utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.",
-        "footer.disclaimer": "Las alertas son meramente informativas y no constituyen asesoramiento financiero."
+        "footer.disclaimer": "Las alertas son meramente informativas y no constituyen asesoramiento financiero.",
+        "plan.basic.f1": "1 activo financiero",
+        "plan.basic.f2": "Alertas en Telegram",
+        "plan.basic.f3": "Análisis con GPT-3.5-turbo",
+        "plan.basic.f4": "Idioma: Español / Inglés",
+        "plan.basic.f5": "Alertas hasta 5/día",
+        "plan.basic.f6": "Historial 1 día",
+        "plan.premium.f1": "Hasta 3 activos",
+        "plan.premium.f2": "Alertas en Telegram y WhatsApp",
+        "plan.premium.f3": "Análisis con GPT-4o",
+        "plan.premium.f4": "Idiomas: ES, EN, FR, DE",
+        "plan.premium.f5": "Alertas hasta 10/día",
+        "plan.premium.f6": "Historial 7 días",
+        "plan.premium.f7": "Soporte por email",
+        "plan.pro.f1": "Todos los activos (sin límite)",
+        "plan.pro.f2": "Alertas ilimitadas",
+        "plan.pro.f3": "Alertas en Telegram y WhatsApp",
+        "plan.pro.f4": "Análisis con GPT-5.2",
+        "plan.pro.f5": "Todos los idiomas (8 idiomas)",
+        "plan.pro.f6": "Dashboard en tiempo real",
+        "plan.pro.f7": "Historial 30 días",
+        "plan.pro.f8": "API key personal",
+        "plan.pro.f9": "Soporte prioritario Telegram",
+        "plan.pro.f10": "Informes PDF semanales",
+        "logout.title": "¿Cerrar sesión?",
+        "logout.message": "¿Estás seguro de que quieres cerrar sesión?",
+        "logout.cancel": "Cancelar",
+        "logout.confirm": "Cerrar sesión"
       },
       en: {
         "nav.pricing": "Pricing",
@@ -533,7 +587,34 @@
         "cta.button": "Create free account →",
         "footer.tagline": "Geopolitical alerts with AI for traders",
         "footer.ai_desc": "GEO-NEWSLETTER uses the latest generation GPT artificial intelligence models to analyze geopolitical events and their impact on financial markets. The model is continuously trained and improved.",
-        "footer.disclaimer": "Alerts are informational only and do not constitute financial advice."
+        "footer.disclaimer": "Alerts are informational only and do not constitute financial advice.",
+        "plan.basic.f1": "1 financial asset",
+        "plan.basic.f2": "Telegram alerts",
+        "plan.basic.f3": "Analysis with GPT-3.5-turbo",
+        "plan.basic.f4": "Language: Spanish / English",
+        "plan.basic.f5": "Up to 5 alerts/day",
+        "plan.basic.f6": "1-day history",
+        "plan.premium.f1": "Up to 3 assets",
+        "plan.premium.f2": "Telegram and WhatsApp alerts",
+        "plan.premium.f3": "Analysis with GPT-4o",
+        "plan.premium.f4": "Languages: ES, EN, FR, DE",
+        "plan.premium.f5": "Up to 10 alerts/day",
+        "plan.premium.f6": "7-day history",
+        "plan.premium.f7": "Email support",
+        "plan.pro.f1": "All assets (unlimited)",
+        "plan.pro.f2": "Unlimited alerts",
+        "plan.pro.f3": "Telegram and WhatsApp alerts",
+        "plan.pro.f4": "Analysis with GPT-5.2",
+        "plan.pro.f5": "All languages (8 languages)",
+        "plan.pro.f6": "Real-time dashboard",
+        "plan.pro.f7": "30-day history",
+        "plan.pro.f8": "Personal API key",
+        "plan.pro.f9": "Priority Telegram support",
+        "plan.pro.f10": "Weekly PDF reports",
+        "logout.title": "Log out?",
+        "logout.message": "Are you sure you want to log out?",
+        "logout.cancel": "Cancel",
+        "logout.confirm": "Log out"
       },
       fr: {
         "nav.pricing": "Tarifs",
@@ -591,7 +672,34 @@
         "cta.button": "Créer un compte gratuit →",
         "footer.tagline": "Alertes géopolitiques avec IA pour les traders",
         "footer.ai_desc": "GEO-NEWSLETTER utilise les modèles d'intelligence artificielle GPT de dernière génération pour analyser les événements géopolitiques et leur impact sur les marchés financiers. Le modèle est continuellement entraîné et amélioré.",
-        "footer.disclaimer": "Les alertes sont purement informatives et ne constituent pas un conseil financier."
+        "footer.disclaimer": "Les alertes sont purement informatives et ne constituent pas un conseil financier.",
+        "plan.basic.f1": "1 actif financier",
+        "plan.basic.f2": "Alertes sur Telegram",
+        "plan.basic.f3": "Analyse avec GPT-3.5-turbo",
+        "plan.basic.f4": "Langue: Espagnol / Anglais",
+        "plan.basic.f5": "Jusqu'à 5 alertes/jour",
+        "plan.basic.f6": "Historique 1 jour",
+        "plan.premium.f1": "Jusqu'à 3 actifs",
+        "plan.premium.f2": "Alertes Telegram et WhatsApp",
+        "plan.premium.f3": "Analyse avec GPT-4o",
+        "plan.premium.f4": "Langues: ES, EN, FR, DE",
+        "plan.premium.f5": "Jusqu'à 10 alertes/jour",
+        "plan.premium.f6": "Historique 7 jours",
+        "plan.premium.f7": "Support par email",
+        "plan.pro.f1": "Tous les actifs (illimité)",
+        "plan.pro.f2": "Alertes illimitées",
+        "plan.pro.f3": "Alertes Telegram et WhatsApp",
+        "plan.pro.f4": "Analyse avec GPT-5.2",
+        "plan.pro.f5": "Toutes les langues (8 langues)",
+        "plan.pro.f6": "Tableau de bord en temps réel",
+        "plan.pro.f7": "Historique 30 jours",
+        "plan.pro.f8": "Clé API personnelle",
+        "plan.pro.f9": "Support prioritaire Telegram",
+        "plan.pro.f10": "Rapports PDF hebdomadaires",
+        "logout.title": "Se déconnecter?",
+        "logout.message": "Êtes-vous sûr de vouloir vous déconnecter?",
+        "logout.cancel": "Annuler",
+        "logout.confirm": "Se déconnecter"
       },
       de: {
         "nav.pricing": "Preise",
@@ -649,7 +757,34 @@
         "cta.button": "Kostenloses Konto erstellen →",
         "footer.tagline": "Geopolitische Alerts mit KI für Trader",
         "footer.ai_desc": "GEO-NEWSLETTER verwendet die neuesten GPT-KI-Modelle zur Analyse geopolitischer Ereignisse und ihrer Auswirkungen auf die Finanzmärkte. Das Modell wird kontinuierlich trainiert und verbessert.",
-        "footer.disclaimer": "Alerts sind rein informativ und stellen keine Finanzberatung dar."
+        "footer.disclaimer": "Alerts sind rein informativ und stellen keine Finanzberatung dar.",
+        "plan.basic.f1": "1 Finanzasset",
+        "plan.basic.f2": "Telegram-Alerts",
+        "plan.basic.f3": "Analyse mit GPT-3.5-turbo",
+        "plan.basic.f4": "Sprache: Spanisch / Englisch",
+        "plan.basic.f5": "Bis zu 5 Alerts/Tag",
+        "plan.basic.f6": "Verlauf 1 Tag",
+        "plan.premium.f1": "Bis zu 3 Assets",
+        "plan.premium.f2": "Telegram- und WhatsApp-Alerts",
+        "plan.premium.f3": "Analyse mit GPT-4o",
+        "plan.premium.f4": "Sprachen: ES, EN, FR, DE",
+        "plan.premium.f5": "Bis zu 10 Alerts/Tag",
+        "plan.premium.f6": "Verlauf 7 Tage",
+        "plan.premium.f7": "E-Mail-Support",
+        "plan.pro.f1": "Alle Assets (unbegrenzt)",
+        "plan.pro.f2": "Unbegrenzte Alerts",
+        "plan.pro.f3": "Telegram- und WhatsApp-Alerts",
+        "plan.pro.f4": "Analyse mit GPT-5.2",
+        "plan.pro.f5": "Alle Sprachen (8 Sprachen)",
+        "plan.pro.f6": "Echtzeit-Dashboard",
+        "plan.pro.f7": "Verlauf 30 Tage",
+        "plan.pro.f8": "Persönlicher API-Schlüssel",
+        "plan.pro.f9": "Prioritärer Telegram-Support",
+        "plan.pro.f10": "Wöchentliche PDF-Berichte",
+        "logout.title": "Abmelden?",
+        "logout.message": "Sind Sie sicher, dass Sie sich abmelden möchten?",
+        "logout.cancel": "Abbrechen",
+        "logout.confirm": "Abmelden"
       },
       it: {
         "nav.pricing": "Prezzi",
@@ -707,7 +842,34 @@
         "cta.button": "Crea account gratuito →",
         "footer.tagline": "Avvisi geopolitici con IA per i trader",
         "footer.ai_desc": "GEO-NEWSLETTER utilizza i modelli di intelligenza artificiale GPT di ultima generazione per analizzare gli eventi geopolitici e il loro impatto sui mercati finanziari. Il modello viene continuamente addestrato e migliorato.",
-        "footer.disclaimer": "Gli avvisi sono puramente informativi e non costituiscono consulenza finanziaria."
+        "footer.disclaimer": "Gli avvisi sono puramente informativi e non costituiscono consulenza finanziaria.",
+        "plan.basic.f1": "1 asset finanziario",
+        "plan.basic.f2": "Avvisi su Telegram",
+        "plan.basic.f3": "Analisi con GPT-3.5-turbo",
+        "plan.basic.f4": "Lingua: Spagnolo / Inglese",
+        "plan.basic.f5": "Fino a 5 avvisi/giorno",
+        "plan.basic.f6": "Storico 1 giorno",
+        "plan.premium.f1": "Fino a 3 asset",
+        "plan.premium.f2": "Avvisi Telegram e WhatsApp",
+        "plan.premium.f3": "Analisi con GPT-4o",
+        "plan.premium.f4": "Lingue: ES, EN, FR, DE",
+        "plan.premium.f5": "Fino a 10 avvisi/giorno",
+        "plan.premium.f6": "Storico 7 giorni",
+        "plan.premium.f7": "Supporto via email",
+        "plan.pro.f1": "Tutti gli asset (illimitato)",
+        "plan.pro.f2": "Avvisi illimitati",
+        "plan.pro.f3": "Avvisi Telegram e WhatsApp",
+        "plan.pro.f4": "Analisi con GPT-5.2",
+        "plan.pro.f5": "Tutte le lingue (8 lingue)",
+        "plan.pro.f6": "Dashboard in tempo reale",
+        "plan.pro.f7": "Storico 30 giorni",
+        "plan.pro.f8": "Chiave API personale",
+        "plan.pro.f9": "Supporto prioritario Telegram",
+        "plan.pro.f10": "Report PDF settimanali",
+        "logout.title": "Disconnettersi?",
+        "logout.message": "Sei sicuro di voler uscire?",
+        "logout.cancel": "Annulla",
+        "logout.confirm": "Disconnetti"
       },
       pt: {
         "nav.pricing": "Preços",
@@ -765,7 +927,34 @@
         "cta.button": "Criar conta gratuita →",
         "footer.tagline": "Alertas geopolíticos com IA para traders",
         "footer.ai_desc": "GEO-NEWSLETTER usa os modelos de inteligência artificial GPT de última geração para analisar eventos geopolíticos e seu impacto nos mercados financeiros. O modelo é continuamente treinado e melhorado.",
-        "footer.disclaimer": "Os alertas são meramente informativos e não constituem aconselhamento financeiro."
+        "footer.disclaimer": "Os alertas são meramente informativos e não constituem aconselhamento financeiro.",
+        "plan.basic.f1": "1 ativo financeiro",
+        "plan.basic.f2": "Alertas no Telegram",
+        "plan.basic.f3": "Análise com GPT-3.5-turbo",
+        "plan.basic.f4": "Idioma: Espanhol / Inglês",
+        "plan.basic.f5": "Até 5 alertas/dia",
+        "plan.basic.f6": "Histórico 1 dia",
+        "plan.premium.f1": "Até 3 ativos",
+        "plan.premium.f2": "Alertas Telegram e WhatsApp",
+        "plan.premium.f3": "Análise com GPT-4o",
+        "plan.premium.f4": "Idiomas: ES, EN, FR, DE",
+        "plan.premium.f5": "Até 10 alertas/dia",
+        "plan.premium.f6": "Histórico 7 dias",
+        "plan.premium.f7": "Suporte por email",
+        "plan.pro.f1": "Todos os ativos (ilimitado)",
+        "plan.pro.f2": "Alertas ilimitados",
+        "plan.pro.f3": "Alertas Telegram e WhatsApp",
+        "plan.pro.f4": "Análise com GPT-5.2",
+        "plan.pro.f5": "Todos os idiomas (8 idiomas)",
+        "plan.pro.f6": "Dashboard em tempo real",
+        "plan.pro.f7": "Histórico 30 dias",
+        "plan.pro.f8": "Chave API pessoal",
+        "plan.pro.f9": "Suporte prioritário Telegram",
+        "plan.pro.f10": "Relatórios PDF semanais",
+        "logout.title": "Sair?",
+        "logout.message": "Tem certeza que deseja sair?",
+        "logout.cancel": "Cancelar",
+        "logout.confirm": "Sair"
       },
       zh: {
         "nav.pricing": "定价",
@@ -823,7 +1012,34 @@
         "cta.button": "创建免费账户 →",
         "footer.tagline": "为交易者提供AI地缘政治警报",
         "footer.ai_desc": "GEO-NEWSLETTER使用最新一代GPT人工智能模型分析地缘政治事件及其对金融市场的影响。该模型持续训练和改进。",
-        "footer.disclaimer": "警报仅供参考，不构成金融建议。"
+        "footer.disclaimer": "警报仅供参考，不构成金融建议。",
+        "plan.basic.f1": "1个金融资产",
+        "plan.basic.f2": "Telegram警报",
+        "plan.basic.f3": "GPT-3.5-turbo分析",
+        "plan.basic.f4": "语言：西班牙语/英语",
+        "plan.basic.f5": "每天最多5条警报",
+        "plan.basic.f6": "1天历史记录",
+        "plan.premium.f1": "最多3个资产",
+        "plan.premium.f2": "Telegram和WhatsApp警报",
+        "plan.premium.f3": "GPT-4o分析",
+        "plan.premium.f4": "语言：ES、EN、FR、DE",
+        "plan.premium.f5": "每天最多10条警报",
+        "plan.premium.f6": "7天历史记录",
+        "plan.premium.f7": "邮件支持",
+        "plan.pro.f1": "所有资产（无限制）",
+        "plan.pro.f2": "无限警报",
+        "plan.pro.f3": "Telegram和WhatsApp警报",
+        "plan.pro.f4": "GPT-5.2分析",
+        "plan.pro.f5": "所有语言（8种语言）",
+        "plan.pro.f6": "实时仪表板",
+        "plan.pro.f7": "30天历史记录",
+        "plan.pro.f8": "个人API密钥",
+        "plan.pro.f9": "优先Telegram支持",
+        "plan.pro.f10": "每周PDF报告",
+        "logout.title": "退出登录？",
+        "logout.message": "您确定要退出登录吗？",
+        "logout.cancel": "取消",
+        "logout.confirm": "退出"
       },
       ar: {
         "nav.pricing": "الأسعار",
@@ -881,7 +1097,34 @@
         "cta.button": "إنشاء حساب مجاني →",
         "footer.tagline": "تنبيهات جيوسياسية بالذكاء الاصطناعي للمتداولين",
         "footer.ai_desc": "تستخدم GEO-NEWSLETTER أحدث نماذج الذكاء الاصطناعي GPT لتحليل الأحداث الجيوسياسية وتأثيرها على الأسواق المالية. يتم تدريب النموذج وتحسينه باستمرار.",
-        "footer.disclaimer": "التنبيهات لأغراض إعلامية فقط ولا تشكّل نصيحة مالية."
+        "footer.disclaimer": "التنبيهات لأغراض إعلامية فقط ولا تشكّل نصيحة مالية.",
+        "plan.basic.f1": "أصل مالي واحد",
+        "plan.basic.f2": "تنبيهات على Telegram",
+        "plan.basic.f3": "تحليل مع GPT-3.5-turbo",
+        "plan.basic.f4": "اللغة: الإسبانية / الإنجليزية",
+        "plan.basic.f5": "حتى 5 تنبيهات/يوم",
+        "plan.basic.f6": "سجل يوم واحد",
+        "plan.premium.f1": "حتى 3 أصول",
+        "plan.premium.f2": "تنبيهات Telegram وWhatsApp",
+        "plan.premium.f3": "تحليل مع GPT-4o",
+        "plan.premium.f4": "اللغات: ES، EN، FR، DE",
+        "plan.premium.f5": "حتى 10 تنبيهات/يوم",
+        "plan.premium.f6": "سجل 7 أيام",
+        "plan.premium.f7": "دعم البريد الإلكتروني",
+        "plan.pro.f1": "جميع الأصول (غير محدود)",
+        "plan.pro.f2": "تنبيهات غير محدودة",
+        "plan.pro.f3": "تنبيهات Telegram وWhatsApp",
+        "plan.pro.f4": "تحليل مع GPT-5.2",
+        "plan.pro.f5": "جميع اللغات (8 لغات)",
+        "plan.pro.f6": "لوحة تحكم فورية",
+        "plan.pro.f7": "سجل 30 يوماً",
+        "plan.pro.f8": "مفتاح API شخصي",
+        "plan.pro.f9": "دعم Telegram ذو أولوية",
+        "plan.pro.f10": "تقارير PDF أسبوعية",
+        "logout.title": "تسجيل الخروج؟",
+        "logout.message": "هل أنت متأكد من أنك تريد تسجيل الخروج؟",
+        "logout.cancel": "إلغاء",
+        "logout.confirm": "تسجيل الخروج"
       }
     };
 
