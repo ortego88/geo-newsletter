@@ -14,18 +14,18 @@
   <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0">
     <div class="px-6 py-5 border-b border-slate-800">
       <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
-      <p class="text-slate-500 text-xs mt-1">Área privada</p>
+      <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
     </div>
 
     <nav class="flex-1 px-4 py-6 space-y-1">
       <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>📊</span> Dashboard
+        <span>📊</span> <span data-i18n="dash.dashboard">Dashboard</span>
       </a>
       <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
-        <span>⚙️</span> Configuración
+        <span>⚙️</span> <span data-i18n="dash.settings">Configuración</span>
       </a>
       <a href="/pricing" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>💳</span> Suscripción
+        <span>💳</span> <span data-i18n="dash.subscription">Suscripción</span>
       </a>
     </nav>
 
@@ -35,7 +35,7 @@
         <p class="text-slate-500 text-xs">{{ current_user.email }}</p>
       </div>
       <a href="/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>🚪</span> Cerrar sesión
+        <span>🚪</span> <span data-i18n="dash.sign_out">Cerrar sesión</span>
       </a>
     </div>
   </aside>
@@ -44,7 +44,7 @@
   <main class="flex-1 overflow-auto">
 
     <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between">
-      <h1 class="text-white font-bold text-xl">Configuración</h1>
+      <h1 class="text-white font-bold text-xl" data-i18n="dash.settings">Configuración</h1>
       <!-- Compact lang switcher -->
       <div class="relative" id="dash-lang-wrapper">
         <button onclick="toggleDashLang()" class="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700" id="dash-lang-btn">
@@ -75,11 +75,11 @@
         <!-- Asset selector -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-bold text-white">Activos a monitorizar</h2>
+            <h2 class="font-bold text-white" data-i18n="settings.assets_title">Activos a monitorizar</h2>
             <span class="text-slate-400 text-sm">
-              Máximo:
+              <span data-i18n="settings.maximum">Máximo</span>:
               {% if plan_config.max_assets == -1 %}
-                <span class="text-emerald-400 font-semibold">Ilimitado</span>
+                <span class="text-emerald-400 font-semibold" data-i18n="settings.unlimited">Ilimitado</span>
               {% else %}
                 <span class="text-emerald-400 font-semibold">{{ plan_config.max_assets }}</span>
               {% endif %}
@@ -89,11 +89,11 @@
           {% if plan_config and plan_config.max_assets == -1 %}
           <div class="flex gap-3 mb-4">
             <button type="button" onclick="selectAllAssets()"
-              class="text-sm text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition">
+              class="text-sm text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition" data-i18n="settings.select_all">
               ✓ Seleccionar todos
             </button>
             <button type="button" onclick="deselectAllAssets()"
-              class="text-sm text-slate-400 hover:text-white border border-slate-600 px-3 py-1.5 rounded-lg transition">
+              class="text-sm text-slate-400 hover:text-white border border-slate-600 px-3 py-1.5 rounded-lg transition" data-i18n="settings.deselect_all">
               ✗ Quitar todos
             </button>
           </div>
@@ -123,15 +123,15 @@
           </div>
           {% if plan_config.max_assets != -1 %}
             <p class="mt-4 text-xs text-slate-500">
-              Los activos bloqueados requieren un plan superior.
-              <a href="/pricing" class="text-emerald-400 hover:text-emerald-300">Actualizar plan →</a>
+              <span data-i18n="settings.locked_assets_msg">Los activos bloqueados requieren un plan superior.</span>
+              <a href="/pricing" class="text-emerald-400 hover:text-emerald-300" data-i18n="settings.upgrade_plan">Actualizar plan →</a>
             </p>
           {% endif %}
         </div>
 
         <!-- Language selector -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-4">Idioma de las alertas</h2>
+          <h2 class="font-bold text-white mb-4" data-i18n="settings.lang_title">Idioma de las alertas</h2>
           <div class="flex flex-wrap gap-3">
             {% set available_langs = plan_config.languages %}
             {% set all_langs = [('es', '🇪🇸 Español'), ('en', '🇬🇧 English')] %}
@@ -169,12 +169,12 @@
 
         <!-- Subscription management -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-4">Gestión de suscripción</h2>
+          <h2 class="font-bold text-white mb-4" data-i18n="settings.subscription_title">Gestión de suscripción</h2>
           <div class="flex flex-wrap gap-4">
             <div class="flex-1 min-w-48">
-              <p class="text-slate-400 text-sm mb-1">Plan actual</p>
+              <p class="text-slate-400 text-sm mb-1" data-i18n="settings.current_plan">Plan actual</p>
               <p class="text-white font-semibold">
-                {% if sub %}{{ plans[sub.plan].name }}{% else %}Sin suscripción{% endif %}
+                {% if sub %}{{ plans[sub.plan].name }}{% else %}<span data-i18n="settings.no_subscription">Sin suscripción</span>{% endif %}
               </p>
               <p class="text-slate-500 text-xs mt-0.5">
                 {% if sub %}
@@ -183,12 +183,12 @@
               </p>
             </div>
             <div class="flex flex-col gap-2">
-              <a href="/pricing" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+              <a href="/pricing" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="settings.change_plan">
                 Cambiar plan
               </a>
               {% if sub and sub.status in ('active', 'trial') %}
                 <button type="button" onclick="openCancelModal()"
-                  class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition">
+                  class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition" data-i18n="settings.cancel_subscription">
                   Cancelar suscripción
                 </button>
               {% endif %}
@@ -197,7 +197,7 @@
         </div>
 
         <button type="submit"
-          class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition">
+          class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition" data-i18n="settings.save_btn">
           Guardar configuración
         </button>
 
@@ -256,6 +256,7 @@
     document.getElementById('dash-lang-code').textContent = lang.toUpperCase();
     localStorage.setItem('geo_lang', lang);
     dashCurrentLang = lang;
+    applyDashLang(lang);
     fetch('/dashboard/set-language', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -376,6 +377,8 @@
       document.getElementById('dash-lang-code').textContent = storedLang.toUpperCase();
       dashCurrentLang = storedLang;
     }
+    applyDashLang(dashCurrentLang);
+    initCookieBanner();
 
     const inp = document.getElementById('cancel-confirm-input');
     if (inp) {
@@ -390,7 +393,119 @@
       });
     }
   });
+
+  var DASH_TRANSLATIONS = {
+    es: {
+      "dash.private_area": "Área privada",
+      "dash.dashboard": "Dashboard",
+      "dash.settings": "Configuración",
+      "dash.subscription": "Suscripción",
+      "dash.sign_out": "Cerrar sesión",
+      "settings.assets_title": "Activos a monitorizar",
+      "settings.maximum": "Máximo",
+      "settings.unlimited": "Ilimitado",
+      "settings.select_all": "✓ Seleccionar todos",
+      "settings.deselect_all": "✗ Quitar todos",
+      "settings.locked_assets_msg": "Los activos bloqueados requieren un plan superior.",
+      "settings.upgrade_plan": "Actualizar plan →",
+      "settings.lang_title": "Idioma de las alertas",
+      "settings.subscription_title": "Gestión de suscripción",
+      "settings.current_plan": "Plan actual",
+      "settings.no_subscription": "Sin suscripción",
+      "settings.change_plan": "Cambiar plan",
+      "settings.cancel_subscription": "Cancelar suscripción",
+      "settings.save_btn": "Guardar configuración",
+      "cookies.title": "🍪 Usamos cookies",
+      "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
+      "cookies.policy_link": "Política de cookies",
+      "cookies.essential_btn": "Solo esenciales",
+      "cookies.accept_btn": "Aceptar todas"
+    },
+    en: {
+      "dash.private_area": "Private area",
+      "dash.dashboard": "Dashboard",
+      "dash.settings": "Settings",
+      "dash.subscription": "Subscription",
+      "dash.sign_out": "Sign out",
+      "settings.assets_title": "Assets to monitor",
+      "settings.maximum": "Maximum",
+      "settings.unlimited": "Unlimited",
+      "settings.select_all": "✓ Select all",
+      "settings.deselect_all": "✗ Deselect all",
+      "settings.locked_assets_msg": "Locked assets require a higher plan.",
+      "settings.upgrade_plan": "Upgrade plan →",
+      "settings.lang_title": "Alert language",
+      "settings.subscription_title": "Subscription management",
+      "settings.current_plan": "Current plan",
+      "settings.no_subscription": "No subscription",
+      "settings.change_plan": "Change plan",
+      "settings.cancel_subscription": "Cancel subscription",
+      "settings.save_btn": "Save settings",
+      "cookies.title": "🍪 We use cookies",
+      "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
+      "cookies.policy_link": "Cookie policy",
+      "cookies.essential_btn": "Essential only",
+      "cookies.accept_btn": "Accept all"
+    }
+  };
+
+  function applyDashLang(lang) {
+    var t = DASH_TRANSLATIONS[lang] || DASH_TRANSLATIONS['es'];
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+  }
+
+  // Cookie consent
+  function cookieConsent(level) {
+    localStorage.setItem('geo_cookie_consent', level);
+    document.getElementById('cookie-banner').classList.add('hidden');
+    if (level === 'all') loadGTM();
+  }
+
+  function initCookieBanner() {
+    var consent = localStorage.getItem('geo_cookie_consent');
+    if (!consent) {
+      document.getElementById('cookie-banner').classList.remove('hidden');
+    } else if (consent === 'all') {
+      loadGTM();
+    }
+  }
+
+  function loadGTM() {
+    if (window._gtmLoaded) return;
+    window._gtmLoaded = true;
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-XXXXXXX');
+  }
 </script>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[100] bg-slate-900 border-t border-slate-700 shadow-xl">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex-1">
+      <p class="text-white font-semibold text-sm mb-1" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-slate-400 text-xs">
+        <span data-i18n="cookies.desc">Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.</span>
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" data-i18n="cookies.policy_link">Política de cookies</a>
+      </p>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <button onclick="cookieConsent('essential')"
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 px-4 py-2 rounded-lg transition" data-i18n="cookies.essential_btn">
+        Solo esenciales
+      </button>
+      <button onclick="cookieConsent('all')"
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition" data-i18n="cookies.accept_btn">
+        Aceptar todas
+      </button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

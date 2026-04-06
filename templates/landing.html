@@ -166,19 +166,19 @@
         <!-- Basic -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
           <div class="mb-6">
-            <h3 class="text-xl font-bold text-white mb-1">{{ plans.basic.name }}</h3>
+            <h3 class="text-xl font-bold text-white mb-1" data-i18n="plan.basic.name">{{ plans.basic.name }}</h3>
             <!-- Precio mensual -->
             <div id="price-basic-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">14,99€</span>
-              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="text-slate-400 text-sm" data-i18n="pricing.per_month">/mes</span>
               <span class="line-through text-slate-500 text-sm">24,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-40%</span>
             </div>
-            <p id="price-basic-monthly-sub" class="text-slate-500 text-sm mt-1">o 149,99€/año</p>
+            <p id="price-basic-monthly-sub" class="text-slate-500 text-sm mt-1"><span data-i18n="pricing.or">o</span> 149,99€/<span data-i18n="pricing.per_year_short">año</span></p>
             <!-- Precio anual -->
             <div id="price-basic-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">12,49€</span>
-              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="text-slate-400 text-sm" data-i18n="pricing.per_month">/mes</span>
               <span class="line-through text-slate-500 text-sm">24,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-50%</span>
             </div>
@@ -203,19 +203,19 @@
             <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full" data-i18n="pricing.most_popular">⭐ MÁS POPULAR</span>
           </div>
           <div class="mb-6">
-            <h3 class="text-xl font-bold text-white mb-1">{{ plans.premium.name }}</h3>
+            <h3 class="text-xl font-bold text-white mb-1" data-i18n="plan.premium.name">{{ plans.premium.name }}</h3>
             <!-- Precio mensual -->
             <div id="price-premium-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">29,99€</span>
-              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="text-slate-400 text-sm" data-i18n="pricing.per_month">/mes</span>
               <span class="line-through text-slate-500 text-sm">59,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-50%</span>
             </div>
-            <p id="price-premium-monthly-sub" class="text-slate-500 text-sm mt-1">o 299,99€/año</p>
+            <p id="price-premium-monthly-sub" class="text-slate-500 text-sm mt-1"><span data-i18n="pricing.or">o</span> 299,99€/<span data-i18n="pricing.per_year_short">año</span></p>
             <!-- Precio anual -->
             <div id="price-premium-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">24,99€</span>
-              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="text-slate-400 text-sm" data-i18n="pricing.per_month">/mes</span>
               <span class="line-through text-slate-500 text-sm">59,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-58%</span>
             </div>
@@ -238,7 +238,7 @@
         <!-- Pro -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
           <div class="mb-6">
-            <h3 class="text-xl font-bold text-white mb-1">{{ plans.pro.name }}</h3>
+            <h3 class="text-xl font-bold text-white mb-1" data-i18n="plan.pro.name">{{ plans.pro.name }}</h3>
             <!-- Precio mensual -->
             <div id="price-pro-monthly" class="flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">59,99€</span>
@@ -246,7 +246,7 @@
               <span class="line-through text-slate-500 text-sm">99,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-40%</span>
             </div>
-            <p id="price-pro-monthly-sub" class="text-slate-500 text-sm mt-1">o 599,99€/año</p>
+            <p id="price-pro-monthly-sub" class="text-slate-500 text-sm mt-1"><span data-i18n="pricing.or">o</span> 599,99€/<span data-i18n="pricing.per_year_short">año</span></p>
             <!-- Precio anual -->
             <div id="price-pro-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">49,99€</span>
@@ -392,6 +392,7 @@
     </div>
     <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto" data-i18n="footer.ai_desc">GEO-NEWSLETTER utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.</p>
     <p class="mt-3 text-xs text-slate-600" data-i18n="footer.disclaimer">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
+    <p class="mt-3 text-xs text-slate-600"><a href="/privacy" class="hover:text-slate-400 transition" data-i18n="cookies.policy_link">Política de cookies</a></p>
   </footer>
 
 <!-- Logout confirmation modal -->
@@ -474,9 +475,15 @@
         "pricing.monthly_btn": "Mensual",
         "pricing.annual_btn": "Anual",
         "pricing.per_month": "/mes",
+        "pricing.per_year": "/año",
+        "pricing.per_year_short": "año",
+        "pricing.or": "o",
         "pricing.billed_annually": "facturado anualmente",
         "pricing.start_trial": "Empezar prueba",
         "pricing.most_popular": "⭐ MÁS POPULAR",
+        "plan.basic.name": "Básica",
+        "plan.premium.name": "Premium",
+        "plan.pro.name": "Profesional",
         "testimonials.title": "Lo que dicen nuestros usuarios",
         "faq.title": "Preguntas frecuentes",
         "faq.q1": "¿Necesito tarjeta de crédito para la prueba gratuita?",
@@ -523,7 +530,12 @@
         "logout.title": "¿Cerrar sesión?",
         "logout.message": "¿Estás seguro de que quieres cerrar sesión?",
         "logout.cancel": "Cancelar",
-        "logout.confirm": "Cerrar sesión"
+        "logout.confirm": "Cerrar sesión",
+        "cookies.title": "🍪 Usamos cookies",
+        "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
+        "cookies.policy_link": "Política de cookies",
+        "cookies.essential_btn": "Solo esenciales",
+        "cookies.accept_btn": "Aceptar todas"
       },
       en: {
         "nav.pricing": "Pricing",
@@ -559,9 +571,15 @@
         "pricing.monthly_btn": "Monthly",
         "pricing.annual_btn": "Annual",
         "pricing.per_month": "/mo",
+        "pricing.per_year": "/yr",
+        "pricing.per_year_short": "yr",
+        "pricing.or": "or",
         "pricing.billed_annually": "billed annually",
         "pricing.start_trial": "Start trial",
         "pricing.most_popular": "⭐ MOST POPULAR",
+        "plan.basic.name": "Basic",
+        "plan.premium.name": "Premium",
+        "plan.pro.name": "Professional",
         "testimonials.title": "What our users say",
         "faq.title": "Frequently asked questions",
         "faq.q1": "Do I need a credit card for the free trial?",
@@ -608,7 +626,12 @@
         "logout.title": "Sign out?",
         "logout.message": "Are you sure you want to sign out?",
         "logout.cancel": "Cancel",
-        "logout.confirm": "Sign out"
+        "logout.confirm": "Sign out",
+        "cookies.title": "🍪 We use cookies",
+        "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
+        "cookies.policy_link": "Cookie policy",
+        "cookies.essential_btn": "Essential only",
+        "cookies.accept_btn": "Accept all"
       }
     };
 
@@ -658,7 +681,58 @@
       var lang = localStorage.getItem('geo_lang') || 'es';
       if (!TRANSLATIONS[lang]) lang = 'es';
       applyLang(lang);
+      initCookieBanner();
     });
+
+    // ── Cookie consent ───────────────────────────────────────────────────
+    function cookieConsent(level) {
+      localStorage.setItem('geo_cookie_consent', level);
+      document.getElementById('cookie-banner').classList.add('hidden');
+      if (level === 'all') loadGTM();
+    }
+
+    function initCookieBanner() {
+      var consent = localStorage.getItem('geo_cookie_consent');
+      if (!consent) {
+        document.getElementById('cookie-banner').classList.remove('hidden');
+      } else if (consent === 'all') {
+        loadGTM();
+      }
+    }
+
+    function loadGTM() {
+      if (window._gtmLoaded) return;
+      window._gtmLoaded = true;
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-XXXXXXX');
+    }
   </script>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[100] bg-slate-900 border-t border-slate-700 shadow-xl">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex-1">
+      <p class="text-white font-semibold text-sm mb-1" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-slate-400 text-xs" data-i18n="cookies.desc">
+        Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" data-i18n="cookies.policy_link">Política de cookies</a>
+      </p>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <button onclick="cookieConsent('essential')"
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 px-4 py-2 rounded-lg transition" data-i18n="cookies.essential_btn">
+        Solo esenciales
+      </button>
+      <button onclick="cookieConsent('all')"
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition" data-i18n="cookies.accept_btn">
+        Aceptar todas
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
