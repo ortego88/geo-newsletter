@@ -15,3 +15,4 @@ trafilatura
 geopy
 python-dateutil
 yfinance
+flask>=2.0
