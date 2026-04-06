@@ -35,8 +35,8 @@ def tail_log_file(path, n=200):
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
         return [line.rstrip() for line in lines[-n:]]
-    except Exception as e:
-        return [f"Error leyendo log: {e}"]
+    except Exception:
+        return ["Error leyendo log."]
 
 
 @app.route("/")
@@ -139,7 +139,7 @@ def api_reset_dedup():
             p.unlink()
         return jsonify({"status": "ok", "message": "Deduplicador reseteado."})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Error al resetear el deduplicador."}), 500
 
 
 @app.route("/stream/logs")
