@@ -50,7 +50,6 @@ newspaper3k==0.2.8
 numpy==2.4.2
 openai>=1.0.0
 packaging==26.0
-the developers have with openai.
 pandas==2.3.3
 pillow==12.1.1
 praw==7.8.1
