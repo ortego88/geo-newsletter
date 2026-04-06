@@ -303,16 +303,16 @@
       if (MAX_ASSETS !== -1 && selected.length > MAX_ASSETS) {
         if (MAX_ASSETS === 1) {
           checkboxes.forEach(c => { if (c !== this && !c.disabled) c.checked = false; });
-          document.querySelectorAll('label:has(input[name="assets"])').forEach(label => {
-            const inp = label.querySelector('input[name="assets"]');
-            if (inp && !inp.disabled) {
-              if (inp.checked) {
-                label.classList.remove('border-slate-700', 'bg-slate-800');
-                label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
-              } else {
-                label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
-                label.classList.add('border-slate-700', 'bg-slate-800');
-              }
+          checkboxes.forEach(c => {
+            if (c.disabled) return;
+            const label = c.closest('label');
+            if (!label) return;
+            if (c.checked) {
+              label.classList.remove('border-slate-700', 'bg-slate-800');
+              label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
+            } else {
+              label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
+              label.classList.add('border-slate-700', 'bg-slate-800');
             }
           });
         } else {
