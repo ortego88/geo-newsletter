@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO-NEWSLETTER Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+.header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 18px; font-weight: 600; color: #f0f6fc; }
+.header .subtitle { color: #8b949e; font-size: 12px; margin-top: 2px; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-green { background: #1a4a2e; color: #3fb950; border: 1px solid #238636; }
+.badge-red { background: #3d1a1a; color: #f85149; border: 1px solid #da3633; }
+.badge-gray { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px 24px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+.card-label { color: #8b949e; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.card-value { font-size: 32px; font-weight: 700; color: #f0f6fc; }
+.card-value.green { color: #3fb950; }
+.card-value.red { color: #f85149; }
+.card-value.blue { color: #58a6ff; }
+.section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; margin-bottom: 20px; }
+.section-header { padding: 16px 20px; border-bottom: 1px solid #30363d; display: flex; align-items: center; justify-content: space-between; }
+.section-title { font-size: 15px; font-weight: 600; color: #f0f6fc; }
+.actions { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.btn { padding: 8px 18px; border-radius: 6px; border: 1px solid; cursor: pointer; font-size: 14px; font-weight: 500; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.8; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-green { background: #238636; border-color: #2ea043; color: #fff; }
+.btn-blue { background: #1f6feb; border-color: #388bfd; color: #fff; }
+.btn-gray { background: #21262d; border-color: #30363d; color: #c9d1d9; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { padding: 10px 16px; text-align: left; font-weight: 600; color: #8b949e; background: #0d1117; border-bottom: 1px solid #30363d; white-space: nowrap; }
+td { padding: 10px 16px; border-bottom: 1px solid #21262d; color: #c9d1d9; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #1c2128; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.text-mono { font-family: 'SF Mono', 'Consolas', monospace; }
+.text-green { color: #3fb950; }
+.text-red { color: #f85149; }
+.text-muted { color: #8b949e; }
+.log-panel { background: #010409; padding: 16px; font-family: 'SF Mono', 'Consolas', 'Courier New', monospace; font-size: 12px; height: 380px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+.log-line { color: #c9d1d9; line-height: 1.6; }
+.log-line.info { color: #58a6ff; }
+.log-line.warn { color: #d29922; }
+.log-line.error { color: #f85149; }
+.status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 16px; }
+.status-item { display: flex; align-items: flex-start; gap: 10px; }
+.status-label { color: #8b949e; font-size: 12px; }
+.status-value { color: #f0f6fc; font-weight: 500; margin-top: 2px; }
+#notification { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 1000; display: none; max-width: 360px; }
+.notify-ok { background: #1a4a2e; border: 1px solid #238636; color: #3fb950; }
+.notify-error { background: #3d1a1a; border: 1px solid #da3633; color: #f85149; }
+.notify-info { background: #1a3a5c; border: 1px solid #1f6feb; color: #58a6ff; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>🌍 GEO-NEWSLETTER — Sistema de Alertas Geopolíticas</h1>
+    <div class="subtitle">Análisis de eventos globales e impacto en mercados financieros</div>
+  </div>
+  <div id="scheduler-badge" class="badge badge-gray">⏳ Cargando...</div>
+</div>
+<div id="notification"></div>
+<div class="container">
+  <div class="stats-grid">
+    <div class="card">
+      <div class="card-label">Total Predicciones</div>
+      <div class="card-value blue" id="stat-total">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">✅ Correctas</div>
+      <div class="card-value green" id="stat-correct">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">❌ Incorrectas</div>
+      <div class="card-value red" id="stat-incorrect">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Precisión</div>
+      <div class="card-value" id="stat-accuracy">—</div>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-green" id="btn-run" onclick="runPipeline()">▶ Ejecutar Pipeline Ahora</button>
+    <button class="btn btn-gray" onclick="resetDedup()">🔄 Resetear Deduplicador</button>
+    <button class="btn btn-blue" onclick="fetchAll()">↻ Actualizar Dashboard</button>
+  </div>
+  <div class="section" style="margin-bottom:20px">
+    <div class="section-header">
+      <span class="section-title">Estado del Sistema</span>
+      <span id="last-update" class="text-muted" style="font-size:12px"></span>
+    </div>
+    <div class="status-grid">
+      <div class="status-item">
+        <div style="font-size:18px">⚙️</div>
+        <div>
+          <div class="status-label">Pipeline</div>
+          <div class="status-value" id="status-pipeline">—</div>
+        </div>
+      </div>
+      <div class="status-item">
+        <div style="font-size:18px">🗞️</div>
+        <div>
+          <div class="status-label">Noticias en deduplicador</div>
+          <div class="status-value" id="status-dedup">—</div>
+        </div>
+      </div>
+      <div class="status-item">
+        <div style="font-size:18px">⏰</div>
+        <div>
+          <div class="status-label">Última ejecución</div>
+          <div class="status-value" id="status-last-run">—</div>
+        </div>
+      </div>
+      <div class="status-item">
+        <div style="font-size:18px">📊</div>
+        <div>
+          <div class="status-label">Último ciclo: eventos</div>
+          <div class="status-value" id="status-last-count">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">📈 Predicciones Recientes</span>
+      <span id="pred-count" class="badge badge-gray">0</span>
+    </div>
+    <div style="max-height:400px;overflow-y:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Activo</th><th>Dir</th><th class="text-right">Impacto</th>
+            <th class="text-right">Confianza</th><th class="text-right">Precio entrada</th>
+            <th class="text-right">Precio valid.</th><th class="text-right">Cambio real</th>
+            <th class="text-center">Estado</th><th>Fecha</th><th>Evento</th>
+          </tr>
+        </thead>
+        <tbody id="pred-tbody">
+          <tr><td colspan="11" class="text-center text-muted" style="padding:30px">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">📋 Logs del Sistema</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="log-count" class="text-muted" style="font-size:12px"></span>
+        <button class="btn btn-gray" style="padding:4px 12px;font-size:12px" onclick="fetchLogs()">↻</button>
+      </div>
+    </div>
+    <div class="log-panel" id="log-panel"><div class="log-line text-muted">Cargando logs...</div></div>
+  </div>
+</div>
+<script>
+let logsAutoScroll = true;
+function notify(msg, type) {
+  const el = document.getElementById('notification');
+  el.className = 'notify-' + (type||'info');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=>{ el.style.display='none'; }, 4000);
+}
+function formatPrice(p) {
+  if (p==null||p===0) return '—';
+  if (p>=1000) return '$'+p.toLocaleString('es-ES',{maximumFractionDigits:0});
+  if (p>=1) return '$'+p.toFixed(2);
+  return '$'+p.toFixed(4);
+}
+function formatChange(c) {
+  if (c==null) return '—';
+  const s = c>0?'+':''; const cls = c>0?'text-green':c<0?'text-red':'text-muted';
+  return '<span class="'+cls+'">'+s+c.toFixed(2)+'%</span>';
+}
+function dirBadge(d) {
+  const u=(d||'').toLowerCase();
+  if(['up','bullish','positive','alza'].includes(u)) return '<span class="text-green">↑</span>';
+  if(['down','bearish','negative','baja'].includes(u)) return '<span class="text-red">↓</span>';
+  return '<span class="text-muted">→</span>';
+}
+function outcomeBadge(o) {
+  if(o==='correct') return '<span class="badge badge-green">✅ Correcto</span>';
+  if(o==='incorrect') return '<span class="badge badge-red">❌ Incorrecto</span>';
+  return '<span class="badge badge-gray">⏳ Pendiente</span>';
+}
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function fetchStats() {
+  try {
+    const r=await fetch('/api/stats'); const d=await r.json();
+    document.getElementById('stat-total').textContent=d.total;
+    document.getElementById('stat-correct').textContent=d.correct;
+    document.getElementById('stat-incorrect').textContent=d.incorrect;
+    document.getElementById('stat-accuracy').textContent=d.accuracy_pct+'%';
+    document.getElementById('status-pipeline').textContent=d.pipeline_running?'⚙️ Ejecutando...':'En espera';
+    document.getElementById('status-last-run').textContent=d.last_run||'Nunca';
+    document.getElementById('status-last-count').textContent=d.last_run_count!=null?d.last_run_count+' eventos':'—';
+    document.getElementById('btn-run').disabled=d.pipeline_running;
+    document.getElementById('btn-run').textContent=d.pipeline_running?'⚙️ Ejecutando...':'▶ Ejecutar Pipeline Ahora';
+    document.getElementById('last-update').textContent='Actualizado: '+new Date().toLocaleTimeString('es-ES');
+  } catch(e){}
+}
+async function fetchStatus() {
+  try {
+    const r=await fetch('/api/status'); const d=await r.json();
+    const badge=document.getElementById('scheduler-badge');
+    if(d.scheduler_active){badge.className='badge badge-green';badge.textContent='🟢 Scheduler activo';}
+    else if(d.scheduler_log_exists){badge.className='badge badge-red';badge.textContent='🔴 Scheduler inactivo';}
+    else{badge.className='badge badge-gray';badge.textContent='⚪ Sin scheduler';}
+    document.getElementById('status-dedup').textContent=d.dedup_articles_seen+' noticias';
+  } catch(e){}
+}
+async function fetchPredictions() {
+  try {
+    const r=await fetch('/api/predictions?limit=50'); const preds=await r.json();
+    document.getElementById('pred-count').textContent=preds.length;
+    const tbody=document.getElementById('pred-tbody');
+    if(!preds.length){tbody.innerHTML='<tr><td colspan="11" class="text-center text-muted" style="padding:30px">Sin predicciones aun. Ejecuta el pipeline.</td></tr>';return;}
+    tbody.innerHTML=preds.map(p=>{
+      const rc=p.price_at_validation&&p.price_at_prediction?((p.price_at_validation-p.price_at_prediction)/p.price_at_prediction*100):null;
+      const is=p.impact_percent>0?'+':'';
+      const dt=(p.predicted_at||'').replace('T',' ').slice(0,16);
+      const ttl=(p.title||'').slice(0,50)+((p.title||'').length>50?'...':'');
+      return '<tr><td class="text-mono text-muted">#'+p.id+'</td><td><strong>'+(p.asset||'—')+'</strong></td><td class="text-center">'+dirBadge(p.direction)+'</td><td class="text-right text-mono">'+is+(p.impact_percent||0).toFixed(1)+'%</td><td class="text-right text-mono">'+(p.confidence||0).toFixed(0)+'%</td><td class="text-right text-mono">'+formatPrice(p.price_at_prediction)+'</td><td class="text-right text-mono">'+formatPrice(p.price_at_validation)+'</td><td class="text-right text-mono">'+formatChange(rc)+'</td><td class="text-center">'+outcomeBadge(p.outcome)+'</td><td class="text-muted" style="white-space:nowrap">'+dt+'</td><td class="text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(p.title||'')+'">'+ttl+'</td></tr>';
+    }).join('');
+  } catch(e){}
+}
+async function fetchLogs() {
+  try {
+    const r=await fetch('/api/logs?n=200'); const d=await r.json();
+    document.getElementById('log-count').textContent=d.count+' lineas';
+    const panel=document.getElementById('log-panel');
+    panel.innerHTML=d.lines.map(line=>{
+      let cls='log-line';
+      if(line.includes(' ERROR ')||line.includes('Error')) cls+=' error';
+      else if(line.includes(' WARNING ')) cls+=' warn';
+      else if(line.includes(' INFO ')) cls+=' info';
+      return '<div class="'+cls+'">'+escapeHtml(line)+'</div>';
+    }).join('');
+    if(logsAutoScroll) panel.scrollTop=panel.scrollHeight;
+  } catch(e){}
+}
+async function runPipeline() {
+  if(!confirm('Ejecutar el pipeline ahora? Tardara 1-2 minutos.')) return;
+  try {
+    const r=await fetch('/api/run-pipeline',{method:'POST'}); const d=await r.json();
+    notify(r.ok?'Pipeline iniciado. Revisa los logs.':d.message||'Error', r.ok?'ok':'error');
+    setTimeout(fetchStats,1000);
+  } catch(e){notify('Error de conexion','error');}
+}
+async function resetDedup() {
+  if(!confirm('Resetear el deduplicador? El proximo ciclo procesara todas las noticias como nuevas.')) return;
+  try {
+    const r=await fetch('/api/reset-dedup',{method:'POST'}); const d=await r.json();
+    notify(d.message,r.ok?'ok':'error'); setTimeout(fetchStatus,500);
+  } catch(e){notify('Error de conexion','error');}
+}
+async function fetchAll() { await Promise.all([fetchStats(),fetchStatus(),fetchPredictions(),fetchLogs()]); }
+const evtSource=new EventSource('/stream/logs');
+evtSource.onmessage=function(e){
+  const panel=document.getElementById('log-panel');
+  const line=JSON.parse(e.data);
+  const div=document.createElement('div');
+  let cls='log-line';
+  if(line.includes(' ERROR ')||line.includes('Error')) cls+=' error';
+  else if(line.includes(' WARNING ')) cls+=' warn';
+  else if(line.includes(' INFO ')) cls+=' info';
+  div.className=cls; div.textContent=line; panel.appendChild(div);
+  if(logsAutoScroll) panel.scrollTop=panel.scrollHeight;
+  while(panel.children.length>500) panel.removeChild(panel.firstChild);
+};
+document.getElementById('log-panel').addEventListener('scroll',function(){
+  logsAutoScroll=this.scrollHeight-this.scrollTop-this.clientHeight<50;
+});
+fetchAll();
+setInterval(fetchStats,30000); setInterval(fetchStatus,30000);
+setInterval(fetchPredictions,30000); setInterval(fetchLogs,10000);
+</script>
+</body>
+</html>
