@@ -14,18 +14,18 @@
   <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0">
     <div class="px-6 py-5 border-b border-slate-800">
       <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
-      <p class="text-slate-500 text-xs mt-1">Área privada</p>
+      <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
     </div>
 
     <nav class="flex-1 px-4 py-6 space-y-1">
       <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
-        <span>📊</span> Dashboard
+        <span>📊</span> <span data-i18n="dash.dashboard">Dashboard</span>
       </a>
       <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>⚙️</span> Configuración
+        <span>⚙️</span> <span data-i18n="dash.settings">Configuración</span>
       </a>
       <a href="/pricing" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>💳</span> Suscripción
+        <span>💳</span> <span data-i18n="dash.subscription">Suscripción</span>
       </a>
     </nav>
 
@@ -35,7 +35,7 @@
         <p class="text-slate-500 text-xs">{{ current_user.email }}</p>
       </div>
       <a href="/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>🚪</span> Cerrar sesión
+        <span>🚪</span> <span data-i18n="dash.sign_out">Cerrar sesión</span>
       </a>
     </div>
   </aside>
@@ -50,7 +50,7 @@
         {% if sub %}
           {% if sub.status == 'trial' %}
             <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full">
-              🔔 Período de prueba activo
+              🔔 <span data-i18n="dash.trial_active">Período de prueba activo</span>
             </span>
           {% elif sub.status == 'active' %}
             <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
@@ -105,13 +105,13 @@
       <!-- Stats row -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Plan activo</p>
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.active_plan">Plan activo</p>
           <p class="text-white font-bold text-xl">
             {% if sub %}{{ plans[sub.plan].name }}{% else %}—{% endif %}
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Activos</p>
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.assets">Activos</p>
           <p class="text-white font-bold text-xl">
             {% if sub and sub.selected_assets and sub.selected_assets != [''] %}
               {{ sub.selected_assets|length }}
@@ -121,11 +121,11 @@
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Alertas hoy</p>
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.alerts_today">Alertas hoy</p>
           <p class="text-white font-bold text-xl">{{ alerts|length if alerts else 0 }}</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Alertas máx./día</p>
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.max_alerts">Alertas máx./día</p>
           <p class="text-white font-bold text-xl">
             {% if plan_config %}
               {% if plan_config.max_daily_alerts == -1 %}∞{% else %}{{ plan_config.max_daily_alerts }}{% endif %}
@@ -139,7 +139,7 @@
         <div class="bg-slate-800 border border-emerald-500/30 rounded-2xl p-6 mb-6">
           <div class="flex items-center gap-2 mb-4">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <h2 class="text-white font-bold">Dashboard en tiempo real</h2>
+            <h2 class="text-white font-bold" data-i18n="dash.realtime_dashboard">Dashboard en tiempo real</h2>
             <span class="text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">PRO</span>
           </div>
           <p class="text-slate-400 text-sm">El dashboard completo con gráficos en tiempo real está disponible aquí.</p>
@@ -148,11 +148,11 @@
       {% else %}
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-white font-bold">Dashboard en tiempo real</h2>
-            <span class="text-slate-500 text-xs bg-slate-700 px-2 py-0.5 rounded-full">Solo plan Profesional</span>
+            <h2 class="text-white font-bold" data-i18n="dash.realtime_dashboard">Dashboard en tiempo real</h2>
+            <span class="text-slate-500 text-xs bg-slate-700 px-2 py-0.5 rounded-full" data-i18n="dash.pro_only">Solo plan Profesional</span>
           </div>
           <p class="text-slate-400 text-sm mb-4">Accede al dashboard en tiempo real con gráficos, mapa de calor geopolítico y API key personal.</p>
-          <a href="/pricing" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition">
+          <a href="/pricing" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition" data-i18n="dash.upgrade_pro">
             Actualizar a Profesional →
           </a>
         </div>
@@ -161,7 +161,7 @@
       <!-- Recent alerts table -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-          <h2 class="font-bold text-white">Alertas recientes</h2>
+          <h2 class="font-bold text-white" data-i18n="dash.recent_alerts">Alertas recientes</h2>
           <span class="text-slate-500 text-xs">Últimas {{ alerts|length if alerts else 0 }} señales</span>
         </div>
         {% if alerts %}
@@ -169,11 +169,11 @@
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-700 bg-slate-900/50">
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Activo</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Dirección</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Confianza</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Fecha</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium">Análisis</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dirección</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_confidence">Confianza</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha</th>
+                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_analysis">Análisis</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">
@@ -182,11 +182,11 @@
                     <td class="px-6 py-4 font-semibold text-white">{{ alert[0] or '—' }}</td>
                     <td class="px-6 py-4">
                       {% if alert[1] in ('up', 'bullish', 'positive', 'alza') %}
-                        <span class="text-emerald-400">📈 Alza</span>
+                        <span class="text-emerald-400">📈 <span data-i18n="dash.dir_up">Alza</span></span>
                       {% elif alert[1] in ('down', 'bearish', 'negative', 'baja') %}
-                        <span class="text-red-400">📉 Baja</span>
+                        <span class="text-red-400">📉 <span data-i18n="dash.dir_down">Baja</span></span>
                       {% else %}
-                        <span class="text-slate-400">➡️ Lateral</span>
+                        <span class="text-slate-400">➡️ <span data-i18n="dash.dir_sideways">Lateral</span></span>
                       {% endif %}
                     </td>
                     <td class="px-6 py-4 text-slate-300">
@@ -239,6 +239,7 @@
     document.getElementById('dash-lang-code').textContent = lang.toUpperCase();
     localStorage.setItem('geo_lang', lang);
     dashCurrentLang = lang;
+    applyDashLang(lang);
     fetch('/dashboard/set-language', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -281,8 +282,130 @@
       document.getElementById('dash-lang-code').textContent = storedLang.toUpperCase();
       dashCurrentLang = storedLang;
     }
+    applyDashLang(dashCurrentLang);
+    initCookieBanner();
   });
+
+  var DASH_TRANSLATIONS = {
+    es: {
+      "dash.private_area": "Área privada",
+      "dash.dashboard": "Dashboard",
+      "dash.settings": "Configuración",
+      "dash.subscription": "Suscripción",
+      "dash.sign_out": "Cerrar sesión",
+      "dash.trial_active": "Período de prueba activo",
+      "dash.activate_plan": "Activar plan",
+      "dash.active_plan": "Plan activo",
+      "dash.assets": "Activos",
+      "dash.alerts_today": "Alertas hoy",
+      "dash.max_alerts": "Alertas máx./día",
+      "dash.realtime_dashboard": "Dashboard en tiempo real",
+      "dash.pro_only": "Solo plan Profesional",
+      "dash.upgrade_pro": "Actualizar a Profesional →",
+      "dash.recent_alerts": "Alertas recientes",
+      "dash.col_asset": "Activo",
+      "dash.col_direction": "Dirección",
+      "dash.col_confidence": "Confianza",
+      "dash.col_date": "Fecha",
+      "dash.col_analysis": "Análisis",
+      "dash.dir_up": "Alza",
+      "dash.dir_down": "Baja",
+      "dash.dir_sideways": "Lateral",
+      "cookies.title": "🍪 Usamos cookies",
+      "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
+      "cookies.policy_link": "Política de cookies",
+      "cookies.essential_btn": "Solo esenciales",
+      "cookies.accept_btn": "Aceptar todas"
+    },
+    en: {
+      "dash.private_area": "Private area",
+      "dash.dashboard": "Dashboard",
+      "dash.settings": "Settings",
+      "dash.subscription": "Subscription",
+      "dash.sign_out": "Sign out",
+      "dash.trial_active": "Active trial period",
+      "dash.activate_plan": "Activate plan",
+      "dash.active_plan": "Active plan",
+      "dash.assets": "Assets",
+      "dash.alerts_today": "Alerts today",
+      "dash.max_alerts": "Max alerts/day",
+      "dash.realtime_dashboard": "Real-time dashboard",
+      "dash.pro_only": "Pro plan only",
+      "dash.upgrade_pro": "Upgrade to Pro →",
+      "dash.recent_alerts": "Recent alerts",
+      "dash.col_asset": "Asset",
+      "dash.col_direction": "Direction",
+      "dash.col_confidence": "Confidence",
+      "dash.col_date": "Date",
+      "dash.col_analysis": "Analysis",
+      "dash.dir_up": "Up",
+      "dash.dir_down": "Down",
+      "dash.dir_sideways": "Sideways",
+      "cookies.title": "🍪 We use cookies",
+      "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
+      "cookies.policy_link": "Cookie policy",
+      "cookies.essential_btn": "Essential only",
+      "cookies.accept_btn": "Accept all"
+    }
+  };
+
+  function applyDashLang(lang) {
+    var t = DASH_TRANSLATIONS[lang] || DASH_TRANSLATIONS['es'];
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+  }
+
+  // Cookie consent
+  function cookieConsent(level) {
+    localStorage.setItem('geo_cookie_consent', level);
+    document.getElementById('cookie-banner').classList.add('hidden');
+    if (level === 'all') loadGTM();
+  }
+
+  function initCookieBanner() {
+    var consent = localStorage.getItem('geo_cookie_consent');
+    if (!consent) {
+      document.getElementById('cookie-banner').classList.remove('hidden');
+    } else if (consent === 'all') {
+      loadGTM();
+    }
+  }
+
+  function loadGTM() {
+    if (window._gtmLoaded) return;
+    window._gtmLoaded = true;
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-XXXXXXX');
+  }
 </script>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[100] bg-slate-900 border-t border-slate-700 shadow-xl">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex-1">
+      <p class="text-white font-semibold text-sm mb-1" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-slate-400 text-xs">
+        <span data-i18n="cookies.desc">Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.</span>
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" data-i18n="cookies.policy_link">Política de cookies</a>
+      </p>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <button onclick="cookieConsent('essential')"
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 px-4 py-2 rounded-lg transition" data-i18n="cookies.essential_btn">
+        Solo esenciales
+      </button>
+      <button onclick="cookieConsent('all')"
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition" data-i18n="cookies.accept_btn">
+        Aceptar todas
+      </button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

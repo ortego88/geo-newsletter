@@ -13,6 +13,7 @@ DB_PATH = os.getenv("APP_DB_PATH", "data/app.db")
 PLANS = {
     "basic": {
         "name": "Básica",
+        "name_en": "Basic",
         "price_monthly": 14.99,
         "price_yearly": 149.99,
         "original_price": 24.99,
@@ -26,6 +27,7 @@ PLANS = {
     },
     "premium": {
         "name": "Premium",
+        "name_en": "Premium",
         "price_monthly": 29.99,
         "price_yearly": 299.99,
         "original_price": 59.99,
@@ -39,6 +41,7 @@ PLANS = {
     },
     "pro": {
         "name": "Profesional",
+        "name_en": "Professional",
         "price_monthly": 59.99,
         "price_yearly": 599.99,
         "original_price": 99.99,

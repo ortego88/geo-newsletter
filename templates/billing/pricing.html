@@ -13,10 +13,20 @@
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
       <a href="/" class="text-emerald-400 font-bold text-xl">🌍 GEO-NEWSLETTER</a>
       <div class="flex items-center gap-4">
-        <a href="/login" class="text-sm text-slate-400 hover:text-white transition">Iniciar sesión</a>
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+        <a href="/login" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
           Empezar gratis
         </a>
+        <!-- Language selector -->
+        <div class="relative" id="pricing-lang-wrapper">
+          <button onclick="togglePricingLang()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="pricing-lang-btn">
+            <span id="pricing-lang-flag">🇪🇸</span>
+            <span id="pricing-lang-code" class="font-semibold uppercase text-xs">ES</span>
+            <span class="text-xs text-slate-600">▾</span>
+          </button>
+          <div id="pricing-lang-dropdown" class="hidden absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
+          </div>
+        </div>
       </div>
     </div>
   </nav>
@@ -25,8 +35,8 @@
     <div class="max-w-5xl mx-auto">
 
       <div class="text-center mb-12">
-        <h1 class="text-4xl font-extrabold text-white mb-4">Planes y precios</h1>
-        <p class="text-slate-400 text-lg">Todos los planes incluyen 7 días de prueba gratuita · Sin compromiso</p>
+        <h1 class="text-4xl font-extrabold text-white mb-4" data-i18n="pricing.title">Planes y precios</h1>
+        <p class="text-slate-400 text-lg" data-i18n="pricing.subtitle_full">Todos los planes incluyen 7 días de prueba gratuita · Sin compromiso</p>
       </div>
 
       <!-- Flash messages -->
@@ -46,25 +56,25 @@
 
         <!-- Basic -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
-          <h3 class="text-xl font-bold text-white mb-1">{{ plans.basic.name }}</h3>
+          <h3 class="text-xl font-bold text-white mb-1" data-i18n="plan.basic.name">{{ plans.basic.name }}</h3>
           <div class="flex items-baseline gap-2 mt-3 mb-1">
             <span class="text-4xl font-extrabold text-white">{{ plans.basic.price_monthly }}€</span>
-            <span class="text-slate-400">/mes</span>
+            <span class="text-slate-400" data-i18n="pricing.per_month">/mes</span>
           </div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="line-through text-slate-500 text-sm">{{ plans.basic.original_price }}€/mes</span>
+            <span class="line-through text-slate-500 text-sm">{{ plans.basic.original_price }}€/<span data-i18n="pricing.per_month_short">mes</span></span>
             <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.basic.discount_pct }}%</span>
           </div>
-          <p class="text-slate-500 text-sm mb-6">{{ plans.basic.price_yearly }}€/año (ahorra 2 meses)</p>
+          <p class="text-slate-500 text-sm mb-6">{{ plans.basic.price_yearly }}€/<span data-i18n="pricing.per_year_short">año</span> (<span data-i18n="pricing.save_2_months">ahorra 2 meses</span>)</p>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Idiomas: ES, EN</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> 1 activo seleccionable</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Hasta 5 alertas diarias por Telegram</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Historial últimas 24h</li>
-            <li class="flex gap-2 text-slate-500"><span>✗</span> Dashboard en tiempo real</li>
-            <li class="flex gap-2 text-slate-500"><span>✗</span> API key personal</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.basic.lang">Idiomas: ES, EN</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.basic.assets">1 activo seleccionable</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.basic.alerts">Hasta 5 alertas diarias por Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.basic.history">Historial últimas 24h</span></li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_dashboard">Dashboard en tiempo real</span></li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_api">API key personal</span></li>
           </ul>
-          <a href="/subscribe/basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+          <a href="/subscribe/basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba gratis
           </a>
         </div>
@@ -72,56 +82,56 @@
         <!-- Premium -->
         <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-8 flex flex-col relative shadow-xl shadow-emerald-500/10">
           <div class="absolute -top-4 left-1/2 -translate-x-1/2">
-            <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap">⭐ MÁS POPULAR</span>
+            <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap" data-i18n="pricing.most_popular">⭐ MÁS POPULAR</span>
           </div>
-          <h3 class="text-xl font-bold text-white mb-1">{{ plans.premium.name }}</h3>
+          <h3 class="text-xl font-bold text-white mb-1" data-i18n="plan.premium.name">{{ plans.premium.name }}</h3>
           <div class="flex items-baseline gap-2 mt-3 mb-1">
             <span class="text-4xl font-extrabold text-white">{{ plans.premium.price_monthly }}€</span>
-            <span class="text-slate-400">/mes</span>
+            <span class="text-slate-400" data-i18n="pricing.per_month">/mes</span>
           </div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="line-through text-slate-500 text-sm">{{ plans.premium.original_price }}€/mes</span>
+            <span class="line-through text-slate-500 text-sm">{{ plans.premium.original_price }}€/<span data-i18n="pricing.per_month_short">mes</span></span>
             <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.premium.discount_pct }}%</span>
           </div>
-          <p class="text-slate-500 text-sm mb-6">{{ plans.premium.price_yearly }}€/año (ahorra 2 meses)</p>
+          <p class="text-slate-500 text-sm mb-6">{{ plans.premium.price_yearly }}€/<span data-i18n="pricing.per_year_short">año</span> (<span data-i18n="pricing.save_2_months">ahorra 2 meses</span>)</p>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Idiomas: ES, EN</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> 3 activos seleccionables</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Hasta 10 alertas diarias por Telegram</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Historial 7 días</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Estadísticas de precisión</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Resumen semanal por email</li>
-            <li class="flex gap-2 text-slate-500"><span>✗</span> Dashboard en tiempo real</li>
-            <li class="flex gap-2 text-slate-500"><span>✗</span> API key personal</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.premium.lang">Idiomas: ES, EN</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.premium.assets">3 activos seleccionables</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.premium.alerts">Hasta 10 alertas diarias por Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.premium.history">Historial 7 días</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.premium.stats">Estadísticas de precisión</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.premium.weekly">Resumen semanal por email</span></li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_dashboard">Dashboard en tiempo real</span></li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_api">API key personal</span></li>
           </ul>
-          <a href="/subscribe/premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition">
+          <a href="/subscribe/premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba gratis
           </a>
         </div>
 
         <!-- Pro -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
-          <h3 class="text-xl font-bold text-white mb-1">{{ plans.pro.name }}</h3>
+          <h3 class="text-xl font-bold text-white mb-1" data-i18n="plan.pro.name">{{ plans.pro.name }}</h3>
           <div class="flex items-baseline gap-2 mt-3 mb-1">
             <span class="text-4xl font-extrabold text-white">{{ plans.pro.price_monthly }}€</span>
-            <span class="text-slate-400">/mes</span>
+            <span class="text-slate-400" data-i18n="pricing.per_month">/mes</span>
           </div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="line-through text-slate-500 text-sm">{{ plans.pro.original_price }}€/mes</span>
+            <span class="line-through text-slate-500 text-sm">{{ plans.pro.original_price }}€/<span data-i18n="pricing.per_month_short">mes</span></span>
             <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.pro.discount_pct }}%</span>
           </div>
-          <p class="text-slate-500 text-sm mb-6">{{ plans.pro.price_yearly }}€/año (ahorra 2 meses)</p>
+          <p class="text-slate-500 text-sm mb-6">{{ plans.pro.price_yearly }}€/<span data-i18n="pricing.per_year_short">año</span> (<span data-i18n="pricing.save_2_months">ahorra 2 meses</span>)</p>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Idiomas: ES, EN</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Todos los activos sin límite</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Alertas ilimitadas por Telegram</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Dashboard en tiempo real</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Historial 30 días</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> API key personal</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Soporte prioritario Telegram</li>
-            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Informes PDF semanales</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.lang">Idiomas: ES, EN</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.assets">Todos los activos sin límite</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.alerts">Alertas ilimitadas por Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.dashboard">Dashboard en tiempo real</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.history">Historial 30 días</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.api">API key personal</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.support">Soporte prioritario Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.pdf">Informes PDF semanales</span></li>
           </ul>
-          <a href="/subscribe/pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+          <a href="/subscribe/pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
             Empezar prueba gratis
           </a>
         </div>
@@ -130,69 +140,69 @@
       <!-- Feature comparison table -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700">
-          <h2 class="text-lg font-bold text-white">Comparativa completa de características</h2>
+          <h2 class="text-lg font-bold text-white" data-i18n="pricing.comparison">Comparativa completa de características</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-slate-700">
-                <th class="text-left px-6 py-4 text-slate-400 font-medium">Característica</th>
-                <th class="text-center px-6 py-4 text-slate-300 font-semibold">Básica</th>
-                <th class="text-center px-6 py-4 text-emerald-400 font-semibold">Premium</th>
-                <th class="text-center px-6 py-4 text-slate-300 font-semibold">Profesional</th>
+                <th class="text-left px-6 py-4 text-slate-400 font-medium" data-i18n="table.feature">Característica</th>
+                <th class="text-center px-6 py-4 text-slate-300 font-semibold" data-i18n="plan.basic.name">Básica</th>
+                <th class="text-center px-6 py-4 text-emerald-400 font-semibold" data-i18n="plan.premium.name">Premium</th>
+                <th class="text-center px-6 py-4 text-slate-300 font-semibold" data-i18n="plan.pro.name">Profesional</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
               <tr>
-                <td class="px-6 py-4 text-slate-300">Activos seleccionables</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.selectable_assets">Activos seleccionables</td>
                 <td class="px-6 py-4 text-center text-slate-400">1</td>
                 <td class="px-6 py-4 text-center text-slate-300">3</td>
-                <td class="px-6 py-4 text-center text-emerald-400">Todos</td>
+                <td class="px-6 py-4 text-center text-emerald-400" data-i18n="table.all">Todos</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Alertas diarias Telegram</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.daily_alerts">Alertas diarias Telegram</td>
                 <td class="px-6 py-4 text-center text-slate-400">5</td>
                 <td class="px-6 py-4 text-center text-slate-300">10</td>
-                <td class="px-6 py-4 text-center text-emerald-400">Ilimitadas</td>
+                <td class="px-6 py-4 text-center text-emerald-400" data-i18n="table.unlimited">Ilimitadas</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Historial de alertas</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.alert_history">Historial de alertas</td>
                 <td class="px-6 py-4 text-center text-slate-400">24h</td>
-                <td class="px-6 py-4 text-center text-slate-300">7 días</td>
-                <td class="px-6 py-4 text-center text-emerald-400">30 días</td>
+                <td class="px-6 py-4 text-center text-slate-300" data-i18n="table.7days">7 días</td>
+                <td class="px-6 py-4 text-center text-emerald-400" data-i18n="table.30days">30 días</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Idiomas</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.languages">Idiomas</td>
                 <td class="px-6 py-4 text-center text-slate-400">ES, EN</td>
                 <td class="px-6 py-4 text-center text-slate-300">ES, EN</td>
                 <td class="px-6 py-4 text-center text-emerald-400">ES, EN</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Estadísticas de precisión</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.accuracy_stats">Estadísticas de precisión</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-emerald-400">✓</td>
                 <td class="px-6 py-4 text-center text-emerald-400">✓</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Dashboard en tiempo real</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.realtime_dashboard">Dashboard en tiempo real</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-emerald-400">✓</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">API key personal</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.api_key">API key personal</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-emerald-400">✓</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Informes PDF semanales</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.pdf_reports">Informes PDF semanales</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-emerald-400">✓</td>
               </tr>
               <tr>
-                <td class="px-6 py-4 text-slate-300">Soporte prioritario Telegram</td>
+                <td class="px-6 py-4 text-slate-300" data-i18n="table.priority_support">Soporte prioritario Telegram</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-slate-500">✗</td>
                 <td class="px-6 py-4 text-center text-emerald-400">✓</td>
@@ -205,8 +215,227 @@
   </main>
 
   <footer class="py-8 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
-    <a href="/" class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</a> · Alertas geopolíticas para traders
+    <a href="/" class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</a> · <span data-i18n="footer.tagline">Alertas geopolíticas para traders</span>
+    <span class="mx-2">·</span><a href="/privacy" class="hover:text-slate-400 transition" data-i18n="cookies.policy_link">Política de cookies</a>
   </footer>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[100] bg-slate-900 border-t border-slate-700 shadow-xl">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex-1">
+      <p class="text-white font-semibold text-sm mb-1" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-slate-400 text-xs" data-i18n="cookies.desc">
+        Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" data-i18n="cookies.policy_link">Política de cookies</a>
+      </p>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <button onclick="cookieConsent('essential')"
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 px-4 py-2 rounded-lg transition" data-i18n="cookies.essential_btn">
+        Solo esenciales
+      </button>
+      <button onclick="cookieConsent('all')"
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition" data-i18n="cookies.accept_btn">
+        Aceptar todas
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var PRICING_LANG_META = {
+    es: { flag: '🇪🇸', label: 'Español' },
+    en: { flag: '🇬🇧', label: 'English' }
+  };
+  var pricingCurrentLang = 'es';
+
+  var PRICING_TRANSLATIONS = {
+    es: {
+      "nav.login": "Iniciar sesión",
+      "nav.start_free": "Empezar gratis",
+      "pricing.title": "Planes y precios",
+      "pricing.subtitle_full": "Todos los planes incluyen 7 días de prueba gratuita · Sin compromiso",
+      "pricing.per_month": "/mes",
+      "pricing.per_month_short": "mes",
+      "pricing.per_year_short": "año",
+      "pricing.save_2_months": "ahorra 2 meses",
+      "pricing.start_trial": "Empezar prueba gratis",
+      "pricing.most_popular": "⭐ MÁS POPULAR",
+      "pricing.comparison": "Comparativa completa de características",
+      "plan.basic.name": "Básica",
+      "plan.premium.name": "Premium",
+      "plan.pro.name": "Profesional",
+      "plan.basic.lang": "Idiomas: ES, EN",
+      "plan.basic.assets": "1 activo seleccionable",
+      "plan.basic.alerts": "Hasta 5 alertas diarias por Telegram",
+      "plan.basic.history": "Historial últimas 24h",
+      "plan.no_dashboard": "Dashboard en tiempo real",
+      "plan.no_api": "API key personal",
+      "plan.premium.lang": "Idiomas: ES, EN",
+      "plan.premium.assets": "3 activos seleccionables",
+      "plan.premium.alerts": "Hasta 10 alertas diarias por Telegram",
+      "plan.premium.history": "Historial 7 días",
+      "plan.premium.stats": "Estadísticas de precisión",
+      "plan.premium.weekly": "Resumen semanal por email",
+      "plan.pro.lang": "Idiomas: ES, EN",
+      "plan.pro.assets": "Todos los activos sin límite",
+      "plan.pro.alerts": "Alertas ilimitadas por Telegram",
+      "plan.pro.dashboard": "Dashboard en tiempo real",
+      "plan.pro.history": "Historial 30 días",
+      "plan.pro.api": "API key personal",
+      "plan.pro.support": "Soporte prioritario Telegram",
+      "plan.pro.pdf": "Informes PDF semanales",
+      "table.feature": "Característica",
+      "table.selectable_assets": "Activos seleccionables",
+      "table.daily_alerts": "Alertas diarias Telegram",
+      "table.alert_history": "Historial de alertas",
+      "table.languages": "Idiomas",
+      "table.accuracy_stats": "Estadísticas de precisión",
+      "table.realtime_dashboard": "Dashboard en tiempo real",
+      "table.api_key": "API key personal",
+      "table.pdf_reports": "Informes PDF semanales",
+      "table.priority_support": "Soporte prioritario Telegram",
+      "table.all": "Todos",
+      "table.unlimited": "Ilimitadas",
+      "table.7days": "7 días",
+      "table.30days": "30 días",
+      "footer.tagline": "Alertas geopolíticas para traders",
+      "cookies.title": "🍪 Usamos cookies",
+      "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
+      "cookies.policy_link": "Política de cookies",
+      "cookies.essential_btn": "Solo esenciales",
+      "cookies.accept_btn": "Aceptar todas"
+    },
+    en: {
+      "nav.login": "Sign in",
+      "nav.start_free": "Start free",
+      "pricing.title": "Plans & pricing",
+      "pricing.subtitle_full": "All plans include a 7-day free trial · No commitment",
+      "pricing.per_month": "/mo",
+      "pricing.per_month_short": "mo",
+      "pricing.per_year_short": "yr",
+      "pricing.save_2_months": "save 2 months",
+      "pricing.start_trial": "Start free trial",
+      "pricing.most_popular": "⭐ MOST POPULAR",
+      "pricing.comparison": "Full feature comparison",
+      "plan.basic.name": "Basic",
+      "plan.premium.name": "Premium",
+      "plan.pro.name": "Professional",
+      "plan.basic.lang": "Languages: ES, EN",
+      "plan.basic.assets": "1 selectable asset",
+      "plan.basic.alerts": "Up to 5 daily Telegram alerts",
+      "plan.basic.history": "Last 24h history",
+      "plan.no_dashboard": "Real-time dashboard",
+      "plan.no_api": "Personal API key",
+      "plan.premium.lang": "Languages: ES, EN",
+      "plan.premium.assets": "3 selectable assets",
+      "plan.premium.alerts": "Up to 10 daily Telegram alerts",
+      "plan.premium.history": "7-day history",
+      "plan.premium.stats": "Accuracy statistics",
+      "plan.premium.weekly": "Weekly email summary",
+      "plan.pro.lang": "Languages: ES, EN",
+      "plan.pro.assets": "All assets (unlimited)",
+      "plan.pro.alerts": "Unlimited Telegram alerts",
+      "plan.pro.dashboard": "Real-time dashboard",
+      "plan.pro.history": "30-day history",
+      "plan.pro.api": "Personal API key",
+      "plan.pro.support": "Priority Telegram support",
+      "plan.pro.pdf": "Weekly PDF reports",
+      "table.feature": "Feature",
+      "table.selectable_assets": "Selectable assets",
+      "table.daily_alerts": "Daily Telegram alerts",
+      "table.alert_history": "Alert history",
+      "table.languages": "Languages",
+      "table.accuracy_stats": "Accuracy statistics",
+      "table.realtime_dashboard": "Real-time dashboard",
+      "table.api_key": "Personal API key",
+      "table.pdf_reports": "Weekly PDF reports",
+      "table.priority_support": "Priority Telegram support",
+      "table.all": "All",
+      "table.unlimited": "Unlimited",
+      "table.7days": "7 days",
+      "table.30days": "30 days",
+      "footer.tagline": "Geopolitical alerts with AI for traders",
+      "cookies.title": "🍪 We use cookies",
+      "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
+      "cookies.policy_link": "Cookie policy",
+      "cookies.essential_btn": "Essential only",
+      "cookies.accept_btn": "Accept all"
+    }
+  };
+
+  function applyPricingLang(lang) {
+    var t = PRICING_TRANSLATIONS[lang] || PRICING_TRANSLATIONS['es'];
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+    document.getElementById('pricing-lang-flag').textContent = PRICING_LANG_META[lang].flag;
+    document.getElementById('pricing-lang-code').textContent = lang.toUpperCase();
+    document.documentElement.lang = lang;
+    localStorage.setItem('geo_lang', lang);
+    pricingCurrentLang = lang;
+  }
+
+  function togglePricingLang() {
+    var dd = document.getElementById('pricing-lang-dropdown');
+    if (dd.classList.contains('hidden')) {
+      dd.innerHTML = '';
+      Object.keys(PRICING_LANG_META).forEach(function(code) {
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition' + (code === pricingCurrentLang ? ' text-emerald-400 font-semibold' : '');
+        item.innerHTML = '<span>' + PRICING_LANG_META[code].flag + '</span><span class="uppercase font-semibold">' + code.toUpperCase() + '</span><span class="text-slate-500">' + PRICING_LANG_META[code].label + '</span>';
+        item.onclick = function() { applyPricingLang(code); dd.classList.add('hidden'); };
+        dd.appendChild(item);
+      });
+      dd.classList.remove('hidden');
+    } else {
+      dd.classList.add('hidden');
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    var wrapper = document.getElementById('pricing-lang-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      var dd = document.getElementById('pricing-lang-dropdown');
+      if (dd) dd.classList.add('hidden');
+    }
+  });
+
+  // Cookie consent
+  function cookieConsent(level) {
+    localStorage.setItem('geo_cookie_consent', level);
+    document.getElementById('cookie-banner').classList.add('hidden');
+    if (level === 'all') loadGTM();
+  }
+
+  function initCookieBanner() {
+    var consent = localStorage.getItem('geo_cookie_consent');
+    if (!consent) {
+      document.getElementById('cookie-banner').classList.remove('hidden');
+    } else if (consent === 'all') {
+      loadGTM();
+    }
+  }
+
+  function loadGTM() {
+    if (window._gtmLoaded) return;
+    window._gtmLoaded = true;
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-XXXXXXX');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var lang = localStorage.getItem('geo_lang') || 'es';
+    if (!PRICING_TRANSLATIONS[lang]) lang = 'es';
+    applyPricingLang(lang);
+    initCookieBanner();
+  });
+</script>
 
 </body>
 </html>

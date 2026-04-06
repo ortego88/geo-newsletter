@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidad y Cookies — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  <!-- NAV -->
+  <nav class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-emerald-400 font-bold text-xl">🌍 GEO-NEWSLETTER</a>
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.back_home">← Inicio</a>
+        <!-- Language selector -->
+        <div class="relative" id="privacy-lang-wrapper">
+          <button onclick="togglePrivacyLang()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="privacy-lang-btn">
+            <span id="privacy-lang-flag">🇪🇸</span>
+            <span id="privacy-lang-code" class="font-semibold uppercase text-xs">ES</span>
+            <span class="text-xs text-slate-600">▾</span>
+          </button>
+          <div id="privacy-lang-dropdown" class="hidden absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="py-16 px-6">
+    <div class="max-w-3xl mx-auto">
+
+      <h1 class="text-4xl font-extrabold text-white mb-2" data-i18n="privacy.title">Política de Privacidad y Cookies</h1>
+      <p class="text-slate-400 text-sm mb-10" data-i18n="privacy.last_updated">Última actualización: enero 2025</p>
+
+      <!-- 1. Data controller -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-3" data-i18n="privacy.s1.title">1. Responsable del tratamiento</h2>
+        <p class="text-slate-400 text-sm leading-relaxed">
+          <span data-i18n="privacy.s1.body_part1">El responsable del tratamiento de los datos personales recogidos a través de este sitio web es</span>
+          <strong class="text-white">GEO-NEWSLETTER</strong>.
+          <span data-i18n="privacy.s1.body_part2">Para cualquier consulta relativa a la privacidad, puedes contactarnos en</span>
+          <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:underline">soporte@geo-newsletter.com</a>.
+        </p>
+      </section>
+
+      <!-- 2. Data we collect -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-3" data-i18n="privacy.s2.title">2. Datos que recopilamos</h2>
+        <ul class="space-y-2 text-slate-400 text-sm">
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s2.item1">Datos de registro: nombre completo, dirección de email y contraseña cifrada.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s2.item2">Datos de configuración: activos financieros seleccionados, idioma de preferencia, Telegram Chat ID.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s2.item3">Datos de pago: gestionados íntegramente por Stripe. GEO-NEWSLETTER no almacena números de tarjeta ni datos bancarios completos.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s2.item4">Datos de uso: registro de alertas enviadas (activo, dirección, score, fecha).</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s2.item5">Datos de navegación: cookies de sesión y, si se acepta, cookies de análisis vía Google Tag Manager.</span></li>
+        </ul>
+      </section>
+
+      <!-- 3. Purpose -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-3" data-i18n="privacy.s3.title">3. Finalidad del tratamiento</h2>
+        <ul class="space-y-2 text-slate-400 text-sm">
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s3.item1">Prestación del servicio: envío de alertas geopolíticas personalizadas vía Telegram.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s3.item2">Gestión de suscripciones y pagos a través de Stripe.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s3.item3">Mejora del servicio mediante análisis de uso (solo si se acepta el consentimiento de cookies).</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s3.item4">Comunicaciones relacionadas con el servicio (notificaciones de cambios, actualizaciones de planes).</span></li>
+        </ul>
+      </section>
+
+      <!-- 4. Legal basis -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-3" data-i18n="privacy.s4.title">4. Base legal</h2>
+        <p class="text-slate-400 text-sm leading-relaxed" data-i18n="privacy.s4.body">
+          El tratamiento de tus datos se basa en la ejecución del contrato de suscripción (Art. 6.1.b RGPD), el interés legítimo para mejorar el servicio (Art. 6.1.f RGPD) y el consentimiento expreso para las cookies no esenciales (Art. 6.1.a RGPD).
+        </p>
+      </section>
+
+      <!-- 5. Cookies -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-4" data-i18n="privacy.s5.title">5. Política de cookies</h2>
+        <p class="text-slate-400 text-sm mb-5" data-i18n="privacy.s5.intro">
+          Utilizamos cookies propias y de terceros. Puedes gestionar tu preferencia en el banner de cookies que aparece al visitar el sitio por primera vez.
+        </p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border border-slate-700 rounded-xl overflow-hidden">
+            <thead>
+              <tr class="bg-slate-800 border-b border-slate-700">
+                <th class="text-left px-4 py-3 text-slate-300 font-semibold" data-i18n="cookies.table.type">Tipo</th>
+                <th class="text-left px-4 py-3 text-slate-300 font-semibold" data-i18n="cookies.table.name">Nombre</th>
+                <th class="text-left px-4 py-3 text-slate-300 font-semibold" data-i18n="cookies.table.purpose">Finalidad</th>
+                <th class="text-left px-4 py-3 text-slate-300 font-semibold" data-i18n="cookies.table.duration">Duración</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50">
+              <tr class="bg-slate-800/30">
+                <td class="px-4 py-3 text-emerald-400 font-medium" data-i18n="cookies.essential">Esencial</td>
+                <td class="px-4 py-3 text-slate-300 font-mono text-xs">session</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.session_purpose">Mantener la sesión del usuario autenticado</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.session_duration">Sesión</td>
+              </tr>
+              <tr class="bg-slate-800/30">
+                <td class="px-4 py-3 text-emerald-400 font-medium" data-i18n="cookies.essential">Esencial</td>
+                <td class="px-4 py-3 text-slate-300 font-mono text-xs">geo_lang</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.lang_purpose">Guardar el idioma seleccionado por el usuario</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.persistent">Persistente</td>
+              </tr>
+              <tr class="bg-slate-800/30">
+                <td class="px-4 py-3 text-emerald-400 font-medium" data-i18n="cookies.essential">Esencial</td>
+                <td class="px-4 py-3 text-slate-300 font-mono text-xs">geo_cookie_consent</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.consent_purpose">Recordar la preferencia de consentimiento de cookies</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.persistent">Persistente</td>
+              </tr>
+              <tr class="bg-slate-800/50">
+                <td class="px-4 py-3 text-amber-400 font-medium" data-i18n="cookies.analytics">Analítica</td>
+                <td class="px-4 py-3 text-slate-300 font-mono text-xs">_ga, _gtm*</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.analytics_purpose">Análisis de uso del sitio web vía Google Tag Manager / Google Analytics</td>
+                <td class="px-4 py-3 text-slate-400" data-i18n="cookies.up_to_2_years">Hasta 2 años</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 6. User rights -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-3" data-i18n="privacy.s6.title">6. Derechos del usuario</h2>
+        <p class="text-slate-400 text-sm mb-3" data-i18n="privacy.s6.intro">Tienes derecho a:</p>
+        <ul class="space-y-2 text-slate-400 text-sm">
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s6.access">Acceder a tus datos personales.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s6.rectify">Rectificar datos inexactos o incompletos.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s6.delete">Suprimir tus datos (derecho al olvido).</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s6.portability">Portabilidad de datos.</span></li>
+          <li class="flex gap-2"><span class="text-emerald-400">•</span> <span data-i18n="privacy.s6.object">Oponerte al tratamiento o solicitar su limitación.</span></li>
+        </ul>
+        <p class="text-slate-400 text-sm mt-4">
+          <span data-i18n="privacy.s6.contact_prefix">Para ejercer estos derechos, escríbenos a</span>
+          <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:underline">soporte@geo-newsletter.com</a>.
+        </p>
+      </section>
+
+      <!-- 7. Contact -->
+      <section class="mb-10">
+        <h2 class="text-xl font-bold text-white mb-3" data-i18n="privacy.s7.title">7. Contacto</h2>
+        <p class="text-slate-400 text-sm">
+          <span data-i18n="privacy.s7.body_prefix">Para cualquier consulta sobre esta política de privacidad o el tratamiento de tus datos, contacta con nosotros en</span>
+          <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:underline">soporte@geo-newsletter.com</a>.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="py-8 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+    <a href="/" class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</a> · <span data-i18n="footer.tagline">Alertas geopolíticas para traders</span>
+  </footer>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-banner" class="hidden fixed bottom-0 inset-x-0 z-[100] bg-slate-900 border-t border-slate-700 shadow-xl">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="flex-1">
+      <p class="text-white font-semibold text-sm mb-1" data-i18n="cookies.title">🍪 Usamos cookies</p>
+      <p class="text-slate-400 text-xs">
+        <span data-i18n="cookies.desc">Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.</span>
+        <a href="/privacy" class="text-emerald-400 hover:underline ml-1" data-i18n="cookies.policy_link">Política de cookies</a>
+      </p>
+    </div>
+    <div class="flex gap-3 shrink-0">
+      <button onclick="cookieConsent('essential')"
+        class="text-sm text-slate-400 hover:text-white border border-slate-600 px-4 py-2 rounded-lg transition" data-i18n="cookies.essential_btn">
+        Solo esenciales
+      </button>
+      <button onclick="cookieConsent('all')"
+        class="text-sm bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition" data-i18n="cookies.accept_btn">
+        Aceptar todas
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var PRIVACY_LANG_META = {
+    es: { flag: '🇪🇸', label: 'Español' },
+    en: { flag: '🇬🇧', label: 'English' }
+  };
+  var privacyCurrentLang = 'es';
+
+  var PRIVACY_TRANSLATIONS = {
+    es: {
+      "nav.back_home": "← Inicio",
+      "privacy.title": "Política de Privacidad y Cookies",
+      "privacy.last_updated": "Última actualización: enero 2025",
+      "privacy.s1.title": "1. Responsable del tratamiento",
+      "privacy.s1.body_part1": "El responsable del tratamiento de los datos personales recogidos a través de este sitio web es",
+      "privacy.s1.body_part2": "Para cualquier consulta relativa a la privacidad, puedes contactarnos en",
+      "privacy.s2.title": "2. Datos que recopilamos",
+      "privacy.s2.item1": "Datos de registro: nombre completo, dirección de email y contraseña cifrada.",
+      "privacy.s2.item2": "Datos de configuración: activos financieros seleccionados, idioma de preferencia, Telegram Chat ID.",
+      "privacy.s2.item3": "Datos de pago: gestionados íntegramente por Stripe. GEO-NEWSLETTER no almacena números de tarjeta ni datos bancarios completos.",
+      "privacy.s2.item4": "Datos de uso: registro de alertas enviadas (activo, dirección, score, fecha).",
+      "privacy.s2.item5": "Datos de navegación: cookies de sesión y, si se acepta, cookies de análisis vía Google Tag Manager.",
+      "privacy.s3.title": "3. Finalidad del tratamiento",
+      "privacy.s3.item1": "Prestación del servicio: envío de alertas geopolíticas personalizadas vía Telegram.",
+      "privacy.s3.item2": "Gestión de suscripciones y pagos a través de Stripe.",
+      "privacy.s3.item3": "Mejora del servicio mediante análisis de uso (solo si se acepta el consentimiento de cookies).",
+      "privacy.s3.item4": "Comunicaciones relacionadas con el servicio (notificaciones de cambios, actualizaciones de planes).",
+      "privacy.s4.title": "4. Base legal",
+      "privacy.s4.body": "El tratamiento de tus datos se basa en la ejecución del contrato de suscripción (Art. 6.1.b RGPD), el interés legítimo para mejorar el servicio (Art. 6.1.f RGPD) y el consentimiento expreso para las cookies no esenciales (Art. 6.1.a RGPD).",
+      "privacy.s5.title": "5. Política de cookies",
+      "privacy.s5.intro": "Utilizamos cookies propias y de terceros. Puedes gestionar tu preferencia en el banner de cookies que aparece al visitar el sitio por primera vez.",
+      "cookies.table.type": "Tipo",
+      "cookies.table.name": "Nombre",
+      "cookies.table.purpose": "Finalidad",
+      "cookies.table.duration": "Duración",
+      "cookies.essential": "Esencial",
+      "cookies.analytics": "Analítica",
+      "cookies.session_purpose": "Mantener la sesión del usuario autenticado",
+      "cookies.session_duration": "Sesión",
+      "cookies.lang_purpose": "Guardar el idioma seleccionado por el usuario",
+      "cookies.persistent": "Persistente",
+      "cookies.consent_purpose": "Recordar la preferencia de consentimiento de cookies",
+      "cookies.analytics_purpose": "Análisis de uso del sitio web vía Google Tag Manager / Google Analytics",
+      "cookies.up_to_2_years": "Hasta 2 años",
+      "privacy.s6.title": "6. Derechos del usuario",
+      "privacy.s6.intro": "Tienes derecho a:",
+      "privacy.s6.access": "Acceder a tus datos personales.",
+      "privacy.s6.rectify": "Rectificar datos inexactos o incompletos.",
+      "privacy.s6.delete": "Suprimir tus datos (derecho al olvido).",
+      "privacy.s6.portability": "Portabilidad de datos.",
+      "privacy.s6.object": "Oponerte al tratamiento o solicitar su limitación.",
+      "privacy.s6.contact": "Para ejercer estos derechos, escríbenos a soporte@geo-newsletter.com.",
+      "privacy.s6.contact_prefix": "Para ejercer estos derechos, escríbenos a",
+      "privacy.s7.title": "7. Contacto",
+      "privacy.s7.body": "Para cualquier consulta sobre esta política de privacidad o el tratamiento de tus datos, contacta con nosotros en soporte@geo-newsletter.com.",
+      "privacy.s7.body_prefix": "Para cualquier consulta sobre esta política de privacidad o el tratamiento de tus datos, contacta con nosotros en",
+      "footer.tagline": "Alertas geopolíticas para traders",
+      "cookies.title": "🍪 Usamos cookies",
+      "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
+      "cookies.policy_link": "Política de cookies",
+      "cookies.essential_btn": "Solo esenciales",
+      "cookies.accept_btn": "Aceptar todas"
+    },
+    en: {
+      "nav.back_home": "← Home",
+      "privacy.title": "Privacy and Cookie Policy",
+      "privacy.last_updated": "Last updated: January 2025",
+      "privacy.s1.title": "1. Data controller",
+      "privacy.s1.body_part1": "The data controller for personal data collected through this website is",
+      "privacy.s1.body_part2": "For any privacy-related enquiries, please contact us at",
+      "privacy.s2.title": "2. Data we collect",
+      "privacy.s2.item1": "Registration data: full name, email address and encrypted password.",
+      "privacy.s2.item2": "Configuration data: selected financial assets, preferred language, Telegram Chat ID.",
+      "privacy.s2.item3": "Payment data: managed entirely by Stripe. GEO-NEWSLETTER does not store card numbers or full banking details.",
+      "privacy.s2.item4": "Usage data: log of alerts sent (asset, direction, score, date).",
+      "privacy.s2.item5": "Browsing data: session cookies and, if accepted, analytics cookies via Google Tag Manager.",
+      "privacy.s3.title": "3. Purpose of processing",
+      "privacy.s3.item1": "Service provision: sending personalised geopolitical alerts via Telegram.",
+      "privacy.s3.item2": "Subscription and payment management through Stripe.",
+      "privacy.s3.item3": "Service improvement through usage analytics (only if cookie consent is accepted).",
+      "privacy.s3.item4": "Service-related communications (change notifications, plan updates).",
+      "privacy.s4.title": "4. Legal basis",
+      "privacy.s4.body": "Processing of your data is based on performance of the subscription contract (Art. 6.1.b GDPR), legitimate interest to improve the service (Art. 6.1.f GDPR) and explicit consent for non-essential cookies (Art. 6.1.a GDPR).",
+      "privacy.s5.title": "5. Cookie policy",
+      "privacy.s5.intro": "We use our own and third-party cookies. You can manage your preferences in the cookie banner that appears when you first visit the site.",
+      "cookies.table.type": "Type",
+      "cookies.table.name": "Name",
+      "cookies.table.purpose": "Purpose",
+      "cookies.table.duration": "Duration",
+      "cookies.essential": "Essential",
+      "cookies.analytics": "Analytics",
+      "cookies.session_purpose": "Maintain the authenticated user session",
+      "cookies.session_duration": "Session",
+      "cookies.lang_purpose": "Save the language selected by the user",
+      "cookies.persistent": "Persistent",
+      "cookies.consent_purpose": "Remember cookie consent preference",
+      "cookies.analytics_purpose": "Website usage analytics via Google Tag Manager / Google Analytics",
+      "cookies.up_to_2_years": "Up to 2 years",
+      "privacy.s6.title": "6. User rights",
+      "privacy.s6.intro": "You have the right to:",
+      "privacy.s6.access": "Access your personal data.",
+      "privacy.s6.rectify": "Rectify inaccurate or incomplete data.",
+      "privacy.s6.delete": "Erase your data (right to be forgotten).",
+      "privacy.s6.portability": "Data portability.",
+      "privacy.s6.object": "Object to processing or request its restriction.",
+      "privacy.s6.contact": "To exercise these rights, write to us at soporte@geo-newsletter.com.",
+      "privacy.s6.contact_prefix": "To exercise these rights, write to us at",
+      "privacy.s7.title": "7. Contact",
+      "privacy.s7.body": "For any enquiries about this privacy policy or the processing of your data, contact us at soporte@geo-newsletter.com.",
+      "privacy.s7.body_prefix": "For any enquiries about this privacy policy or the processing of your data, contact us at",
+      "footer.tagline": "Geopolitical alerts with AI for traders",
+      "cookies.title": "🍪 We use cookies",
+      "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
+      "cookies.policy_link": "Cookie policy",
+      "cookies.essential_btn": "Essential only",
+      "cookies.accept_btn": "Accept all"
+    }
+  };
+
+  function applyPrivacyLang(lang) {
+    var t = PRIVACY_TRANSLATIONS[lang] || PRIVACY_TRANSLATIONS['es'];
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n');
+      if (t[key]) el.textContent = t[key];
+    });
+    document.getElementById('privacy-lang-flag').textContent = PRIVACY_LANG_META[lang].flag;
+    document.getElementById('privacy-lang-code').textContent = lang.toUpperCase();
+    document.documentElement.lang = lang;
+    localStorage.setItem('geo_lang', lang);
+    privacyCurrentLang = lang;
+  }
+
+  function togglePrivacyLang() {
+    var dd = document.getElementById('privacy-lang-dropdown');
+    if (dd.classList.contains('hidden')) {
+      dd.innerHTML = '';
+      Object.keys(PRIVACY_LANG_META).forEach(function(code) {
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition' + (code === privacyCurrentLang ? ' text-emerald-400 font-semibold' : '');
+        item.innerHTML = '<span>' + PRIVACY_LANG_META[code].flag + '</span><span class="uppercase font-semibold">' + code.toUpperCase() + '</span><span class="text-slate-500">' + PRIVACY_LANG_META[code].label + '</span>';
+        item.onclick = function() { applyPrivacyLang(code); dd.classList.add('hidden'); };
+        dd.appendChild(item);
+      });
+      dd.classList.remove('hidden');
+    } else {
+      dd.classList.add('hidden');
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    var wrapper = document.getElementById('privacy-lang-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      var dd = document.getElementById('privacy-lang-dropdown');
+      if (dd) dd.classList.add('hidden');
+    }
+  });
+
+  // Cookie consent
+  function cookieConsent(level) {
+    localStorage.setItem('geo_cookie_consent', level);
+    document.getElementById('cookie-banner').classList.add('hidden');
+    if (level === 'all') loadGTM();
+  }
+
+  function initCookieBanner() {
+    var consent = localStorage.getItem('geo_cookie_consent');
+    if (!consent) {
+      document.getElementById('cookie-banner').classList.remove('hidden');
+    } else if (consent === 'all') {
+      loadGTM();
+    }
+  }
+
+  function loadGTM() {
+    if (window._gtmLoaded) return;
+    window._gtmLoaded = true;
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-XXXXXXX');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var lang = localStorage.getItem('geo_lang') || 'es';
+    if (!PRIVACY_TRANSLATIONS[lang]) lang = 'es';
+    applyPrivacyLang(lang);
+    initCookieBanner();
+  });
+</script>
+
+</body>
+</html>
