@@ -439,7 +439,7 @@
   // Cookie consent
   function cookieConsent(level) {
     localStorage.setItem('geo_cookie_consent', level);
-    document.getElementById('cookie-banner').classList.add('hidden');
+    var b = document.getElementById('cookie-banner'); b.classList.add('hidden'); b.style.display = 'none';
     if (level === 'all') loadGTM();
   }
 
@@ -447,7 +447,7 @@
     var consent = localStorage.getItem('geo_cookie_consent');
     if (!consent) {
       var banner = document.getElementById('cookie-banner');
-      if (banner) { banner.classList.remove('hidden'); banner.style.display = ''; }
+      if (banner) { banner.classList.remove('hidden'); banner.style.display = 'block'; }
     } else if (consent === 'all') {
       loadGTM();
     }
