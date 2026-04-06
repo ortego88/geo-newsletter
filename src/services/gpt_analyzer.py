@@ -92,6 +92,7 @@ def _call_ollama(prompt: str) -> dict | None:
         resp = requests.post(ollama_url, json=payload, timeout=30)
         if resp.status_code == 404:
             # Fallback to legacy /api/generate endpoint
+            logger.info("Ollama /api/chat not available, falling back to /api/generate")
             generate_url = f"{OLLAMA_HOST}/api/generate"
             full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
             payload_gen = {
