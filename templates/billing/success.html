@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Suscripción activada! — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes confetti-fall {
+      0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: fixed;
+      top: -20px;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased min-h-screen flex items-center justify-center px-4">
+
+  <!-- Confetti container -->
+  <div id="confetti-container" aria-hidden="true"></div>
+
+  <div class="max-w-lg w-full text-center">
+    <div class="text-7xl mb-6 animate-bounce">🎉</div>
+    <h1 class="text-4xl font-extrabold text-white mb-4">¡Suscripción activada!</h1>
+
+    {% if sub %}
+      <p class="text-slate-400 text-lg mb-8">
+        {% if sub.status == 'trial' %}
+          Tienes <strong class="text-emerald-400">7 días de prueba gratuita</strong>. No se realizará ningún cargo hasta que finalice.
+        {% else %}
+          Tu plan <strong class="text-emerald-400">{{ plans[sub.plan].name }}</strong> ya está activo. ¡Bienvenido!
+        {% endif %}
+      </p>
+    {% else %}
+      <p class="text-slate-400 text-lg mb-8">Tu suscripción está activa. ¡Bienvenido!</p>
+    {% endif %}
+
+    <!-- Next steps -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 text-left mb-8">
+      <h2 class="font-bold text-white mb-4">Próximos pasos</h2>
+      <ol class="space-y-3 text-sm text-slate-300">
+        <li class="flex gap-3">
+          <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">1</span>
+          <span>Ve a <strong class="text-white">Configuración</strong> y selecciona los activos que quieres monitorizar (oro, petróleo, BTC…)</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">2</span>
+          <span>Añade tu <strong class="text-white">Telegram Chat ID</strong> para recibir las alertas (habla con @userinfobot en Telegram)</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">3</span>
+          <span>Las alertas llegarán automáticamente cada vez que haya un evento geopolítico relevante con score ≥ 60/100</span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a href="/dashboard" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition">
+        Ir al dashboard →
+      </a>
+      <a href="/dashboard/settings" class="border border-slate-600 hover:border-slate-400 text-slate-300 font-semibold px-8 py-3 rounded-xl transition">
+        Configurar activos
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Simple confetti animation
+    const colors = ['#10b981', '#34d399', '#6ee7b7', '#f59e0b', '#fbbf24', '#60a5fa', '#a78bfa'];
+    const container = document.getElementById('confetti-container');
+    for (let i = 0; i < 60; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      piece.style.animationDelay = (Math.random() * 2) + 's';
+      piece.style.width = (Math.random() * 10 + 5) + 'px';
+      piece.style.height = (Math.random() * 10 + 5) + 'px';
+      container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 6000);
+  </script>
+
+</body>
+</html>

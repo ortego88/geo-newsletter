@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased min-h-screen">
+
+  <!-- NAV -->
+  <nav class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <a href="/" class="text-emerald-400 font-bold text-xl">🌍 GEO-NEWSLETTER</a>
+    <span class="text-slate-400 text-sm">🔒 Pago seguro</span>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <h1 class="text-3xl font-bold text-white mb-8">
+      {% if is_trial %}Prueba gratuita — Añade tu método de pago{% else %}Completar suscripción{% endif %}
+    </h1>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="mb-6 p-4 rounded-xl text-sm
+          {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+          {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+          {% else %}bg-blue-500/10 border border-blue-500/30 text-blue-400{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="grid md:grid-cols-2 gap-8">
+
+      <!-- Left: Order summary -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+        <h2 class="font-bold text-white text-lg mb-5">Resumen del pedido</h2>
+
+        <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
+          <div>
+            <p class="font-semibold text-white">Plan {{ plan_config.name }}</p>
+            <p class="text-slate-400 text-sm">Facturación mensual</p>
+          </div>
+          <div class="text-right">
+            <p class="text-white font-bold">{{ plan_config.price_monthly }}€/mes</p>
+            <p class="text-slate-500 text-xs line-through">{{ plan_config.original_price }}€</p>
+          </div>
+        </div>
+
+        {% if is_trial %}
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
+            <p class="text-emerald-400 font-semibold text-sm">🎁 Prueba gratuita de 7 días</p>
+            <p class="text-slate-400 text-xs mt-1">No se realizará ningún cargo hasta el día 8. Cancela en cualquier momento.</p>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Hoy pagas</span>
+            <span class="text-emerald-400 font-bold text-lg">0,00€</span>
+          </div>
+          <div class="flex justify-between text-sm mt-2">
+            <span class="text-slate-400">Después del período de prueba</span>
+            <span class="text-slate-300">{{ plan_config.price_monthly }}€/mes</span>
+          </div>
+        {% else %}
+          <div class="flex justify-between text-sm mt-2">
+            <span class="text-slate-400">Total hoy</span>
+            <span class="text-white font-bold text-lg">{{ plan_config.price_monthly }}€</span>
+          </div>
+        {% endif %}
+
+        <div class="mt-6 pt-4 border-t border-slate-700 space-y-2 text-xs text-slate-500">
+          <p>✅ Cancela en cualquier momento</p>
+          <p>✅ Renovación automática mensual</p>
+          <p>✅ Soporte incluido</p>
+        </div>
+      </div>
+
+      <!-- Right: Payment form -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+        <h2 class="font-bold text-white text-lg mb-5">
+          {% if is_trial %}Método de pago (para después del período de prueba){% else %}Datos de pago{% endif %}
+        </h2>
+
+        <!-- Test mode notice -->
+        {% if stripe_pk == 'pk_test_placeholder' %}
+          <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-5">
+            <p class="text-amber-400 font-semibold text-sm">🧪 Modo test activado</p>
+            <p class="text-slate-400 text-xs mt-1">Usa la tarjeta de prueba: <code class="text-amber-300 font-mono">4242 4242 4242 4242</code> · Cualquier fecha futura · Cualquier CVC</p>
+          </div>
+        {% endif %}
+
+        <form method="POST" action="/subscribe/process" id="payment-form" class="space-y-4">
+          <input type="hidden" name="plan" value="{{ plan }}">
+          <input type="hidden" name="billing_cycle" value="{{ billing_cycle }}">
+          <input type="hidden" name="is_trial" value="{% if is_trial %}1{% else %}0{% endif %}">
+          <input type="hidden" name="stripe_token" id="stripe-token" value="">
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1.5">Número de tarjeta</label>
+            <input type="text" name="card_number" id="card-number" maxlength="19"
+              placeholder="4242 4242 4242 4242"
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+              oninput="formatCardNumber(this)">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-1.5">Caducidad</label>
+              <input type="text" name="card_expiry" maxlength="5"
+                placeholder="MM/AA"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+                oninput="formatExpiry(this)">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-1.5">CVC</label>
+              <input type="text" name="card_cvc" maxlength="4"
+                placeholder="123"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1.5">Nombre en la tarjeta</label>
+            <input type="text" name="card_name"
+              placeholder="Tu nombre completo"
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+          </div>
+
+          <button type="submit"
+            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition mt-2">
+            {% if is_trial %}
+              🚀 Iniciar prueba gratuita
+            {% else %}
+              💳 Confirmar pago — {{ plan_config.price_monthly }}€
+            {% endif %}
+          </button>
+
+          <div class="text-center">
+            <p class="text-slate-500 text-xs">— o —</p>
+            <button type="button" class="w-full mt-3 bg-[#003087] hover:bg-[#002475] text-white font-semibold py-3 rounded-xl transition opacity-60 cursor-not-allowed" disabled>
+              <span class="text-[#009cde]">Pay</span><span class="text-white">Pal</span> — Próximamente
+            </button>
+          </div>
+        </form>
+
+        <p class="mt-4 text-center text-xs text-slate-600 flex items-center justify-center gap-1">
+          🔒 Conexión segura · Datos encriptados
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function formatCardNumber(input) {
+      let value = input.value.replace(/\D/g, '').substring(0, 16);
+      input.value = value.replace(/(.{4})/g, '$1 ').trim();
+    }
+    function formatExpiry(input) {
+      let value = input.value.replace(/\D/g, '').substring(0, 4);
+      if (value.length >= 2) {
+        value = value.substring(0, 2) + '/' + value.substring(2);
+      }
+      input.value = value;
+    }
+  </script>
+
+</body>
+</html>

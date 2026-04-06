@@ -34,6 +34,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from src.services.pipeline_v2 import AnalysisPipeline
 from src.services.prediction_tracker import PredictionTracker
 from src.services.prediction_validator_scheduler import PredictionValidatorScheduler
+from web.app import create_app
+
+flask_app = create_app()
 
 DB_PATH = "data/predictions.db"
 
@@ -144,9 +147,8 @@ def start_scheduler():
 def start_dashboard(port: int):
     """Inicia el servidor Flask del dashboard."""
     try:
-        from dashboard import app
         logger.info(f"🌐 Dashboard iniciando en puerto {port}...")
-        app.run(host="0.0.0.0", port=port, debug=False, threaded=True, use_reloader=False)
+        flask_app.run(host="0.0.0.0", port=port, debug=False, threaded=True, use_reloader=False)
     except Exception as e:
         logger.error(f"Error iniciando dashboard: {e}", exc_info=True)
 

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Precios — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  <!-- NAV -->
+  <nav class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="text-emerald-400 font-bold text-xl">🌍 GEO-NEWSLETTER</a>
+      <div class="flex items-center gap-4">
+        <a href="/login" class="text-sm text-slate-400 hover:text-white transition">Iniciar sesión</a>
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+          Empezar gratis
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="py-16 px-6">
+    <div class="max-w-5xl mx-auto">
+
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-extrabold text-white mb-4">Planes y precios</h1>
+        <p class="text-slate-400 text-lg">Todos los planes incluyen 7 días de prueba gratuita · Sin compromiso</p>
+      </div>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="mb-6 p-4 rounded-xl text-sm
+            {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+            {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+            {% else %}bg-blue-500/10 border border-blue-500/30 text-blue-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <!-- Pricing cards -->
+      <div class="grid md:grid-cols-3 gap-6 mb-16">
+
+        <!-- Basic -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
+          <h3 class="text-xl font-bold text-white mb-1">{{ plans.basic.name }}</h3>
+          <div class="flex items-baseline gap-2 mt-3 mb-1">
+            <span class="text-4xl font-extrabold text-white">{{ plans.basic.price_monthly }}€</span>
+            <span class="text-slate-400">/mes</span>
+          </div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="line-through text-slate-500 text-sm">{{ plans.basic.original_price }}€/mes</span>
+            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.basic.discount_pct }}%</span>
+          </div>
+          <p class="text-slate-500 text-sm mb-6">{{ plans.basic.price_yearly }}€/año (ahorra 2 meses)</p>
+          <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Idiomas: ES, EN</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> 1 activo seleccionable</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Hasta 5 alertas diarias por Telegram</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Historial últimas 24h</li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> Dashboard en tiempo real</li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> API key personal</li>
+          </ul>
+          <a href="/subscribe/basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+            Empezar prueba gratis
+          </a>
+        </div>
+
+        <!-- Premium -->
+        <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-8 flex flex-col relative shadow-xl shadow-emerald-500/10">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+            <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap">⭐ MÁS POPULAR</span>
+          </div>
+          <h3 class="text-xl font-bold text-white mb-1">{{ plans.premium.name }}</h3>
+          <div class="flex items-baseline gap-2 mt-3 mb-1">
+            <span class="text-4xl font-extrabold text-white">{{ plans.premium.price_monthly }}€</span>
+            <span class="text-slate-400">/mes</span>
+          </div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="line-through text-slate-500 text-sm">{{ plans.premium.original_price }}€/mes</span>
+            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.premium.discount_pct }}%</span>
+          </div>
+          <p class="text-slate-500 text-sm mb-6">{{ plans.premium.price_yearly }}€/año (ahorra 2 meses)</p>
+          <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Idiomas: ES, EN, FR, DE</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> 3 activos seleccionables</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Hasta 10 alertas diarias por Telegram</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Historial 7 días</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Estadísticas de precisión</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Resumen semanal por email</li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> Dashboard en tiempo real</li>
+            <li class="flex gap-2 text-slate-500"><span>✗</span> API key personal</li>
+          </ul>
+          <a href="/subscribe/premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition">
+            Empezar prueba gratis
+          </a>
+        </div>
+
+        <!-- Pro -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
+          <h3 class="text-xl font-bold text-white mb-1">{{ plans.pro.name }}</h3>
+          <div class="flex items-baseline gap-2 mt-3 mb-1">
+            <span class="text-4xl font-extrabold text-white">{{ plans.pro.price_monthly }}€</span>
+            <span class="text-slate-400">/mes</span>
+          </div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="line-through text-slate-500 text-sm">{{ plans.pro.original_price }}€/mes</span>
+            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.pro.discount_pct }}%</span>
+          </div>
+          <p class="text-slate-500 text-sm mb-6">{{ plans.pro.price_yearly }}€/año (ahorra 2 meses)</p>
+          <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Todos los idiomas</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Todos los activos sin límite</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Alertas ilimitadas por Telegram</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Dashboard en tiempo real</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Historial 30 días</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> API key personal</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Soporte prioritario Telegram</li>
+            <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> Informes PDF semanales</li>
+          </ul>
+          <a href="/subscribe/pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+            Empezar prueba gratis
+          </a>
+        </div>
+      </div>
+
+      <!-- Feature comparison table -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700">
+          <h2 class="text-lg font-bold text-white">Comparativa completa de características</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-700">
+                <th class="text-left px-6 py-4 text-slate-400 font-medium">Característica</th>
+                <th class="text-center px-6 py-4 text-slate-300 font-semibold">Básica</th>
+                <th class="text-center px-6 py-4 text-emerald-400 font-semibold">Premium</th>
+                <th class="text-center px-6 py-4 text-slate-300 font-semibold">Profesional</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50">
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Activos seleccionables</td>
+                <td class="px-6 py-4 text-center text-slate-400">1</td>
+                <td class="px-6 py-4 text-center text-slate-300">3</td>
+                <td class="px-6 py-4 text-center text-emerald-400">Todos</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Alertas diarias Telegram</td>
+                <td class="px-6 py-4 text-center text-slate-400">5</td>
+                <td class="px-6 py-4 text-center text-slate-300">10</td>
+                <td class="px-6 py-4 text-center text-emerald-400">Ilimitadas</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Historial de alertas</td>
+                <td class="px-6 py-4 text-center text-slate-400">24h</td>
+                <td class="px-6 py-4 text-center text-slate-300">7 días</td>
+                <td class="px-6 py-4 text-center text-emerald-400">30 días</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Idiomas</td>
+                <td class="px-6 py-4 text-center text-slate-400">ES, EN</td>
+                <td class="px-6 py-4 text-center text-slate-300">ES, EN, FR, DE</td>
+                <td class="px-6 py-4 text-center text-emerald-400">8 idiomas</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Estadísticas de precisión</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Dashboard en tiempo real</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">API key personal</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Informes PDF semanales</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-slate-300">Soporte prioritario Telegram</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-slate-500">✗</td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="py-8 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+    <a href="/" class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</a> · Alertas geopolíticas para traders
+  </footer>
+
+</body>
+</html>

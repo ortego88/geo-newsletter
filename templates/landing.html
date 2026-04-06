@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEO-NEWSLETTER — Alertas geopolíticas para traders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#10b981', dark: '#059669', light: '#34d399' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  <!-- NAV -->
+  <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <span class="text-emerald-400 font-bold text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
+      <div class="flex items-center gap-4">
+        <a href="#precios" class="text-sm text-slate-400 hover:text-white transition">Precios</a>
+        <a href="#faq" class="text-sm text-slate-400 hover:text-white transition">FAQ</a>
+        <a href="/login" class="text-sm text-slate-300 hover:text-white transition">Iniciar sesión</a>
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+          Empezar gratis
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="pt-32 pb-24 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm px-4 py-1.5 rounded-full mb-8">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Alertas en tiempo real · Más de 12 activos
+      </div>
+      <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
+        Alertas geopolíticas en<br>
+        <span class="text-emerald-400">tiempo real</span> para traders
+      </h1>
+      <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
+        Recibe alertas instantáneas en Telegram sobre eventos geopolíticos que mueven los mercados, analizadas con IA y traducidas al español.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20">
+          🚀 Empezar gratis — 7 días
+        </a>
+        <a href="#precios" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition">
+          Ver precios →
+        </a>
+      </div>
+      <p class="mt-4 text-sm text-slate-500">Sin compromiso · Cancela cuando quieras · No se cobra hasta el día 8</p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="py-20 px-6 bg-slate-800/30">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-12">¿Por qué GEO-NEWSLETTER?</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
+          <div class="text-4xl mb-4">🌍</div>
+          <h3 class="text-xl font-bold text-white mb-3">Cobertura global</h3>
+          <p class="text-slate-400">Monitorizamos más de 50 fuentes de noticias geopolíticas en tiempo real: conflictos, sanciones, acuerdos y más.</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
+          <div class="text-4xl mb-4">🤖</div>
+          <h3 class="text-xl font-bold text-white mb-3">IA avanzada</h3>
+          <p class="text-slate-400">Cada evento es analizado por GPT-4 para determinar su impacto en activos financieros con un score de 0 a 100.</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
+          <div class="text-4xl mb-4">⚡</div>
+          <h3 class="text-xl font-bold text-white mb-3">Alertas en tiempo real</h3>
+          <p class="text-slate-400">Recibe directamente en tu Telegram el activo afectado, la dirección del movimiento y el razonamiento en español.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="precios" class="py-20 px-6">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-4">Planes y precios</h2>
+      <p class="text-center text-slate-400 mb-12">Todos los planes incluyen 7 días de prueba gratuita</p>
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <!-- Basic -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
+          <div class="mb-6">
+            <h3 class="text-xl font-bold text-white mb-1">{{ plans.basic.name }}</h3>
+            <div class="flex items-baseline gap-2 mt-3">
+              <span class="text-3xl font-extrabold text-white">{{ plans.basic.price_monthly }}€</span>
+              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="line-through text-slate-500 text-sm">{{ plans.basic.original_price }}€</span>
+              <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.basic.discount_pct }}%</span>
+            </div>
+            <p class="text-slate-500 text-sm mt-1">o {{ plans.basic.price_yearly }}€/año</p>
+          </div>
+          <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> 1 activo seleccionable</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hasta 5 alertas diarias</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial últimas 24h</li>
+          </ul>
+          <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+            Empezar prueba
+          </a>
+        </div>
+
+        <!-- Premium (most popular) -->
+        <div class="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-8 flex flex-col relative shadow-xl shadow-emerald-500/10">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2">
+            <span class="bg-emerald-500 text-white text-xs font-bold px-4 py-1.5 rounded-full">⭐ MÁS POPULAR</span>
+          </div>
+          <div class="mb-6">
+            <h3 class="text-xl font-bold text-white mb-1">{{ plans.premium.name }}</h3>
+            <div class="flex items-baseline gap-2 mt-3">
+              <span class="text-3xl font-extrabold text-white">{{ plans.premium.price_monthly }}€</span>
+              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="line-through text-slate-500 text-sm">{{ plans.premium.original_price }}€</span>
+              <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.premium.discount_pct }}%</span>
+            </div>
+            <p class="text-slate-500 text-sm mt-1">o {{ plans.premium.price_yearly }}€/año</p>
+          </div>
+          <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Idiomas: ES, EN, FR, DE</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> 3 activos seleccionables</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hasta 10 alertas diarias</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial 7 días</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Estadísticas de precisión</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Resumen semanal por email</li>
+          </ul>
+          <a href="/register" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition">
+            Empezar prueba
+          </a>
+        </div>
+
+        <!-- Pro -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col">
+          <div class="mb-6">
+            <h3 class="text-xl font-bold text-white mb-1">{{ plans.pro.name }}</h3>
+            <div class="flex items-baseline gap-2 mt-3">
+              <span class="text-3xl font-extrabold text-white">{{ plans.pro.price_monthly }}€</span>
+              <span class="text-slate-400 text-sm">/mes</span>
+              <span class="line-through text-slate-500 text-sm">{{ plans.pro.original_price }}€</span>
+              <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-{{ plans.pro.discount_pct }}%</span>
+            </div>
+            <p class="text-slate-500 text-sm mt-1">o {{ plans.pro.price_yearly }}€/año</p>
+          </div>
+          <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Todos los idiomas</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Todos los activos (sin límite)</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Alertas ilimitadas</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Dashboard en tiempo real</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Historial 30 días</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> API key personal</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Soporte prioritario Telegram</li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> Informes PDF semanales</li>
+          </ul>
+          <a href="/register" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition">
+            Empezar prueba
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="py-20 px-6 bg-slate-800/30">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-12">Lo que dicen nuestros usuarios</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <div class="text-emerald-400 text-2xl mb-3">★★★★★</div>
+          <p class="text-slate-300 text-sm mb-4">"Las alertas me llegaron antes de que WTI se desplomara un 4% por las tensiones en Oriente Medio. Inestimable para mi operativa."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">JM</div>
+            <div>
+              <p class="text-white text-sm font-semibold">Javier M.</p>
+              <p class="text-slate-500 text-xs">Trader de futuros · Madrid</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <div class="text-emerald-400 text-2xl mb-3">★★★★★</div>
+          <p class="text-slate-300 text-sm mb-4">"Uso el plan Premium para GOLD y BTC. Las alertas en español con el razonamiento del por qué me ahorran mucho tiempo de análisis."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">SL</div>
+            <div>
+              <p class="text-white text-sm font-semibold">Sara L.</p>
+              <p class="text-slate-500 text-xs">Inversora particular · Barcelona</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <div class="text-emerald-400 text-2xl mb-3">★★★★☆</div>
+          <p class="text-slate-300 text-sm mb-4">"Perfecto para el plan Profesional: tengo la API integrada en mi bot de trading y la precisión es sorprendente para ser IA pura."</p>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">RG</div>
+            <div>
+              <p class="text-white text-sm font-semibold">Rodrigo G.</p>
+              <p class="text-slate-500 text-xs">Quant developer · Buenos Aires</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-20 px-6">
+    <div class="max-w-2xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-white mb-12">Preguntas frecuentes</h2>
+      <div class="space-y-4">
+        <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
+          <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
+            ¿Necesito tarjeta de crédito para la prueba gratuita?
+            <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-4 text-slate-400 text-sm">Sí, pedimos los datos de pago al registrarte, pero no se realizará ningún cargo hasta que finalice el período de prueba de 7 días. Puedes cancelar en cualquier momento antes.</p>
+        </details>
+        <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
+          <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
+            ¿Cómo recibo las alertas en Telegram?
+            <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-4 text-slate-400 text-sm">Tras registrarte, en el área de configuración introduce tu Telegram Chat ID (puedes obtenerlo hablando con @userinfobot en Telegram). Nuestro bot te enviará las alertas directamente.</p>
+        </details>
+        <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
+          <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
+            ¿Con qué frecuencia se actualizan las alertas?
+            <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-4 text-slate-400 text-sm">El pipeline de análisis se ejecuta cada 10 minutos. Solo recibirás alertas cuando haya eventos con score ≥ 60/100 que afecten a tus activos seleccionados.</p>
+        </details>
+        <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
+          <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
+            ¿Puedo cambiar de plan en cualquier momento?
+            <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-4 text-slate-400 text-sm">Sí, puedes subir o bajar de plan desde el área de suscripción. El cambio se aplica inmediatamente y el precio se prorratea.</p>
+        </details>
+        <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
+          <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
+            ¿Esto es asesoramiento financiero?
+            <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
+          </summary>
+          <p class="mt-4 text-slate-400 text-sm">No. Las alertas son análisis automatizados de eventos geopolíticos para informar tu toma de decisiones, pero no constituyen asesoramiento financiero ni recomendaciones de inversión.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="py-20 px-6 bg-emerald-500/10 border-y border-emerald-500/20">
+    <div class="max-w-2xl mx-auto text-center">
+      <h2 class="text-3xl font-bold text-white mb-4">Empieza a operar con ventaja geopolítica</h2>
+      <p class="text-slate-400 mb-8">7 días gratis, sin compromiso. Cancela cuando quieras.</p>
+      <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20">
+        Crear cuenta gratis →
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-10 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+    <p class="mb-3">
+      <span class="text-emerald-400 font-bold">🌍 GEO-NEWSLETTER</span> · Alertas geopolíticas para traders
+    </p>
+    <div class="flex justify-center gap-6">
+      <a href="/pricing" class="hover:text-slate-300 transition">Precios</a>
+      <a href="/login" class="hover:text-slate-300 transition">Iniciar sesión</a>
+      <a href="/register" class="hover:text-slate-300 transition">Registrarse</a>
+    </div>
+    <p class="mt-6 text-xs text-slate-600">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
+  </footer>
+
+</body>
+</html>

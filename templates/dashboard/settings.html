@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0">
+    <div class="px-6 py-5 border-b border-slate-800">
+      <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
+      <p class="text-slate-500 text-xs mt-1">Área privada</p>
+    </div>
+
+    <nav class="flex-1 px-4 py-6 space-y-1">
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        <span>📊</span> Dashboard
+      </a>
+      <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
+        <span>⚙️</span> Configuración
+      </a>
+      <a href="/pricing" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        <span>💳</span> Suscripción
+      </a>
+    </nav>
+
+    <div class="px-4 py-4 border-t border-slate-800">
+      <div class="px-3 py-2 mb-2">
+        <p class="text-white text-sm font-medium">{{ current_user.name }}</p>
+        <p class="text-slate-500 text-xs">{{ current_user.email }}</p>
+      </div>
+      <a href="/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        <span>🚪</span> Cerrar sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-auto">
+
+    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4">
+      <h1 class="text-white font-bold text-xl">Configuración</h1>
+    </div>
+
+    <div class="px-8 py-6 max-w-3xl">
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="mb-4 p-3 rounded-lg text-sm
+            {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+            {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+            {% else %}bg-amber-500/10 border border-amber-500/30 text-amber-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="/dashboard/settings" class="space-y-8">
+
+        <!-- Asset selector -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-white">Activos a monitorizar</h2>
+            <span class="text-slate-400 text-sm">
+              Máximo:
+              {% if plan_config.max_assets == -1 %}
+                <span class="text-emerald-400 font-semibold">Ilimitado</span>
+              {% else %}
+                <span class="text-emerald-400 font-semibold">{{ plan_config.max_assets }}</span>
+              {% endif %}
+            </span>
+          </div>
+          <p class="text-slate-400 text-sm mb-5">Selecciona los activos para los que deseas recibir alertas de Telegram.</p>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {% for asset in available_assets %}
+              {% set is_selected = asset.symbol in (sub.selected_assets or []) %}
+              {% set is_locked = asset.symbol in locked_symbols %}
+              <label class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition
+                {% if is_locked %}border-slate-700 bg-slate-800/50 opacity-50 cursor-not-allowed
+                {% elif is_selected %}border-emerald-500/50 bg-emerald-500/10
+                {% else %}border-slate-700 bg-slate-800 hover:border-slate-500{% endif %}">
+                <input type="checkbox" name="assets" value="{{ asset.symbol }}"
+                  {% if is_selected %}checked{% endif %}
+                  {% if is_locked %}disabled{% endif %}
+                  class="w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
+                <span class="text-lg">{{ asset.icon }}</span>
+                <div>
+                  <p class="text-sm font-medium {% if is_locked %}text-slate-500{% else %}text-white{% endif %}">{{ asset.name }}</p>
+                  <p class="text-xs text-slate-500">{{ asset.symbol }}</p>
+                </div>
+                {% if is_locked %}
+                  <span class="absolute top-2 right-2 text-slate-600 text-xs">🔒</span>
+                {% endif %}
+              </label>
+            {% endfor %}
+          </div>
+          {% if plan_config.max_assets != -1 %}
+            <p class="mt-4 text-xs text-slate-500">
+              Los activos bloqueados requieren un plan superior.
+              <a href="/pricing" class="text-emerald-400 hover:text-emerald-300">Actualizar plan →</a>
+            </p>
+          {% endif %}
+        </div>
+
+        <!-- Language selector -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <h2 class="font-bold text-white mb-4">Idioma de las alertas</h2>
+          <div class="flex flex-wrap gap-3">
+            {% set available_langs = plan_config.languages %}
+            {% set all_langs = [('es', '🇪🇸 Español'), ('en', '🇬🇧 English'), ('fr', '🇫🇷 Français'), ('de', '🇩🇪 Deutsch'), ('it', '🇮🇹 Italiano'), ('pt', '🇵🇹 Português'), ('zh', '🇨🇳 中文'), ('ar', '🇸🇦 العربية')] %}
+            {% for lang_code, lang_name in all_langs %}
+              {% set is_available = lang_code in available_langs %}
+              <label class="flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition
+                {% if not is_available %}border-slate-700 opacity-50 cursor-not-allowed
+                {% elif current_user.language == lang_code %}border-emerald-500/50 bg-emerald-500/10
+                {% else %}border-slate-700 hover:border-slate-500{% endif %}">
+                <input type="radio" name="language" value="{{ lang_code }}"
+                  {% if current_user.language == lang_code %}checked{% endif %}
+                  {% if not is_available %}disabled{% endif %}
+                  class="text-emerald-500 focus:ring-emerald-500">
+                <span class="text-sm {% if not is_available %}text-slate-500{% else %}text-white{% endif %}">{{ lang_name }}</span>
+                {% if not is_available %}
+                  <span class="text-slate-600 text-xs">🔒</span>
+                {% endif %}
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Telegram Chat ID -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <h2 class="font-bold text-white mb-2">Telegram Chat ID</h2>
+          <p class="text-slate-400 text-sm mb-4">
+            Para recibir alertas en Telegram, necesitas tu Chat ID personal.
+            Habla con <a href="https://t.me/userinfobot" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">@userinfobot</a> en Telegram y te lo enviará.
+          </p>
+          <input type="text" name="telegram_chat_id"
+            value="{{ current_user.telegram_chat_id or '' }}"
+            placeholder="Ej: 123456789"
+            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500 transition max-w-xs">
+        </div>
+
+        <!-- Subscription management -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+          <h2 class="font-bold text-white mb-4">Gestión de suscripción</h2>
+          <div class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-48">
+              <p class="text-slate-400 text-sm mb-1">Plan actual</p>
+              <p class="text-white font-semibold">
+                {% if sub %}{{ plans[sub.plan].name }}{% else %}Sin suscripción{% endif %}
+              </p>
+              <p class="text-slate-500 text-xs mt-0.5">
+                {% if sub %}
+                  Estado: <span class="{% if sub.status == 'active' %}text-emerald-400{% elif sub.status == 'trial' %}text-amber-400{% else %}text-red-400{% endif %}">{{ sub.status }}</span>
+                {% endif %}
+              </p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <a href="/pricing" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                Cambiar plan
+              </a>
+              {% if sub and sub.status in ('active', 'trial') %}
+                <a href="/cancel" class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition text-center"
+                  onclick="return confirm('¿Seguro que quieres cancelar tu suscripción?')">
+                  Cancelar suscripción
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <button type="submit"
+          class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition">
+          Guardar configuración
+        </button>
+
+      </form>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
