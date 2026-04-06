@@ -1,15 +1,17 @@
 # Phase 1 Dependencies
-
-This file includes the required packages for Python 3.13 compatible dependencies for Phase 1.
-
-- numpy
-- pandas
-- requests
-- flask
-
-# Installation
-
-To install the dependencies, run:
-```
-pip install -r requirements-phase1.txt
-```
+python-dotenv
+pydantic>=2.0
+requests
+feedparser
+beautifulsoup4
+dateparser
+openai>=1.0
+python-telegram-bot>=20.0
+apscheduler>=3.0
+sqlalchemy
+tenacity
+lxml
+trafilatura
+geopy
+python-dateutil
+yfinance

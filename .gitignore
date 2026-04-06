@@ -8,3 +8,5 @@ __pycache__/
 *.sqlite3
 *.log
 *.egg-info/
+data/
+nohup.out
