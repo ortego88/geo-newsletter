@@ -1,58 +1,118 @@
 """
-Analizador de eventos con Ollama (LLaMA2 local).
-Devuelve JSON con: market_impact_percent, direction, timeframe, confidence,
-most_affected_assets, reasoning.
+gpt_analyzer.py — Analizador de eventos con IA.
+Soporta OpenAI (producción) y Ollama (desarrollo local).
+Configurable via variables de entorno:
+  OPENAI_API_KEY  → activa OpenAI
+  OPENAI_MODEL    → modelo a usar (por defecto: gpt-4o-mini)
+  OLLAMA_HOST     → host de Ollama (por defecto: http://localhost:11434)
+  OLLAMA_MODEL    → modelo Ollama (por defecto: llama3.2)
 """
-
 import json
 import logging
+import os
 import re
 
 logger = logging.getLogger("gpt")
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama2"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
-ANALYSIS_PROMPT = """Eres un analista de mercados financieros especializado en geopolítica.
-Analiza el siguiente evento y devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
+# Prompt del sistema para análisis de eventos
+SYSTEM_PROMPT = """Eres un analista financiero experto especializado en el impacto de eventos geopolíticos en mercados financieros.
+Tu tarea es analizar noticias y determinar su impacto en los mercados.
 
-{{
-  "market_impact_percent": <número entre -20 y 20>,
-  "direction": "<up|down|neutral>",
-  "timeframe": "<immediate|hours|hours to days|days|days to weeks|weeks>",
-  "confidence": <número entre 0 y 100>,
-  "most_affected_assets": ["<ASSET1>", "<ASSET2>", "<ASSET3>"],
-  "reasoning": "<explicación en español de máximo 300 caracteres>"
-}}
+REGLAS CRÍTICAS SOBRE ACTIVOS:
+- Noticias sobre bonos del tesoro/treasury yields → activos: ["US10Y", "SPX", "GOLD"]
+- Noticias sobre petróleo/energía → activos: ["WTI", "BRENT", "XOM"]
+- Noticias sobre criptomonedas → activos: ["BTC", "ETH"]
+- Noticias sobre índices/bolsa general → activos: ["SPX", "NASDAQ", "DAX"]
+- Noticias sobre empresas tech → activos: ["NASDAQ", "AAPL", "MSFT", "NVDA"]
+- Noticias sobre geopolítica/guerra → activos: ["GOLD", "WTI", "SPX"]
+- Noticias sobre inflación/fed → activos: ["GOLD", "SPX", "US10Y"]
+- Noticias sobre commodities agrícolas → activos: ["WHEAT", "CORN"]
+- NUNCA asignes BTC a noticias sobre bonos, treasury, yields, acciones tradicionales o índices bursátiles
+- NUNCA asignes más de 4 activos
+- Usa SOLO estos símbolos: BTC, ETH, XRP, SOL, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, NASDAQ, DAX, FTSE, IBEX, AAPL, MSFT, NVDA, AMZN, TSLA, META, JPM, XOM, US10Y
 
-Activos válidos: BTC, ETH, XRP, SOL, WTI_OIL, BRENT, BRENT_OIL, GOLD, SILVER, NATURAL_GAS, SPX, INDU, CCMP, FTSE, DAX, AAPL, GOOGL, MSFT
+Responde ÚNICAMENTE con JSON válido, sin explicaciones adicionales."""
 
-Evento: {title}
+ANALYSIS_PROMPT_TEMPLATE = """Analiza este evento de mercado/geopolítico:
+
+Título: {title}
 Descripción: {description}
-Puntuación de severidad: {score}/100
 Categoría: {category}
+Puntuación de severidad: {score}/100
 
-Responde SOLO con el JSON, sin texto adicional."""
+Responde con este JSON exacto:
+{{
+  "direction": "up|down|neutral",
+  "market_impact_percent": <número entre -20 y 20>,
+  "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
+  "confidence": <número entre 0 y 100>,
+  "most_affected_assets": [<lista de 2-4 símbolos del listado permitido>],
+  "reasoning": "<explicación breve en inglés de max 200 caracteres>"
+}}"""
 
 
-def _call_ollama(prompt: str) -> str | None:
+def _call_openai(prompt: str) -> dict | None:
+    try:
+        import openai
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.2,
+            max_tokens=300,
+        )
+        raw = response.choices[0].message.content.strip()
+        return _parse_json_response(raw)
+    except Exception as e:
+        logger.error(f"Error OpenAI: {e}")
+        return None
+
+
+def _call_ollama(prompt: str) -> dict | None:
     try:
         import requests
+        ollama_url = f"{OLLAMA_HOST}/api/chat"
         payload = {
             "model": OLLAMA_MODEL,
-            "prompt": prompt,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
             "stream": False,
             "options": {"temperature": 0.3, "num_predict": 400},
         }
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=30)
-        resp.raise_for_status()
-        return resp.json().get("response", "")
+        resp = requests.post(ollama_url, json=payload, timeout=30)
+        if resp.status_code == 404:
+            # Fallback to legacy /api/generate endpoint
+            generate_url = f"{OLLAMA_HOST}/api/generate"
+            full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
+            payload_gen = {
+                "model": OLLAMA_MODEL,
+                "prompt": full_prompt,
+                "stream": False,
+                "options": {"temperature": 0.3, "num_predict": 400},
+            }
+            resp = requests.post(generate_url, json=payload_gen, timeout=30)
+            resp.raise_for_status()
+            raw = resp.json().get("response", "")
+        else:
+            resp.raise_for_status()
+            raw = resp.json().get("message", {}).get("content", "")
+        return _parse_json_response(raw)
     except Exception as e:
         logger.warning(f"Error llamando a Ollama: {e}")
         return None
 
 
-def _extract_json(text: str) -> dict | None:
+def _parse_json_response(text: str) -> dict | None:
     if not text:
         return None
     match = re.search(r"\{.*\}", text, re.DOTALL)
@@ -65,7 +125,7 @@ def _extract_json(text: str) -> dict | None:
 
 
 def _validate_analysis(data: dict) -> dict:
-    """Valida y normaliza el análisis devuelto por Ollama."""
+    """Valida y normaliza el análisis devuelto por el modelo de IA."""
     impact = float(data.get("market_impact_percent", 5))
     impact = max(-20, min(20, impact))
 
@@ -84,7 +144,7 @@ def _validate_analysis(data: dict) -> dict:
     assets = data.get("most_affected_assets", [])
     if not isinstance(assets, list):
         assets = []
-    assets = [str(a).upper() for a in assets[:5]]
+    assets = [str(a).upper() for a in assets[:4]]
 
     reasoning = str(data.get("reasoning", ""))[:300]
 
@@ -99,7 +159,7 @@ def _validate_analysis(data: dict) -> dict:
 
 
 def _fallback_analysis(event: dict) -> dict:
-    """Análisis de fallback basado en palabras clave cuando Ollama no está disponible."""
+    """Análisis de fallback basado en palabras clave cuando ningún modelo de IA está disponible."""
     title = (event.get("title") or "").lower()
     desc = (event.get("description") or event.get("summary") or "").lower()
     text = f"{title} {desc}"
@@ -126,11 +186,13 @@ def _fallback_analysis(event: dict) -> dict:
 
     # Activos por categoría
     if "energy" in category or "oil" in category:
-        assets = ["WTI_OIL", "BRENT", "NATURAL_GAS"]
+        assets = ["WTI", "BRENT", "NATURAL_GAS"]
     elif "crypto" in category:
         assets = ["BTC", "ETH", "XRP"]
+    elif "bond" in category or "treasury" in category or "yield" in category:
+        assets = ["US10Y", "SPX", "GOLD"]
     else:
-        assets = ["SPX", "GOLD", "BTC"]
+        assets = ["SPX", "GOLD", "US10Y"]
 
     return {
         "market_impact_percent": round(impact, 1),
@@ -142,6 +204,39 @@ def _fallback_analysis(event: dict) -> dict:
     }
 
 
+def analyze_event(event: dict) -> dict:
+    """
+    Analiza un evento y devuelve el análisis estructurado.
+    Usa OpenAI si OPENAI_API_KEY está configurado; si no, usa Ollama como fallback.
+    Si ambos fallan, usa análisis por palabras clave.
+    """
+    title = event.get("title", "")
+    description = event.get("description") or event.get("summary") or ""
+    score = event.get("score", event.get("impact_score", 50))
+    category = event.get("category", "")
+
+    prompt = ANALYSIS_PROMPT_TEMPLATE.format(
+        title=title,
+        description=description[:300],
+        score=score,
+        category=category,
+    )
+
+    result = None
+    if OPENAI_API_KEY:
+        logger.info("Analizando evento con OpenAI...")
+        result = _call_openai(prompt)
+    else:
+        logger.info("Analizando evento con Ollama...")
+        result = _call_ollama(prompt)
+
+    if result:
+        return _validate_analysis(result)
+
+    logger.warning("Modelo de IA no disponible, usando análisis de fallback")
+    return _fallback_analysis(event)
+
+
 class EventAnalyzer:
     def __init__(self, use_ollama: bool = True):
         self.use_ollama = use_ollama
@@ -149,29 +244,6 @@ class EventAnalyzer:
     def analyze(self, event: dict) -> dict:
         """
         Analiza un evento y devuelve el análisis estructurado.
-        Usa Ollama si está disponible; cae a análisis por palabras clave.
+        Delega a analyze_event() que soporta OpenAI y Ollama.
         """
-        logger.info("Analizando evento con Ollama...")
-
-        title = event.get("title", "")
-        description = event.get("description") or event.get("summary") or ""
-        score = event.get("score", event.get("impact_score", 50))
-        category = event.get("category", "")
-
-        if self.use_ollama:
-            prompt = ANALYSIS_PROMPT.format(
-                title=title,
-                description=description[:300],
-                score=score,
-                category=category,
-            )
-            raw_response = _call_ollama(prompt)
-            if raw_response:
-                parsed = _extract_json(raw_response)
-                if parsed:
-                    return _validate_analysis(parsed)
-                logger.warning("No se pudo parsear la respuesta JSON de Ollama, usando fallback")
-            else:
-                logger.warning("Ollama no disponible, usando análisis de fallback")
-
-        return _fallback_analysis(event)
+        return analyze_event(event)

@@ -45,6 +45,9 @@ MOCK_PRICES = {
     "AMZN": 192.0,
     "TSLA": 175.0,
     "NVDA": 870.0,
+    "US10Y": 4.35,
+    "US2Y": 4.85,
+    "BONDS": 4.35,
 }
 
 # --- Iconos por tipo de activo ---
@@ -76,6 +79,9 @@ ASSET_ICONS = {
     "AMZN": "📦",
     "TSLA": "🚗",
     "NVDA": "🖥️",
+    "US10Y": "📊",
+    "US2Y": "📊",
+    "BONDS": "📊",
 }
 
 # --- Nombres legibles en español ---
@@ -107,6 +113,9 @@ ASSET_NAMES = {
     "AMZN": "Amazon",
     "TSLA": "Tesla",
     "NVDA": "NVIDIA",
+    "US10Y": "Bono Tesoro 10Y",
+    "US2Y": "Bono Tesoro 2Y",
+    "BONDS": "Bonos USA",
 }
 
 # --- Traducción básica de inglés a español para el campo reasoning ---
