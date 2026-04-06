@@ -38,6 +38,48 @@ tracker = PredictionTracker(db_path=DB_PATH)
 validator = PredictionValidatorScheduler(tracker=tracker, interval_minutes=60)
 
 
+def _send_pipeline_alerts(events: list):
+    """Envía alertas de Telegram para los eventos relevantes del ciclo."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        logger.info("TELEGRAM_BOT_TOKEN no configurado — alertas desactivadas")
+        return
+
+    try:
+        from src.services.telegram_sender import send_telegram
+        from src.services.alert_formatter import format_telegram_alert, format_cycle_summary
+    except Exception as e:
+        logger.error(f"Error importando módulos de alerta: {e}")
+        return
+
+    # Filter events with score >= 60 and with analysis
+    alertable = [
+        e for e in events
+        if e.get("score", 0) >= 60 and e.get("analysis")
+    ]
+
+    if not alertable:
+        logger.info("Sin eventos con score >= 60 para alertar")
+        return
+
+    logger.info(f"📨 Enviando {len(alertable)} alertas a Telegram...")
+
+    if len(alertable) == 1:
+        event = alertable[0]
+        msg = format_telegram_alert(event, event["analysis"])
+        send_telegram(msg)
+        logger.info(f"✅ Alerta enviada: {event['title'][:60]}")
+    else:
+        summary = format_cycle_summary(alertable[:5])
+        send_telegram(summary)
+        logger.info(f"✅ Resumen enviado ({len(alertable)} eventos)")
+
+        top = alertable[0]
+        detail = format_telegram_alert(top, top["analysis"])
+        send_telegram(detail)
+        logger.info(f"✅ Detalle enviado: {top['title'][:60]}")
+
+
 def run_pipeline_cycle():
     logger.info("=" * 60)
     logger.info(f"⏱️  CICLO DE PIPELINE — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -52,6 +94,10 @@ def run_pipeline_cycle():
         logger.info(
             f"📊 Precisión: {stats['accuracy_pct']}% ({stats['correct']}/{stats['total']} correctas)"
         )
+
+        # Send Telegram alerts
+        _send_pipeline_alerts(events)
+
     except Exception as e:
         logger.error(f"Error en ciclo de pipeline: {e}", exc_info=True)
 
