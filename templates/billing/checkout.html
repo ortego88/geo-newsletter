@@ -37,13 +37,27 @@
       <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
         <h2 class="font-bold text-white text-lg mb-5">Resumen del pedido</h2>
 
+        {% if not is_trial %}
+        <!-- Billing cycle toggle -->
+        <div class="flex items-center gap-2 mb-4 bg-slate-900/50 rounded-xl p-1">
+          <button type="button" id="btn-monthly" onclick="setCycle('monthly')"
+            class="flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white">
+            Mensual
+          </button>
+          <button type="button" id="btn-yearly" onclick="setCycle('yearly')"
+            class="flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white">
+            Anual <span class="text-emerald-400 text-xs">-2 meses</span>
+          </button>
+        </div>
+        {% endif %}
+
         <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
           <div>
             <p class="font-semibold text-white">Plan {{ plan_config.name }}</p>
-            <p class="text-slate-400 text-sm">Facturación mensual</p>
+            <p class="text-slate-400 text-sm" id="billing-cycle-label">Facturación mensual</p>
           </div>
           <div class="text-right">
-            <p class="text-white font-bold">{{ plan_config.price_monthly }}€/mes</p>
+            <p class="text-white font-bold" id="price-display">{{ plan_config.price_monthly }}€/mes</p>
             <p class="text-slate-500 text-xs line-through">{{ plan_config.original_price }}€</p>
           </div>
         </div>
@@ -64,13 +78,13 @@
         {% else %}
           <div class="flex justify-between text-sm mt-2">
             <span class="text-slate-400">Total hoy</span>
-            <span class="text-white font-bold text-lg">{{ plan_config.price_monthly }}€</span>
+            <span class="text-white font-bold text-lg" id="total-price">{{ plan_config.price_monthly }}€</span>
           </div>
         {% endif %}
 
         <div class="mt-6 pt-4 border-t border-slate-700 space-y-2 text-xs text-slate-500">
           <p>✅ Cancela en cualquier momento</p>
-          <p>✅ Renovación automática mensual</p>
+          <p id="renewal-text">✅ Renovación automática mensual</p>
           <p>✅ Soporte incluido</p>
         </div>
       </div>
@@ -146,7 +160,7 @@
             {% if is_trial %}
               🚀 Iniciar prueba gratuita
             {% else %}
-              💳 Confirmar pago — {{ plan_config.price_monthly }}€
+              <span id="submit-btn-text">💳 Confirmar pago — {{ plan_config.price_monthly }}€</span>
             {% endif %}
           </button>
 
@@ -166,6 +180,42 @@
   </main>
 
   <script>
+    var PRICE_MONTHLY = {{ plan_config.price_monthly }};
+    var PRICE_YEARLY = {{ plan_config.price_yearly }};
+    var currentCycle = '{{ billing_cycle }}';
+
+    function setCycle(cycle) {
+      currentCycle = cycle;
+      var cycleInput = document.querySelector('input[name="billing_cycle"]');
+      if (cycleInput) cycleInput.value = cycle;
+
+      var btnMonthly = document.getElementById('btn-monthly');
+      var btnYearly = document.getElementById('btn-yearly');
+      var priceDisplay = document.getElementById('price-display');
+      var cycleLabel = document.getElementById('billing-cycle-label');
+      var totalPrice = document.getElementById('total-price');
+      var renewalText = document.getElementById('renewal-text');
+      var submitBtnText = document.getElementById('submit-btn-text');
+
+      if (cycle === 'yearly') {
+        if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
+        if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
+        if (priceDisplay) priceDisplay.textContent = PRICE_YEARLY + '€/año';
+        if (cycleLabel) cycleLabel.textContent = 'Facturación anual';
+        if (totalPrice) totalPrice.textContent = PRICE_YEARLY + '€';
+        if (renewalText) renewalText.textContent = '✅ Renovación automática anual';
+        if (submitBtnText) submitBtnText.textContent = '💳 Confirmar pago — ' + PRICE_YEARLY + '€';
+      } else {
+        if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
+        if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
+        if (priceDisplay) priceDisplay.textContent = PRICE_MONTHLY + '€/mes';
+        if (cycleLabel) cycleLabel.textContent = 'Facturación mensual';
+        if (totalPrice) totalPrice.textContent = PRICE_MONTHLY + '€';
+        if (renewalText) renewalText.textContent = '✅ Renovación automática mensual';
+        if (submitBtnText) submitBtnText.textContent = '💳 Confirmar pago — ' + PRICE_MONTHLY + '€';
+      }
+    }
+
     function formatCardNumber(input) {
       let value = input.value.replace(/\D/g, '').substring(0, 16);
       input.value = value.replace(/(.{4})/g, '$1 ').trim();

@@ -11,7 +11,7 @@
 <div class="flex min-h-screen">
 
   <!-- SIDEBAR -->
-  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0">
+  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 sticky top-0 h-screen">
     <div class="px-6 py-5 border-b border-slate-800">
       <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
       <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
@@ -24,7 +24,7 @@
       <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
         <span>⚙️</span> <span data-i18n="dash.settings">Configuración</span>
       </a>
-      <a href="/pricing" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+      <a href="/dashboard/subscription" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
         <span>💳</span> <span data-i18n="dash.subscription">Suscripción</span>
       </a>
     </nav>
@@ -44,7 +44,7 @@
   <main class="flex-1 overflow-auto">
 
     <!-- Top bar -->
-    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between">
+    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
       <h1 class="text-white font-bold text-xl">Dashboard</h1>
       <div class="flex items-center gap-3">
         {% if sub %}
@@ -96,7 +96,7 @@
               Añade tu método de pago para no perder el acceso.
             </p>
           </div>
-          <a href="/checkout/trial" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0">
+          <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0">
             Activar plan
           </a>
         </div>
@@ -152,8 +152,8 @@
             <span class="text-slate-500 text-xs bg-slate-700 px-2 py-0.5 rounded-full" data-i18n="dash.pro_only">Solo plan Profesional</span>
           </div>
           <p class="text-slate-400 text-sm mb-4">Accede al dashboard en tiempo real con gráficos, mapa de calor geopolítico y API key personal.</p>
-          <a href="/pricing" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition" data-i18n="dash.upgrade_pro">
-            Actualizar a Profesional →
+          <a href="/dashboard/subscription" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition" data-i18n="dash.upgrade_pro">
+            Actualizar plan →
           </a>
         </div>
       {% endif %}

@@ -26,6 +26,14 @@
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
       <h1 class="text-2xl font-bold text-white mb-6">Crear cuenta</h1>
 
+      {% if plan and plan != 'basic' %}
+      <div class="mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
+        <p class="text-emerald-400 text-sm font-semibold">
+          Plan seleccionado: {{ {'premium': 'Premium — 29.99€/mes', 'pro': 'Profesional — 59.99€/mes'}.get(plan, plan) }}
+        </p>
+      </div>
+      {% endif %}
+
       <!-- Flash messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
