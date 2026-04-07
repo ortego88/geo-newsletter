@@ -174,8 +174,9 @@ def start_scheduler():
 def start_dashboard(port: int):
     """Inicia el servidor Flask del dashboard."""
     try:
-        logger.info(f"🌐 Dashboard iniciando en puerto {port}...")
-        flask_app.run(host="0.0.0.0", port=port, debug=False, threaded=True, use_reloader=False)
+        debug_mode = os.getenv("FLASK_ENV", "production") == "development" or os.getenv("DEBUG", "").lower() in ("1", "true")
+        logger.info(f"🌐 Dashboard iniciando en puerto {port}{'  [modo desarrollo — hot-reload activo]' if debug_mode else ''}...")
+        flask_app.run(host="0.0.0.0", port=port, debug=debug_mode, threaded=True, use_reloader=debug_mode)
     except Exception as e:
         logger.error(f"Error iniciando dashboard: {e}", exc_info=True)
 
