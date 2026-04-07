@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from web.models import PLANS, AVAILABLE_ASSETS, get_conn
+from src.services.alert_formatter import ASSET_NAMES
 import logging
 import os
 import sqlite3 as _sq
@@ -75,6 +76,7 @@ def index():
     total_pages = 1
     try:
         conn2 = _get_predictions_conn()
+        conn2.row_factory = _sq.Row
         c2 = conn2.cursor()
 
         where = "WHERE datetime(predicted_at) >= datetime('now', '-24 hours')"
@@ -89,8 +91,9 @@ def index():
         total_pages = max(1, (total_alerts + per_page - 1) // per_page)
 
         c2.execute(
-            f"""SELECT asset, direction, confidence, predicted_at, reasoning,
-                       score, impact_percent, price_at_prediction, price_at_validation, outcome, title
+            f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
+                       confidence, price_at_prediction, price_at_validation, predicted_at,
+                       validated_at, outcome, score, source, reasoning
                 FROM predictions {where}
                 ORDER BY {sort_col} {sort_order}
                 LIMIT ? OFFSET ?""",
@@ -102,19 +105,19 @@ def index():
         _logger.warning("Could not load predictions", exc_info=True)
         alerts_raw = []
 
-    # Convert dates to Madrid time and compute price variation
+    # Convert to dicts with Madrid time and price variation
     processed_alerts = []
     for row in alerts_raw:
-        row = list(row)
-        row[3] = _to_madrid_time(row[3])  # predicted_at → Madrid time
-        price_initial = row[7]   # price_at_prediction
-        price_validated = row[8]  # price_at_validation
+        d = dict(row)
+        d["predicted_at_madrid"] = _to_madrid_time(d.get("predicted_at", ""))
+        d["validated_at_madrid"] = _to_madrid_time(d.get("validated_at", ""))
+        price_initial = d.get("price_at_prediction")
+        price_validated = d.get("price_at_validation")
         if price_initial and price_validated and price_initial > 0:
-            variation = round((price_validated - price_initial) / price_initial * 100, 2)
+            d["price_change_pct"] = round((price_validated - price_initial) / price_initial * 100, 2)
         else:
-            variation = None
-        row.append(variation)  # index 11
-        processed_alerts.append(tuple(row))
+            d["price_change_pct"] = None
+        processed_alerts.append(d)
     alerts = processed_alerts
 
     # Get accuracy stats (scoped to last 24h and optional asset filter)
@@ -170,6 +173,7 @@ def index():
         alerts=alerts,
         accuracy_stats=accuracy_stats,
         available_assets=AVAILABLE_ASSETS,
+        asset_names=ASSET_NAMES,
         page=page,
         total_pages=total_pages,
         total_alerts=total_alerts,

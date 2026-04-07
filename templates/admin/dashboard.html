@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard — GEO-NEWSLETTER</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [data-tooltip] { position: relative; cursor: help; }
+    [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute; left: 50%; transform: translateX(-50%);
+      bottom: calc(100% + 6px); white-space: nowrap;
+      background: #1e293b; color: #e2e8f0; font-size: 11px; font-weight: 500;
+      padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;
+      z-index: 50; pointer-events: none;
+    }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-200 antialiased">
 
@@ -117,11 +128,6 @@
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&sort=impact_percent&dir={% if sort_by == 'impact_percent' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
-                      Impacto pred.{% if sort_by == 'impact_percent' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
-                    </a>
-                  </th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
                       Precio entrada{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
@@ -131,7 +137,7 @@
                       Precio valid.{% if sort_by == 'price_at_validation' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Cambio</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Cambio real</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium">Resultado</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition">
@@ -145,7 +151,9 @@
                   <tr class="hover:bg-slate-700/30 transition" title="{{ (pred.reasoning or '')[:150] }}">
                     <td class="px-3 py-3 text-slate-500">{{ pred.id }}</td>
                     <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
-                    <td class="px-3 py-3 font-semibold text-white">{{ pred.asset or '—' }}</td>
+                    <td class="px-3 py-3 font-semibold text-white">
+                      <span data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
+                    </td>
                     <td class="px-3 py-3 text-center">
                       {% set dir = pred.direction or 'neutral' %}
                       {% if dir in ('up', 'bullish', 'positive', 'alza') %}
@@ -161,13 +169,6 @@
                     </td>
                     <td class="px-3 py-3 text-right text-slate-300">
                       {% if pred.score %}{{ pred.score|int }}{% else %}—{% endif %}
-                    </td>
-                    <td class="px-3 py-3 text-right text-slate-400">
-                      {% if pred.impact_percent %}
-                        <span class="{% if pred.impact_percent > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
-                          {{ "%+.1f"|format(pred.impact_percent) }}%
-                        </span>
-                      {% else %}—{% endif %}
                     </td>
                     <td class="px-3 py-3 text-right font-mono text-slate-300">
                       {% if pred.price_at_prediction %}

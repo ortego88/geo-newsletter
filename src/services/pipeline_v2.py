@@ -96,6 +96,7 @@ EVENT_TAXONOMY = {
         "keywords": [
             "bitcoin", "ethereum", "crypto", "blockchain", "defi", "nft",
             "stablecoin", "exchange hack", "crypto regulation", "cbdc",
+            "ripple", "xrp", "solana", "cardano", "dogecoin",
         ],
         "base_severity": 50,
         "category": "CRYPTO",
@@ -105,6 +106,9 @@ EVENT_TAXONOMY = {
             "stock market", "fed", "interest rate", "inflation", "recession",
             "bank failure", "central bank", "bond market", "yield curve",
             "credit rating", "debt ceiling", "gdp", "unemployment",
+            "ibex", "bolsa española", "bolsa madrid", "ftse", "dax",
+            "s&p 500", "nasdaq", "dow jones", "wall street",
+            "etf", "spy", "qqq",
         ],
         "base_severity": 55,
         "category": "MERCADOS",
