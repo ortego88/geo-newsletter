@@ -457,7 +457,10 @@ class AnalysisPipeline:
 
             current_price = self.price_fetcher.get_price(primary_asset)
             if current_price is None:
-                current_price = 100.0
+                logger.warning(
+                    f"   No se pudo obtener precio para {primary_asset}, omitiendo predicción"
+                )
+                continue
 
             prediction_id = self.tracker.save_prediction(event, current_price)
             if prediction_id:

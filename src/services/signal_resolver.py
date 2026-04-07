@@ -108,21 +108,21 @@ def _resolve_group(asset: str, group: list[dict]) -> dict:
 
     margin = abs(up_weight - down_weight) / max(up_weight + down_weight, 1)
 
-    if margin < 0.15:
-        # Too close to call → neutral
-        best_up = max(non_neutral.get("up", [(0, group[0])]), key=lambda t: t[0])[1]
-        resolved_event = dict(best_up)
+    if margin < 0.10:
+        # Too close to call — pick majority direction with heavily reduced confidence
+        winner_dir = "up" if up_weight >= down_weight else "down"
+        best = max(non_neutral.get(winner_dir, [(0, group[0])]), key=lambda t: t[0])[1]
+        resolved_event = dict(best)
         resolved_analysis = dict(resolved_event.get("analysis", {}))
-        resolved_analysis["direction"] = "neutral"
-        resolved_analysis["market_impact_percent"] = 0.0
-        resolved_analysis["confidence"] = max(30, resolved_analysis.get("confidence", 50) - 20)
+        resolved_analysis["direction"] = winner_dir
+        resolved_analysis["confidence"] = max(25, resolved_analysis.get("confidence", 50) - 25)
         resolved_analysis["reasoning"] = (
-            f"Señales contradictorias ({len(group)} fuentes). "
+            f"Señales contradictorias ({len(group)} fuentes), dirección débil. "
             + resolved_analysis.get("reasoning", "")[:80]
         )
         resolved_event["analysis"] = resolved_analysis
         resolved_event["_conflict_resolved"] = True
-        logger.info(f"⚖️  {asset}: empate → neutral")
+        logger.info(f"⚖️  {asset}: empate cercano → {winner_dir} (confianza reducida)")
         return resolved_event
     else:
         # Clear winner

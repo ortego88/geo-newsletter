@@ -114,8 +114,8 @@ class PredictionValidatorScheduler:
             # Ya pasó el plazo → validar con precio actual
             current_price = self.price_fetcher.get_price(asset)
             if current_price is None:
-                logger.warning(f"No se pudo obtener precio para {asset}, usando fallback 100.0")
-                current_price = 100.0
+                logger.warning(f"No se pudo obtener precio para {asset}, omitiendo validación")
+                continue
 
             result = self.tracker.validate_prediction(prediction_id, current_price)
             if result:

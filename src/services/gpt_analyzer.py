@@ -90,6 +90,16 @@ ASSET ASSIGNMENT RULES (strict priority order):
    - Optimism → ["OP", "ETH"]
    - NEVER assign BTC to stock market, bond or macro news
 
+DIRECTION RULES — CRITICAL:
+- EVERY financial news event has a directional implication. Use "up" or "down" in almost all cases.
+- "neutral" should be EXTREMELY RARE (less than 10% of predictions). Only use "neutral" when:
+  * The news is purely procedural with zero market impact (e.g., routine meeting scheduled)
+  * There are genuinely equal and opposite effects that perfectly cancel out
+- Positive news (earnings beat, deal, expansion, upgrade, bullish forecast) → "up"
+- Negative news (earnings miss, lawsuit, downgrade, bearish forecast, sanctions) → "down"
+- Analyst opinions, forecasts, and political rhetoric still have directional impact → use "up" or "down" with lower confidence
+- When in doubt between neutral and a direction, ALWAYS choose the direction with lower confidence
+
 CONFIDENCE CALIBRATION (0-100) — use the FULL range, do NOT cluster around one value:
 - 80-95: Direct, unambiguous, confirmed event (earnings announcement, regulatory decision, confirmed company news)
 - 65-79: Strong causal link but some uncertainty (market rumour confirmed by multiple sources)
@@ -118,10 +128,12 @@ Category: {category}
 Severity score: {score}/100
 
 Instructions:
-- If the title contains attribution words like "Says", "According to", "Warns" — this is an analyst opinion, use confidence 45-59
+- IMPORTANT: Almost all financial news has a directional implication. Use "up" or "down" — avoid "neutral" unless the event is truly non-directional.
+- If the title contains attribution words like "Says", "According to", "Warns" — this is an analyst opinion, use "up" or "down" with confidence 35-55
 - Identify the PRIMARY subject: is it about a specific IBEX 35 company, ETF, or cryptocurrency?
 - Assign assets based on the PRIMARY subject (not secondary effects)
 - Set confidence based on how direct and confirmed the impact is — use the full 25-95 range
+- When unsure about direction, choose the most likely direction with lower confidence rather than "neutral"
 
 Respond with this exact JSON:
 {{
@@ -245,22 +257,42 @@ def _fallback_analysis(event: dict) -> dict:
     score = event.get("score", 50)
     category = event.get("category", "").lower()
 
-    # Señales alcistas
-    bullish_words = ["ceasefire", "peace", "deal", "agreement", "boost", "rise", "increase",
-                     "record high", "sube", "subida", "récord", "acuerdo", "beneficios"]
-    # Señales bajistas
-    bearish_words = ["war", "attack", "sanction", "conflict", "disruption", "threat", "crisis",
-                     "collapse", "baja", "bajada", "caída", "pérdidas", "multa"]
+    # Señales alcistas (español e inglés)
+    bullish_words = [
+        "ceasefire", "peace", "deal", "agreement", "boost", "rise", "increase",
+        "record high", "rally", "surge", "upgrade", "outperform", "bullish",
+        "recovery", "growth", "profit", "gains", "soars", "jumps", "climbs",
+        "sube", "subida", "récord", "acuerdo", "beneficios", "alza", "ganancias",
+        "mejora", "supera", "crece", "crecimiento", "positivo", "récord histórico",
+        "impulso", "repunta", "recuperación", "avanza", "dispara",
+    ]
+    # Señales bajistas (español e inglés)
+    bearish_words = [
+        "war", "attack", "sanction", "conflict", "disruption", "threat", "crisis",
+        "collapse", "crash", "plunge", "downgrade", "bearish", "selloff", "sell-off",
+        "decline", "loss", "losses", "drops", "falls", "tumbles", "slumps",
+        "baja", "bajada", "caída", "pérdidas", "multa", "desplome", "retrocede",
+        "pierde", "riesgo", "recesión", "negativo", "hunde", "cae", "rebaja",
+        "deterioro", "castigo", "sanción", "quiebra", "impago",
+    ]
 
-    bull_hits = sum(1 for w in bullish_words if w in text)
-    bear_hits = sum(1 for w in bearish_words if w in text)
+    bull_positions = {w: text.find(w) for w in bullish_words if w in text}
+    bear_positions = {w: text.find(w) for w in bearish_words if w in text}
+    bull_hits = len(bull_positions)
+    bear_hits = len(bear_positions)
 
     if bear_hits > bull_hits:
         direction = "down"
     elif bull_hits > bear_hits:
         direction = "up"
+    elif bull_hits == bear_hits and bull_hits > 0:
+        # Tie with hits on both sides — pick based on which appears first (headline bias)
+        first_bull = min(bull_positions.values(), default=9999)
+        first_bear = min(bear_positions.values(), default=9999)
+        direction = "down" if first_bear < first_bull else "up"
     else:
-        direction = "up" if score > 70 else "neutral"
+        # No keyword hits at all — use score to infer direction
+        direction = "up" if score > 55 else "down"
 
     # Activos por categoría (solo IBEX35/ETF/Crypto)
     suggested = event.get("suggested_asset", "")
