@@ -26,7 +26,13 @@ def _now_madrid():
     return datetime.now(_MADRID_TZ)
 
 
-# --- Precios mock de fallback ---
+# Module-level constant for IBEX 35 stocks that trade in euros
+_IBEX35_COMPANY_SYMBOLS = frozenset({
+    "ACS", "ACX", "AENA", "ALM", "AMS", "ANA", "BBVA", "BKT", "CABK",
+    "CLNX", "COL", "ELE", "ENG", "FDR", "FER", "GRF", "IAG", "IBE",
+    "IDR", "ITX", "LOG", "MAP", "MEL", "MRL", "MTS", "NTGY", "PHM",
+    "RED", "REP", "ROVI", "SAB", "SAN", "SGRE", "TEF",
+})
 MOCK_PRICES = {
     # Crypto
     "BTC": 62450.0,
@@ -489,13 +495,7 @@ class AssetPriceFetcher:
         if asset_upper in ("SPX", "SP500", "INDU", "CCMP", "NASDAQ", "FTSE", "DAX", "IBEX35", "IBEX"):
             return f"{price:,.0f}"
         # IBEX 35 companies trade in euros
-        _IBEX_STOCKS = {
-            "ACS", "ACX", "AENA", "ALM", "AMS", "ANA", "BBVA", "BKT", "CABK",
-            "CLNX", "COL", "ELE", "ENG", "FDR", "FER", "GRF", "IAG", "IBE",
-            "IDR", "ITX", "LOG", "MAP", "MEL", "MRL", "MTS", "NTGY", "PHM",
-            "RED", "REP", "ROVI", "SAB", "SAN", "SGRE", "TEF",
-        }
-        if asset_upper in _IBEX_STOCKS:
+        if asset_upper in _IBEX35_COMPANY_SYMBOLS:
             if price >= 100:
                 return f"€{price:,.0f}"
             return f"€{price:.2f}"

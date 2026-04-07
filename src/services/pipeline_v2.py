@@ -9,6 +9,7 @@ Noticias que no hacen match con ningún activo de estas categorías son descarta
 import logging
 import hashlib
 import math
+import re
 from datetime import datetime, timedelta, timezone
 
 import feedparser
@@ -140,14 +141,34 @@ ASSET_KEYWORDS: dict[str, list[str]] = {
     "LINK": ["chainlink"],
     "UNI": ["uniswap"],
     "LTC": ["litecoin"],
-    "ATOM": ["cosmos hub", "cosmos network"],
+    "ATOM": ["cosmos hub", "cosmos network", "cosmos blockchain"],
     "XLM": ["stellar lumens", "stellar xlm"],
     "ALGO": ["algorand"],
     "FIL": ["filecoin"],
     "NEAR": ["near protocol"],
     "ARB": ["arbitrum"],
-    "OP": ["optimism rollup", "optimism network"],
+    "OP": ["optimism rollup", "optimism network", "optimism l2", "optimism blockchain"],
 }
+
+
+
+# Tickers that serve as "generic fallback" — only win ties if no specific ticker matches.
+# Specific tickers (company names, individual cryptos) take priority over these.
+_GENERIC_TICKERS = frozenset({"BTC", "IBEX35"})
+
+
+def _kw_matches(keyword: str, text: str) -> bool:
+    """
+    Comprueba si un keyword está presente en el texto con límite de palabra.
+
+    Para keywords de más de 5 caracteres se usa búsqueda simple (substring)
+    ya que la probabilidad de falso positivo es baja.
+    Para keywords cortos (≤5 chars) se usa regex con límite de palabra (\b)
+    para evitar falsos positivos (ej. 'OP' en 'compra', 'SOL' en 'absoluto').
+    """
+    if len(keyword) <= 5:
+        return bool(re.search(r"\b" + re.escape(keyword) + r"\b", text, re.IGNORECASE))
+    return keyword in text
 
 
 def _match_asset(article: dict) -> tuple[str | None, list[str]]:
@@ -158,9 +179,8 @@ def _match_asset(article: dict) -> tuple[str | None, list[str]]:
     - primary_ticker: el ticker con más keywords coincidentes (None si no hay match).
     - all_matched_tickers: lista de todos los tickers con al menos 1 keyword coincidente.
 
-    Prioridades (orden decreciente):
-    1. Ticker específico de empresa/crypto con más hits
-    2. Índice IBEX35 como fallback si coincide
+    Tiebreaker: specific tickers (individual company/crypto) beat generic fallbacks
+    (BTC, IBEX35) when both have the same hit count.
     """
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
@@ -168,18 +188,20 @@ def _match_asset(article: dict) -> tuple[str | None, list[str]]:
 
     hits_per_ticker: dict[str, int] = {}
     for ticker, keywords in ASSET_KEYWORDS.items():
-        count = sum(1 for kw in keywords if kw in text)
+        count = sum(1 for kw in keywords if _kw_matches(kw, text))
         if count > 0:
             hits_per_ticker[ticker] = count
 
     if not hits_per_ticker:
         return None, []
 
-    # Sort by hit count descending; prefer more specific tickers over generic index
-    sorted_tickers = sorted(hits_per_ticker.items(), key=lambda x: x[1], reverse=True)
+    # Sort by: 1) hit count descending, 2) generic tickers come last on ties
+    sorted_tickers = sorted(
+        hits_per_ticker.items(),
+        key=lambda x: (x[1], 0 if x[0] not in _GENERIC_TICKERS else -1),
+        reverse=True,
+    )
     all_matched = [t for t, _ in sorted_tickers]
-
-    # Primary: highest-hit ticker (first non-generic if possible)
     primary = sorted_tickers[0][0]
 
     return primary, all_matched
