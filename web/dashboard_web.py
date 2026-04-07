@@ -35,7 +35,9 @@ def index():
         conn2 = _sq.connect(pred_db_path)
         c2 = conn2.cursor()
         c2.execute(
-            """SELECT asset, direction, confidence, predicted_at, reasoning
+            """SELECT title, asset, direction, confidence, score,
+                      price_at_prediction, price_at_validation, outcome,
+                      predicted_at, reasoning
                FROM predictions
                ORDER BY predicted_at DESC
                LIMIT 20"""
@@ -45,12 +47,34 @@ def index():
     except _sq.Error:
         _logger.warning("Could not load predictions", exc_info=True)
 
+    # Get accuracy stats
+    accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0}
+    try:
+        pred_db_path = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
+        conn2 = _sq.connect(pred_db_path)
+        c2 = conn2.cursor()
+        c2.execute("SELECT outcome FROM predictions WHERE outcome != 'pending'")
+        outcomes = c2.fetchall()
+        conn2.close()
+        if outcomes:
+            total = len(outcomes)
+            correct = sum(1 for r in outcomes if r[0] == "correct")
+            accuracy_stats = {
+                "total": total,
+                "correct": correct,
+                "incorrect": total - correct,
+                "accuracy_pct": round(correct / total * 100, 1) if total > 0 else 0.0,
+            }
+    except _sq.Error:
+        _logger.warning("Could not load accuracy stats", exc_info=True)
+
     return render_template(
         "dashboard/index.html",
         sub=sub,
         plan_config=plan_config,
         plans=PLANS,
         alerts=alerts,
+        accuracy_stats=accuracy_stats,
         available_assets=AVAILABLE_ASSETS,
     )
 

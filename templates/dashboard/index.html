@@ -103,7 +103,7 @@
       {% endif %}
 
       <!-- Stats row -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.active_plan">Plan activo</p>
           <p class="text-white font-bold text-xl">
@@ -125,11 +125,13 @@
           <p class="text-white font-bold text-xl">{{ alerts|length if alerts else 0 }}</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.max_alerts">Alertas máx./día</p>
-          <p class="text-white font-bold text-xl">
-            {% if plan_config %}
-              {% if plan_config.max_daily_alerts == -1 %}∞{% else %}{{ plan_config.max_daily_alerts }}{% endif %}
-            {% else %}—{% endif %}
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.total_predictions">Predicciones validadas</p>
+          <p class="text-white font-bold text-xl">{{ accuracy_stats.total }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.accuracy">Precisión</p>
+          <p class="font-bold text-xl {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 40 %}text-amber-400{% else %}text-red-400{% endif %}">
+            {% if accuracy_stats.total > 0 %}{{ accuracy_stats.accuracy_pct }}%{% else %}—{% endif %}
           </p>
         </div>
       </div>
@@ -169,44 +171,77 @@
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-700 bg-slate-900/50">
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dirección</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_confidence">Confianza</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha</th>
-                  <th class="text-left px-6 py-3 text-slate-400 font-medium" data-i18n="dash.col_analysis">Análisis</th>
+                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">Evento</th>
+                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
+                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_confidence">Conf.</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_score">Score</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_entry">Precio entrada</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_valid">Precio valid.</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Cambio</th>
+                  <th class="text-center px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Estado</th>
+                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">
+                {# alert tuple: (title, asset, direction, confidence, score, price_at_prediction, price_at_validation, outcome, predicted_at, reasoning) #}
                 {% for alert in alerts %}
-                  <tr class="hover:bg-slate-700/30 transition">
-                    <td class="px-6 py-4 font-semibold text-white">{{ alert[0] or '—' }}</td>
-                    <td class="px-6 py-4">
-                      {% if alert[1] in ('up', 'bullish', 'positive', 'alza') %}
-                        <span class="text-emerald-400">📈 <span data-i18n="dash.dir_up">Alza</span></span>
-                      {% elif alert[1] in ('down', 'bearish', 'negative', 'baja') %}
-                        <span class="text-red-400">📉 <span data-i18n="dash.dir_down">Baja</span></span>
+                  {% set title = alert[0] or '—' %}
+                  {% set asset = alert[1] or '—' %}
+                  {% set direction = alert[2] or 'neutral' %}
+                  {% set confidence = alert[3] %}
+                  {% set score = alert[4] %}
+                  {% set price_entry = alert[5] %}
+                  {% set price_valid = alert[6] %}
+                  {% set outcome = alert[7] or 'pending' %}
+                  {% set predicted_at = alert[8] or '' %}
+                  {% set reasoning = alert[9] or '' %}
+                  <tr class="hover:bg-slate-700/30 transition" title="{{ reasoning[:120] }}">
+                    <td class="px-4 py-4 text-slate-300 text-xs max-w-[200px] truncate">{{ title[:60] }}</td>
+                    <td class="px-4 py-4 font-semibold text-white">{{ asset }}</td>
+                    <td class="px-4 py-4">
+                      {% if direction in ('up', 'bullish', 'positive', 'alza') %}
+                        <span class="text-emerald-400">📈</span>
+                      {% elif direction in ('down', 'bearish', 'negative', 'baja') %}
+                        <span class="text-red-400">📉</span>
                       {% else %}
-                        <span class="text-slate-400">➡️ <span data-i18n="dash.dir_sideways">Lateral</span></span>
+                        <span class="text-slate-400">➡️</span>
                       {% endif %}
                     </td>
-                    <td class="px-6 py-4 text-slate-300">
-                      {% if alert[2] %}
-                        <div class="flex items-center gap-2">
-                          <div class="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
-                            <div class="h-full rounded-full
-                              {% if alert[2] >= 70 %}bg-emerald-500
-                              {% elif alert[2] >= 40 %}bg-amber-500
-                              {% else %}bg-red-500{% endif %}"
-                              style="width: {{ alert[2] }}%"></div>
-                          </div>
-                          <span class="text-xs">{{ alert[2] }}%</span>
-                        </div>
+                    <td class="px-4 py-4 text-right text-slate-300 text-xs">
+                      {% if confidence %}{{ confidence|int }}%{% else %}—{% endif %}
+                    </td>
+                    <td class="px-4 py-4 text-right text-slate-300 text-xs">
+                      {% if score %}{{ score|int }}{% else %}—{% endif %}
+                    </td>
+                    <td class="px-4 py-4 text-right text-slate-300 text-xs font-mono">
+                      {% if price_entry %}
+                        {% if price_entry >= 1000 %}${{ "{:,.0f}".format(price_entry) }}{% elif price_entry >= 1 %}${{ "%.2f"|format(price_entry) }}{% else %}${{ "%.4f"|format(price_entry) }}{% endif %}
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-4 py-4 text-right text-slate-300 text-xs font-mono">
+                      {% if price_valid %}
+                        {% if price_valid >= 1000 %}${{ "{:,.0f}".format(price_valid) }}{% elif price_valid >= 1 %}${{ "%.2f"|format(price_valid) }}{% else %}${{ "%.4f"|format(price_valid) }}{% endif %}
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-4 py-4 text-right text-xs font-mono">
+                      {% if price_valid and price_entry and price_entry > 0 %}
+                        {% set change = ((price_valid - price_entry) / price_entry * 100) %}
+                        <span class="{% if change > 0 %}text-emerald-400{% elif change < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+                          {{ "%+.2f"|format(change) }}%
+                        </span>
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                      {% if outcome == 'correct' %}
+                        <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">✅</span>
+                      {% elif outcome == 'incorrect' %}
+                        <span class="bg-red-500/20 text-red-400 text-xs font-semibold px-2 py-0.5 rounded-full">❌</span>
                       {% else %}
-                        —
+                        <span class="bg-slate-700 text-slate-400 text-xs font-semibold px-2 py-0.5 rounded-full">⏳</span>
                       {% endif %}
                     </td>
-                    <td class="px-6 py-4 text-slate-500 text-xs">{{ alert[3][:16] if alert[3] else '—' }}</td>
-                    <td class="px-6 py-4 text-slate-400 text-xs max-w-xs truncate">{{ alert[4][:80] if alert[4] else '—' }}</td>
+                    <td class="px-4 py-4 text-slate-500 text-xs whitespace-nowrap">{{ predicted_at[:16] if predicted_at else '—' }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -298,13 +333,21 @@
       "dash.assets": "Activos",
       "dash.alerts_today": "Alertas hoy",
       "dash.max_alerts": "Alertas máx./día",
+      "dash.total_predictions": "Predicciones validadas",
+      "dash.accuracy": "Precisión",
       "dash.realtime_dashboard": "Dashboard en tiempo real",
       "dash.pro_only": "Solo plan Profesional",
       "dash.upgrade_pro": "Actualizar a Profesional →",
       "dash.recent_alerts": "Alertas recientes",
+      "dash.col_event": "Evento",
       "dash.col_asset": "Activo",
-      "dash.col_direction": "Dirección",
-      "dash.col_confidence": "Confianza",
+      "dash.col_direction": "Dir",
+      "dash.col_confidence": "Conf.",
+      "dash.col_score": "Score",
+      "dash.col_price_entry": "Precio entrada",
+      "dash.col_price_valid": "Precio valid.",
+      "dash.col_change": "Cambio",
+      "dash.col_outcome": "Estado",
       "dash.col_date": "Fecha",
       "dash.col_analysis": "Análisis",
       "dash.dir_up": "Alza",
@@ -328,13 +371,21 @@
       "dash.assets": "Assets",
       "dash.alerts_today": "Alerts today",
       "dash.max_alerts": "Max alerts/day",
+      "dash.total_predictions": "Validated predictions",
+      "dash.accuracy": "Accuracy",
       "dash.realtime_dashboard": "Real-time dashboard",
       "dash.pro_only": "Pro plan only",
       "dash.upgrade_pro": "Upgrade to Pro →",
       "dash.recent_alerts": "Recent alerts",
+      "dash.col_event": "Event",
       "dash.col_asset": "Asset",
-      "dash.col_direction": "Direction",
-      "dash.col_confidence": "Confidence",
+      "dash.col_direction": "Dir",
+      "dash.col_confidence": "Conf.",
+      "dash.col_score": "Score",
+      "dash.col_price_entry": "Entry price",
+      "dash.col_price_valid": "Valid. price",
+      "dash.col_change": "Change",
+      "dash.col_outcome": "Status",
       "dash.col_date": "Date",
       "dash.col_analysis": "Analysis",
       "dash.dir_up": "Up",
