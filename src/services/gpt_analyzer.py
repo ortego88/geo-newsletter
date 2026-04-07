@@ -20,79 +20,94 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 # Prompt del sistema para análisis de eventos
-SYSTEM_PROMPT = """You are an expert quantitative financial analyst specializing in geopolitical event impact on markets.
+SYSTEM_PROMPT = """You are an expert quantitative financial analyst specializing in IBEX 35 (Spanish stock market), ETFs, and cryptocurrency market events.
 IMPORTANT: The "reasoning" field MUST always be written in Spanish (Castilian). All other JSON fields keep their specified format.
 
+SCOPE: Only analyze news about IBEX 35 companies, ETFs, and cryptocurrencies. These are the only asset categories in scope.
+
 ASSET ASSIGNMENT RULES (strict priority order):
-1. News about a specific COMPANY (Apple, JPMorgan, Tesla, Nvidia, etc.) → use that company's ticker FIRST, then the relevant index
-   - JPMorgan/Jamie Dimon/banks → ["JPM", "SPX", "US10Y"]
-   - Apple/iPhone → ["AAPL", "NASDAQ"]
-   - Tesla/Elon Musk (re: Tesla) → ["TSLA", "NASDAQ"]
-   - Nvidia/AI chips → ["NVDA", "NASDAQ"]
-   - Oil majors (ExxonMobil, Shell, BP) → ["XOM", "WTI", "BRENT"]
+1. News about a specific IBEX 35 COMPANY → use that company's ticker FIRST
+   - Inditex/Zara → ["ITX", "IBEX35"]
+   - Santander → ["SAN", "IBEX35"]
+   - BBVA → ["BBVA", "IBEX35"]
+   - Iberdrola → ["IBE", "IBEX35"]
+   - Telefónica/Movistar → ["TEF", "IBEX35"]
+   - Repsol → ["REP", "IBEX35"]
+   - CaixaBank → ["CABK", "IBEX35"]
+   - Banco Sabadell → ["SAB", "IBEX35"]
+   - Ferrovial → ["FER", "IBEX35"]
+   - Cellnex → ["CLNX", "IBEX35"]
+   - Siemens Gamesa → ["SGRE", "IBE", "IBEX35"]
+   - Grifols → ["GRF", "IBEX35"]
+   - Acciona → ["ANA", "IBEX35"]
+   - Amadeus → ["AMS", "IBEX35"]
+   - Endesa → ["ELE", "IBE", "IBEX35"]
+   - IAG/Iberia/British Airways/Vueling → ["IAG", "IBEX35"]
+   - Enagás → ["ENG", "NTGY", "IBEX35"]
+   - Naturgy → ["NTGY", "IBEX35"]
+   - ArcelorMittal → ["MTS", "IBEX35"]
+   - Meliá Hotels → ["MEL", "IBEX35"]
+   - ACS → ["ACS", "IBEX35"]
+   - AENA → ["AENA", "IBEX35"]
+   - Bankinter → ["BKT", "IBEX35"]
+   - Mapfre → ["MAP", "IBEX35"]
+   - Red Eléctrica/REE → ["RED", "IBE", "IBEX35"]
+   - Acerinox → ["ACX", "IBEX35"]
+   - Almirall → ["ALM", "IBEX35"]
+   - Fluidra → ["FDR", "IBEX35"]
+   - Indra → ["IDR", "IBEX35"]
+   - Logista → ["LOG", "IBEX35"]
+   - Merlin Properties → ["MRL", "IBEX35"]
+   - Puig → ["PHM", "IBEX35"]
+   - Rovi → ["ROVI", "IBEX35"]
+   - Inmobiliaria Colonial → ["COL", "IBEX35"]
 
-2. News about COMMODITIES:
-   - Oil/crude/OPEC/refinery/petroleum/pipeline → ["WTI", "BRENT", "XOM"]
-   - Gold/safe haven/fear → ["GOLD", "SILVER"]
-   - Natural gas/LNG → ["NATURAL_GAS", "WTI"]
-   - Agricultural → ["WHEAT", "CORN"]
+2. News about IBEX 35 broadly (no specific company) → ["IBEX35"]
 
-3. News about CRYPTO:
+3. News about ETFs specifically → use the ETF ticker
+   - S&P 500 ETF/SPY → ["SPY"]
+   - Nasdaq ETF/QQQ → ["QQQ"]
+   - Gold ETF/GLD → ["GLD"]
+   - Silver ETF/SLV → ["SLV"]
+   - Russell 2000/IWM → ["IWM"]
+   - ARK Innovation/ARKK → ["ARKK"]
+   - VIX/volatility → ["VIX"]
+   - Treasury bond ETF/TLT → ["TLT"]
+
+4. News about CRYPTO:
    - Bitcoin/BTC/crypto broadly → ["BTC", "ETH"]
    - Ethereum/DeFi specifically → ["ETH", "BTC"]
+   - Ripple/XRP → ["XRP", "BTC"]
+   - Solana → ["SOL", "ETH"]
+   - Binance/BNB → ["BNB", "BTC"]
+   - Cardano → ["ADA", "ETH"]
+   - Dogecoin → ["DOGE", "BTC"]
+   - Polkadot → ["DOT", "ETH"]
+   - Chainlink → ["LINK", "ETH"]
+   - Polygon → ["MATIC", "ETH"]
+   - Avalanche → ["AVAX", "ETH"]
+   - Arbitrum → ["ARB", "ETH"]
+   - Optimism → ["OP", "ETH"]
    - NEVER assign BTC to stock market, bond or macro news
 
-4. News about MACRO / CENTRAL BANKS:
-   - Fed/interest rates/inflation → ["US10Y", "SPX", "GOLD"]
-   - Treasury yields/bonds → ["US10Y", "SPX"]
-   - Recession/GDP/unemployment → ["SPX", "US10Y", "GOLD"]
-
-5. News about GEOPOLITICS / MILITARY:
-   - News about Iran/Middle East tensions/war → ["WTI", "BRENT", "GOLD"] (oil FIRST because Iran is a major producer)
-   - News about Russia/Ukraine conflict → ["NATURAL_GAS", "GOLD", "WHEAT"]
-   - News mentioning "market volatility" as secondary effect → use the PRIMARY subject's assets, not GOLD
-   - News with "optimism", "peace", "ceasefire" in oil-producing regions → ["WTI", "BRENT"] direction=down
-   - If title contains analyst opinion words (Says, According to, Warns, Forecasts) → use confidence 45-59
-   - War/conflict in oil-producing region → ["WTI", "BRENT", "GOLD"]
-   - War/conflict NOT oil-related → ["GOLD", "SPX"]
-   - Strait/chokepoint disruption → ["WTI", "BRENT", "NATURAL_GAS"]
-   - Sanctions/tariffs/trade war → ["SPX", "NASDAQ", "US10Y"]
-
-6. News about STOCK INDICES broadly:
-   - Global markets/Wall Street/S&P → ["SPX", "SPY", "NASDAQ"]
-   - European markets → ["DAX", "FTSE", "IBEX35"]
-   - Spanish markets/IBEX → ["IBEX35", "SPX"]
-   - If the news is about ETFs specifically → use the ETF ticker (SPY, QQQ, GLD, SLV, IWM, DIA)
-   - Gold ETF news → ["GLD", "GOLD"]
-   - Silver ETF news → ["SLV", "SILVER"]
-
-IMPACT CALIBRATION (market_impact_percent):
-- CEO letter/statement/outlook → ±1 to ±3%
-- Central bank meeting/decision → ±1 to ±4%
-- Earnings miss/beat → ±3 to ±8%
-- Trade deal/tariff announcement → ±2 to ±5%
-- Military attack on oil infrastructure → ±5 to ±12%
-- Major war escalation → ±3 to ±8%
-- Chokepoint/strait disruption → ±5 to ±15%
-- Geopolitical tension (no direct impact) → ±1 to ±3%
-- Default: ±2 to ±5%
-- NEVER use round numbers like exactly 10, 15, -10, -15
-
 CONFIDENCE CALIBRATION (0-100) — use the FULL range, do NOT cluster around one value:
-- 80-95: Direct, unambiguous, confirmed event with clear market mechanism (e.g. "OPEC cuts production by 1M barrels", "Fed raises rates 50bp")
-- 65-79: Strong causal link but some uncertainty about timing or magnitude (e.g. confirmed military strike on oil facility)
-- 50-64: Moderate link — the event is real but impact depends on market reaction (e.g. tariff announcement, earnings warning)
-- 35-49: Indirect or secondary impact — analyst opinion, forecast, political rhetoric (e.g. "CEO warns of recession", "Says", "According to")
-- 25-44: Speculative, contradictory signals, or very indirect connection to markets
-- Use 60-70 for opinion pieces, CEO letters, analyst forecasts (NOT 55-65)
+- 80-95: Direct, unambiguous, confirmed event (earnings announcement, regulatory decision, confirmed company news)
+- 65-79: Strong causal link but some uncertainty (market rumour confirmed by multiple sources)
+- 50-64: Moderate link — event is real but impact depends on market reaction
+- 35-49: Indirect or secondary impact — analyst opinion, forecast, political rhetoric
+- 25-44: Speculative, contradictory signals, or very indirect connection
+- Use 60-70 for opinion pieces, CEO letters, analyst forecasts
 - AVOID clustering predictions near 40-50; spread confidence based on event quality
-- IMPORTANT: Vary confidence meaningfully between events. Two different events should rarely get the same confidence.
+- IMPORTANT: Vary confidence meaningfully between events.
 
-ALLOWED SYMBOLS ONLY: BTC, ETH, XRP, SOL, ADA, DOGE, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, COPPER, WHEAT, CORN, SPX, NASDAQ, DAX, FTSE, IBEX35, SPY, QQQ, GLD, SLV, IWM, DIA, AAPL, MSFT, NVDA, AMZN, TSLA, META, GOOGL, JPM, XOM, US10Y
+ALLOWED SYMBOLS ONLY:
+IBEX35, ACS, ACX, AENA, ALM, AMS, ANA, BBVA, BKT, CABK, CLNX, COL, ELE, ENG, FDR, FER, GRF, IAG, IBE, IDR, ITX, LOG, MAP, MEL, MRL, MTS, NTGY, PHM, RED, REP, ROVI, SAB, SAN, SGRE, TEF,
+SPY, QQQ, GLD, SLV, IWM, EWZ, EEM, VIX, ARKK, TLT, XLF, XLE, DIA,
+BTC, ETH, XRP, SOL, BNB, ADA, DOGE, DOT, AVAX, MATIC, LINK, UNI, LTC, ATOM, XLM, ALGO, FIL, NEAR, ARB, OP
 
 Respond ONLY with valid JSON, no explanations."""
 
-ANALYSIS_PROMPT_TEMPLATE = """Analyze this market/geopolitical event and determine its financial impact:
+ANALYSIS_PROMPT_TEMPLATE = """Analyze this market event and determine its financial impact on IBEX 35, ETFs, or cryptocurrencies:
 
 Title: {title}
 Description: {description}
@@ -101,19 +116,17 @@ Severity score: {score}/100
 
 Instructions:
 - If the title contains attribution words like "Says", "According to", "Warns" — this is an analyst opinion, use confidence 45-59
-- Identify the PRIMARY subject: is it about a company, commodity, macro policy, or geopolitical event?
+- Identify the PRIMARY subject: is it about a specific IBEX 35 company, ETF, or cryptocurrency?
 - Assign assets based on the PRIMARY subject (not secondary effects)
-- Use realistic impact percentages (most events are ±1-5%, not ±10-15%)
 - Set confidence based on how direct and confirmed the impact is — use the full 25-95 range
 
 Respond with this exact JSON:
 {{
   "direction": "up|down|neutral",
-  "market_impact_percent": <realistic number, avoid round numbers like 10 or 15>,
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
   "confidence": <calibrated 0-100; direct confirmed events 70-85, indirect/opinions 55-70, speculative 35-55>,
-  "most_affected_assets": [<2-3 symbols, primary subject first>],
-  "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando sujeto primario y dirección>"
+  "most_affected_assets": [<2-3 symbols from ALLOWED SYMBOLS, primary subject first>],
+  "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando el activo principal y la dirección>"
 }}"""
 
 
@@ -188,28 +201,9 @@ def _parse_json_response(text: str) -> dict | None:
 
 def _validate_analysis(data: dict) -> dict:
     """Valida y normaliza el análisis devuelto por el modelo de IA."""
-    _MAX_IMPACT = 15.0
-    _MAX_MODERATE_IMPACT = 8.0  # cap for events with score < 80
-    _MODERATE_SCORE_THRESHOLD = 80
-    _LOW_IMPACT_THRESHOLD = 2.0
-    _HIGH_CONFIDENCE_THRESHOLD = 80.0
-    _CAPPED_CONFIDENCE = 65.0
-
-    impact = float(data.get("market_impact_percent", 2))
-    score = data.get("_event_score", 50)  # passed through if available
-    impact = max(-_MAX_IMPACT, min(_MAX_IMPACT, impact))
-    # Prevent over-inflated impacts for moderate events
-    if abs(impact) > _MAX_MODERATE_IMPACT and score < _MODERATE_SCORE_THRESHOLD:
-        impact = _MAX_MODERATE_IMPACT if impact > 0 else -_MAX_MODERATE_IMPACT
-
     direction = data.get("direction", "neutral")
     if direction not in ("up", "down", "neutral"):
         direction = "neutral"
-    # Auto-fix direction/impact sign mismatch
-    if direction == "up" and impact < 0:
-        impact = abs(impact)
-    elif direction == "down" and impact > 0:
-        impact = -abs(impact)
 
     timeframe = data.get("timeframe", "hours")
     valid_timeframes = ("immediate", "hours", "hours to days", "days", "days to weeks", "weeks")
@@ -218,19 +212,16 @@ def _validate_analysis(data: dict) -> dict:
 
     confidence = float(data.get("confidence", 50))
     confidence = max(0, min(100, confidence))
-    # Cap confidence for indirect events (impact < 3%)
-    if abs(impact) < _LOW_IMPACT_THRESHOLD and confidence > _HIGH_CONFIDENCE_THRESHOLD:
-        confidence = _CAPPED_CONFIDENCE
 
     assets = data.get("most_affected_assets", [])
     if not isinstance(assets, list):
         assets = []
-    assets = [str(a).upper() for a in assets[:3]]  # max 3, not 4
+    assets = [str(a).upper() for a in assets[:3]]  # max 3
 
     reasoning = str(data.get("reasoning", ""))[:300]
 
     return {
-        "market_impact_percent": round(impact, 1),
+        "market_impact_percent": 0,  # dirección únicamente; el % real se calcula desde precios
         "direction": direction,
         "timeframe": timeframe,
         "confidence": round(confidence),
@@ -241,9 +232,6 @@ def _validate_analysis(data: dict) -> dict:
 
 def _fallback_analysis(event: dict) -> dict:
     """Análisis de fallback basado en palabras clave cuando ningún modelo de IA está disponible."""
-    _BASE_IMPACT = 2.0
-    _MAX_MULTIPLIER_IMPACT = 6.0
-    _HIT_MULTIPLIER = 1.5
     _MAX_FALLBACK_CONFIDENCE = 60
     _BASE_CONFIDENCE = 30
     _SCORE_DIVISOR = 6
@@ -255,40 +243,40 @@ def _fallback_analysis(event: dict) -> dict:
     category = event.get("category", "").lower()
 
     # Señales alcistas
-    bullish_words = ["ceasefire", "peace", "deal", "agreement", "boost", "rise", "increase", "record high"]
+    bullish_words = ["ceasefire", "peace", "deal", "agreement", "boost", "rise", "increase",
+                     "record high", "sube", "subida", "récord", "acuerdo", "beneficios"]
     # Señales bajistas
-    bearish_words = ["war", "attack", "sanction", "conflict", "disruption", "threat", "crisis", "collapse"]
+    bearish_words = ["war", "attack", "sanction", "conflict", "disruption", "threat", "crisis",
+                     "collapse", "baja", "bajada", "caída", "pérdidas", "multa"]
 
     bull_hits = sum(1 for w in bullish_words if w in text)
     bear_hits = sum(1 for w in bearish_words if w in text)
 
     if bear_hits > bull_hits:
         direction = "down"
-        impact = -(_BASE_IMPACT + min(_MAX_MULTIPLIER_IMPACT, bear_hits * _HIT_MULTIPLIER))
     elif bull_hits > bear_hits:
         direction = "up"
-        impact = _BASE_IMPACT + min(_MAX_MULTIPLIER_IMPACT, bull_hits * _HIT_MULTIPLIER)
     else:
         direction = "up" if score > 70 else "neutral"
-        impact = 2.0 if score > 70 else 1.0
 
-    # Activos por categoría
-    if "energy" in category or "oil" in category:
-        assets = ["WTI", "BRENT", "NATURAL_GAS"]
-    elif "crypto" in category:
-        assets = ["BTC", "ETH", "XRP"]
-    elif "bond" in category or "treasury" in category or "yield" in category:
-        assets = ["US10Y", "SPX", "GOLD"]
+    # Activos por categoría (solo IBEX35/ETF/Crypto)
+    suggested = event.get("suggested_asset", "")
+    if suggested:
+        assets = [suggested]
+    elif "crypto" in category or "ibex35" in category:
+        assets = ["BTC", "ETH"] if "crypto" in category else ["IBEX35"]
+    elif "etf" in category:
+        assets = ["SPY"]
     else:
-        assets = ["SPX", "GOLD", "US10Y"]
+        assets = ["IBEX35"]
 
     return {
-        "market_impact_percent": round(impact, 1),
+        "market_impact_percent": 0,  # solo dirección
         "direction": direction,
         "timeframe": "hours to days",
         "confidence": min(_MAX_FALLBACK_CONFIDENCE, _BASE_CONFIDENCE + score // _SCORE_DIVISOR),
         "most_affected_assets": assets,
-        "reasoning": "Análisis automático basado en scoring de taxonomía. Impacto moderado esperado según el tipo de evento y zona geográfica.",
+        "reasoning": "Análisis automático basado en scoring de taxonomía. Impacto moderado esperado según el tipo de evento.",
     }
 
 
@@ -319,7 +307,6 @@ def analyze_event(event: dict) -> dict:
         result = _call_ollama(prompt)
 
     if result:
-        result["_event_score"] = score  # inject score for validation
         return _validate_analysis(result)
 
     logger.warning("Modelo de IA no disponible, usando análisis de fallback")
