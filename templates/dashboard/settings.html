@@ -259,12 +259,14 @@
     var overlay = document.getElementById('sidebar-overlay');
     sidebar.classList.toggle('-translate-x-full');
     overlay.classList.toggle('hidden');
+    document.body.classList.toggle('sidebar-open');
   }
   function closeMobileSidebar() {
     var sidebar = document.getElementById('sidebar');
     var overlay = document.getElementById('sidebar-overlay');
     sidebar.classList.add('-translate-x-full');
     overlay.classList.add('hidden');
+    document.body.classList.remove('sidebar-open');
   }
 
   var DASH_LANG_META = {
