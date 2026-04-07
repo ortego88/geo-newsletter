@@ -1,3 +1,4 @@
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
@@ -71,7 +72,8 @@ def register():
     plan = request.args.get("plan", "basic")
     if plan not in PLANS:
         plan = "basic"
-    return render_template("auth/register.html", plan=plan)
+    trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
+    return render_template("auth/register.html", plan=plan, trial_end_date=trial_end_date)
 
 
 @auth_bp.route("/logout")

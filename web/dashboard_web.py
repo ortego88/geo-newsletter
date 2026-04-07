@@ -117,23 +117,48 @@ def index():
         processed_alerts.append(tuple(row))
     alerts = processed_alerts
 
-    # Get accuracy stats
-    accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0}
+    # Get accuracy stats (scoped to last 24h and optional asset filter)
+    accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0, "pending": 0}
     try:
         conn2 = _get_predictions_conn()
         c2 = conn2.cursor()
-        c2.execute("SELECT outcome FROM predictions WHERE outcome != 'pending'")
+
+        stats_where = "WHERE datetime(predicted_at) >= datetime('now', '-24 hours')"
+        stats_params: list = []
+        if asset_filter:
+            stats_where += " AND asset = ?"
+            stats_params.append(asset_filter)
+
+        c2.execute(
+            f"SELECT outcome, confidence FROM predictions {stats_where} AND outcome != 'pending'",
+            stats_params,
+        )
         outcomes = c2.fetchall()
+
+        # Count pending in same window
+        pending = c2.execute(
+            f"SELECT COUNT(*) FROM predictions {stats_where} AND outcome = 'pending'",
+            stats_params,
+        ).fetchone()[0]
+
         conn2.close()
         if outcomes:
             total = len(outcomes)
             correct = sum(1 for r in outcomes if r[0] == "correct")
+            # High-confidence accuracy (confidence >= 70%)
+            high_conf = [r for r in outcomes if (r[1] or 0) >= 70]
+            hc_correct = sum(1 for r in high_conf if r[0] == "correct")
+            hc_accuracy = round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0
             accuracy_stats = {
                 "total": total,
                 "correct": correct,
                 "incorrect": total - correct,
                 "accuracy_pct": round(correct / total * 100, 1) if total > 0 else 0.0,
+                "high_confidence_accuracy": hc_accuracy,
+                "pending": pending,
             }
+        else:
+            accuracy_stats["pending"] = pending
     except _sq.Error:
         _logger.warning("Could not load accuracy stats", exc_info=True)
 
