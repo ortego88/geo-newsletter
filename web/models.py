@@ -1,14 +1,15 @@
 """
 Modelos de base de datos para el sistema de suscripciones.
-Usa SQLite via sqlite3 directamente (sin ORM para mantener consistencia con el proyecto).
+Usa SQLAlchemy para soportar tanto SQLite (local) como PostgreSQL (Railway).
 """
-import sqlite3
 import os
 from datetime import datetime, timezone, timedelta
+
+from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 
-DB_PATH = os.getenv("APP_DB_PATH", "data/app.db")
+from web.db_engine import get_engine
 
 PLANS = {
     "basic": {
@@ -131,63 +132,75 @@ AVAILABLE_ASSETS = [
 
 
 def get_conn():
-    os.makedirs("data", exist_ok=True)
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
+    """
+    Devuelve una conexión DBAPI de SQLAlchemy (compatible con sqlite3 y PostgreSQL).
+    Uso: with get_conn() as conn: conn.execute(text(...))
+    """
+    return get_engine("app").connect()
 
 
 def init_db():
-    conn = get_conn()
-    c = conn.cursor()
-    c.executescript("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            name TEXT NOT NULL,
-            telegram_chat_id TEXT,
-            language TEXT DEFAULT 'es',
-            created_at TEXT DEFAULT (datetime('now')),
-            is_active INTEGER DEFAULT 1
-        );
+    """
+    Inicializa la base de datos creando tablas si no existen (idempotente).
+    # NEVER use drop_all() in production — esto solo crea tablas nuevas, nunca borra datos.
+    """
+    from sqlalchemy import (
+        MetaData, Table, Column, Integer, String, Text, BigInteger,
+        ForeignKey, inspect as sa_inspect,
+    )
 
-        CREATE TABLE IF NOT EXISTS subscriptions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            plan TEXT NOT NULL DEFAULT 'basic',
-            billing_cycle TEXT NOT NULL DEFAULT 'monthly',
-            status TEXT NOT NULL DEFAULT 'trial',
-            trial_ends_at TEXT,
-            current_period_end TEXT,
-            stripe_subscription_id TEXT,
-            stripe_customer_id TEXT,
-            selected_assets TEXT DEFAULT '',
-            created_at TEXT DEFAULT (datetime('now')),
-            updated_at TEXT DEFAULT (datetime('now'))
-        );
+    engine = get_engine("app")
+    meta = MetaData()
 
-        CREATE TABLE IF NOT EXISTS payment_methods (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            stripe_payment_method_id TEXT,
-            card_last4 TEXT,
-            card_brand TEXT,
-            card_exp_month INTEGER,
-            card_exp_year INTEGER,
-            is_default INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
+    Table("users", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("email", String(255), unique=True, nullable=False),
+        Column("password_hash", Text, nullable=False),
+        Column("name", Text, nullable=False),
+        Column("telegram_chat_id", Text),
+        Column("language", String(10), server_default="es"),
+        Column("created_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+        Column("is_active", Integer, server_default="1"),
+    )
 
-        CREATE TABLE IF NOT EXISTS alert_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL REFERENCES users(id),
-            asset TEXT,
-            direction TEXT,
-            score INTEGER,
-            sent_at TEXT DEFAULT (datetime('now'))
-        );
-    """)
-    conn.commit()
-    conn.close()
+    Table("subscriptions", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("user_id", Integer, ForeignKey("users.id"), nullable=False),
+        Column("plan", Text, nullable=False, server_default="basic"),
+        Column("billing_cycle", Text, nullable=False, server_default="monthly"),
+        Column("status", Text, nullable=False, server_default="trial"),
+        Column("trial_ends_at", Text),
+        Column("current_period_end", Text),
+        Column("stripe_subscription_id", Text),
+        Column("stripe_customer_id", Text),
+        Column("selected_assets", Text, server_default=""),
+        Column("created_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+        Column("updated_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+    )
+
+    Table("payment_methods", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("user_id", Integer, ForeignKey("users.id"), nullable=False),
+        Column("stripe_payment_method_id", Text),
+        Column("card_last4", Text),
+        Column("card_brand", Text),
+        Column("card_exp_month", Integer),
+        Column("card_exp_year", Integer),
+        Column("is_default", Integer, server_default="1"),
+        Column("created_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+    )
+
+    Table("alert_log", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("user_id", Integer, ForeignKey("users.id"), nullable=False),
+        Column("asset", Text),
+        Column("direction", Text),
+        Column("score", Integer),
+        Column("sent_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+    )
+
+    # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
+    meta.create_all(engine, checkfirst=True)
 
 
 class User(UserMixin):
@@ -205,14 +218,11 @@ class User(UserMixin):
         return check_password_hash(self.password_hash, password)
 
     def get_subscription(self):
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute(
-            "SELECT * FROM subscriptions WHERE user_id=? ORDER BY created_at DESC LIMIT 1",
-            (self.id,)
-        )
-        row = c.fetchone()
-        conn.close()
+        with get_conn() as conn:
+            row = conn.execute(
+                text("SELECT * FROM subscriptions WHERE user_id=:uid ORDER BY created_at DESC LIMIT 1"),
+                {"uid": self.id},
+            ).fetchone()
         if row:
             return {
                 "id": row[0], "user_id": row[1], "plan": row[2],
@@ -235,48 +245,39 @@ class User(UserMixin):
 
     @staticmethod
     def get_by_id(user_id):
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute(
-            "SELECT id,email,password_hash,name,telegram_chat_id,language,created_at,is_active "
-            "FROM users WHERE id=?",
-            (user_id,)
-        )
-        row = c.fetchone()
-        conn.close()
+        with get_conn() as conn:
+            row = conn.execute(
+                text("SELECT id,email,password_hash,name,telegram_chat_id,language,created_at,is_active "
+                     "FROM users WHERE id=:uid"),
+                {"uid": user_id},
+            ).fetchone()
         return User(row) if row else None
 
     @staticmethod
     def get_by_email(email):
-        conn = get_conn()
-        c = conn.cursor()
-        c.execute(
-            "SELECT id,email,password_hash,name,telegram_chat_id,language,created_at,is_active "
-            "FROM users WHERE email=?",
-            (email,)
-        )
-        row = c.fetchone()
-        conn.close()
+        with get_conn() as conn:
+            row = conn.execute(
+                text("SELECT id,email,password_hash,name,telegram_chat_id,language,created_at,is_active "
+                     "FROM users WHERE email=:email"),
+                {"email": email},
+            ).fetchone()
         return User(row) if row else None
 
     @staticmethod
     def create(email, password, name, language='es', plan='basic'):
         if plan not in ('basic', 'premium', 'pro'):
             plan = 'basic'
-        conn = get_conn()
-        c = conn.cursor()
         pw_hash = generate_password_hash(password)
-        c.execute(
-            "INSERT INTO users (email,password_hash,name,language) VALUES (?,?,?,?)",
-            (email, pw_hash, name, language)
-        )
-        user_id = c.lastrowid
-        # Create trial subscription
         trial_end = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-        c.execute(
-            "INSERT INTO subscriptions (user_id,plan,status,trial_ends_at) VALUES (?,?,?,?)",
-            (user_id, plan, "trial", trial_end)
-        )
-        conn.commit()
-        conn.close()
+        with get_conn() as conn:
+            result = conn.execute(
+                text("INSERT INTO users (email,password_hash,name,language) VALUES (:email,:pw,:name,:lang)"),
+                {"email": email, "pw": pw_hash, "name": name, "lang": language},
+            )
+            user_id = result.lastrowid
+            conn.execute(
+                text("INSERT INTO subscriptions (user_id,plan,status,trial_ends_at) VALUES (:uid,:plan,:status,:trial)"),
+                {"uid": user_id, "plan": plan, "status": "trial", "trial": trial_end},
+            )
+            conn.commit()
         return User.get_by_id(user_id)

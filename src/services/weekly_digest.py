@@ -6,7 +6,6 @@ de alertas de la semana a los usuarios con plan premium o pro.
 """
 import logging
 import os
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from collections import Counter
 
@@ -28,26 +27,24 @@ def get_weekly_events(db_path: str, days: int = 7) -> list:
     Obtiene los eventos de los últimos `days` días desde la BD de predicciones.
     Devuelve una lista de dicts con los datos del evento.
     """
-    if not os.path.exists(db_path):
-        logger.warning(f"Base de datos de predicciones no encontrada: {db_path}")
-        return []
+    from web.db_engine import get_engine
+    from sqlalchemy import text
 
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 
     try:
-        with sqlite3.connect(db_path) as conn:
-            conn.row_factory = sqlite3.Row
+        with get_engine("predictions").connect() as conn:
             rows = conn.execute(
-                """
+                text("""
                 SELECT id, event_id, title, category, asset, direction,
                        impact_percent, timeframe, confidence, reasoning,
                        predicted_at, outcome, score, source
                 FROM predictions
-                WHERE predicted_at >= ?
+                WHERE predicted_at >= :cutoff
                 ORDER BY score DESC
-                """,
-                (cutoff,),
-            ).fetchall()
+                """),
+                {"cutoff": cutoff},
+            ).mappings().fetchall()
     except Exception as e:
         logger.error(f"Error consultando predicciones: {e}")
         return []
@@ -81,15 +78,13 @@ def get_premium_users(app_db_path: str) -> list:
     Obtiene los usuarios con plan premium o pro y estado active o trial desde app.db.
     Devuelve una lista de dicts con id, email, name, plan.
     """
-    if not os.path.exists(app_db_path):
-        logger.warning(f"Base de datos de usuarios no encontrada: {app_db_path}")
-        return []
+    from web.db_engine import get_engine
+    from sqlalchemy import text
 
     try:
-        with sqlite3.connect(app_db_path) as conn:
-            conn.row_factory = sqlite3.Row
+        with get_engine("app").connect() as conn:
             rows = conn.execute(
-                """
+                text("""
                 SELECT u.id, u.email, u.name, s.plan, s.status
                 FROM users u
                 JOIN subscriptions s ON s.user_id = u.id
@@ -97,8 +92,8 @@ def get_premium_users(app_db_path: str) -> list:
                   AND s.status IN ('active', 'trial')
                   AND u.is_active = 1
                 ORDER BY u.id
-                """,
-            ).fetchall()
+                """),
+            ).mappings().fetchall()
     except Exception as e:
         logger.error(f"Error consultando usuarios premium: {e}")
         return []

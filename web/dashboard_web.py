@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
+from sqlalchemy import text
 from web.models import PLANS, AVAILABLE_ASSETS, get_conn
+from web.db_engine import get_engine
 from src.services.alert_formatter import ASSET_NAMES
 import logging
 import os
-import sqlite3 as _sq
 from datetime import datetime
 import pytz
 
@@ -12,7 +13,6 @@ _logger = logging.getLogger("dashboard_web")
 
 dashboard_bp = Blueprint("dashboard_web", __name__)
 
-_PREDICTIONS_DB_PATH = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
 _VALID_SORTS = ["predicted_at", "score", "confidence", "impact_percent", "price_at_prediction", "price_at_validation"]
@@ -22,8 +22,8 @@ _SORT_FIELD_MAP = {s: s for s in _VALID_SORTS}
 
 
 def _get_predictions_conn():
-    """Return a connection to the predictions SQLite database."""
-    return _sq.connect(_PREDICTIONS_DB_PATH)
+    """Return a connection to the predictions database."""
+    return get_engine("predictions").connect()
 
 
 def _to_madrid_time(dt_str: str) -> str:
@@ -75,33 +75,28 @@ def index():
     total_alerts = 0
     total_pages = 1
     try:
-        conn2 = _get_predictions_conn()
-        conn2.row_factory = _sq.Row
-        c2 = conn2.cursor()
+        with _get_predictions_conn() as conn2:
+            where = "WHERE predicted_at >= datetime('now', '-24 hours')"
+            extra_params: dict = {}
+            if asset_filter:
+                where += " AND asset = :asset"
+                extra_params["asset"] = asset_filter
 
-        where = "WHERE datetime(predicted_at) >= datetime('now', '-24 hours')"
-        params: list = []
-        if asset_filter:
-            where += " AND asset = ?"
-            params.append(asset_filter)
+            total_alerts = conn2.execute(
+                text(f"SELECT COUNT(*) FROM predictions {where}"), extra_params
+            ).fetchone()[0]
+            total_pages = max(1, (total_alerts + per_page - 1) // per_page)
 
-        total_alerts = c2.execute(
-            f"SELECT COUNT(*) FROM predictions {where}", params
-        ).fetchone()[0]
-        total_pages = max(1, (total_alerts + per_page - 1) // per_page)
-
-        c2.execute(
-            f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
-                       confidence, price_at_prediction, price_at_validation, predicted_at,
-                       validated_at, outcome, score, source, reasoning
-                FROM predictions {where}
-                ORDER BY {sort_col} {sort_order}
-                LIMIT ? OFFSET ?""",
-            params + [per_page, offset],
-        )
-        alerts_raw = c2.fetchall()
-        conn2.close()
-    except _sq.Error:
+            alerts_raw = conn2.execute(
+                text(f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
+                           confidence, price_at_prediction, price_at_validation, predicted_at,
+                           validated_at, outcome, score, source, reasoning
+                    FROM predictions {where}
+                    ORDER BY {sort_col} {sort_order}
+                    LIMIT :limit OFFSET :offset"""),
+                {**extra_params, "limit": per_page, "offset": offset},
+            ).mappings().fetchall()
+    except Exception:
         _logger.warning("Could not load predictions", exc_info=True)
         alerts_raw = []
 
@@ -123,28 +118,24 @@ def index():
     # Get accuracy stats (scoped to last 24h and optional asset filter)
     accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0, "pending": 0}
     try:
-        conn2 = _get_predictions_conn()
-        c2 = conn2.cursor()
+        with _get_predictions_conn() as conn2:
+            stats_where = "WHERE predicted_at >= datetime('now', '-24 hours')"
+            stats_params: dict = {}
+            if asset_filter:
+                stats_where += " AND asset = :asset"
+                stats_params["asset"] = asset_filter
 
-        stats_where = "WHERE datetime(predicted_at) >= datetime('now', '-24 hours')"
-        stats_params: list = []
-        if asset_filter:
-            stats_where += " AND asset = ?"
-            stats_params.append(asset_filter)
+            outcomes = conn2.execute(
+                text(f"SELECT outcome, confidence FROM predictions {stats_where} AND outcome != 'pending'"),
+                stats_params,
+            ).fetchall()
 
-        c2.execute(
-            f"SELECT outcome, confidence FROM predictions {stats_where} AND outcome != 'pending'",
-            stats_params,
-        )
-        outcomes = c2.fetchall()
+            # Count pending in same window
+            pending = conn2.execute(
+                text(f"SELECT COUNT(*) FROM predictions {stats_where} AND outcome = 'pending'"),
+                stats_params,
+            ).fetchone()[0]
 
-        # Count pending in same window
-        pending = c2.execute(
-            f"SELECT COUNT(*) FROM predictions {stats_where} AND outcome = 'pending'",
-            stats_params,
-        ).fetchone()[0]
-
-        conn2.close()
         if outcomes:
             total = len(outcomes)
             correct = sum(1 for r in outcomes if r[0] == "correct")
@@ -162,7 +153,7 @@ def index():
             }
         else:
             accuracy_stats["pending"] = pending
-    except _sq.Error:
+    except Exception:
         _logger.warning("Could not load accuracy stats", exc_info=True)
 
     return render_template(
@@ -202,18 +193,16 @@ def settings():
         else:
             language = request.form.get("language", "es")
             telegram_id = request.form.get("telegram_chat_id", "").strip()
-            conn = get_conn()
-            c = conn.cursor()
-            c.execute(
-                "UPDATE subscriptions SET selected_assets=? WHERE user_id=?",
-                (",".join(selected_assets), current_user.id),
-            )
-            c.execute(
-                "UPDATE users SET language=?, telegram_chat_id=? WHERE id=?",
-                (language, telegram_id, current_user.id),
-            )
-            conn.commit()
-            conn.close()
+            with get_conn() as conn:
+                conn.execute(
+                    text("UPDATE subscriptions SET selected_assets=:assets WHERE user_id=:uid"),
+                    {"assets": ",".join(selected_assets), "uid": current_user.id},
+                )
+                conn.execute(
+                    text("UPDATE users SET language=:lang, telegram_chat_id=:tid WHERE id=:uid"),
+                    {"lang": language, "tid": telegram_id, "uid": current_user.id},
+                )
+                conn.commit()
             flash("Configuración guardada", "success")
             return redirect(url_for("dashboard_web.settings"))
 
@@ -259,11 +248,7 @@ def set_language():
     VALID = {'es', 'en', 'fr', 'de', 'it', 'pt', 'zh', 'ar'}
     if lang not in VALID:
         lang = 'es'
-    conn = get_conn()
-    try:
-        c = conn.cursor()
-        c.execute("UPDATE users SET language=? WHERE id=?", (lang, current_user.id))
+    with get_conn() as conn:
+        conn.execute(text("UPDATE users SET language=:lang WHERE id=:uid"), {"lang": lang, "uid": current_user.id})
         conn.commit()
-    finally:
-        conn.close()
     return jsonify({"ok": True, "language": lang})

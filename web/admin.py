@@ -4,11 +4,11 @@ Acceso protegido por ADMIN_PASSWORD (variable de entorno).
 Completamente independiente del sistema de usuarios de la app.
 """
 import os
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 import pytz
+from sqlalchemy import text
 from flask import (
     Blueprint,
     flash,
@@ -23,7 +23,6 @@ from src.services.alert_formatter import ASSET_NAMES
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me-in-production")
-PREDICTIONS_DB = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
 RECENT_ARTICLES_DB = os.getenv("RECENT_ARTICLES_DB_PATH", "data/recent_articles.db")
 SEEN_ARTICLES_FILE = os.getenv("SEEN_ARTICLES_FILE_PATH", "data/seen_articles.txt")
 
@@ -38,6 +37,11 @@ _SORT_FIELD_MAP = {
     "price_at_prediction": "price_at_prediction",
     "price_at_validation": "price_at_validation",
 }
+
+from web.db_engine import get_engine as _get_engine
+
+def _pred_conn():
+    return _get_engine("predictions").connect()
 
 
 def _admin_required() -> bool:
@@ -98,27 +102,25 @@ def dashboard():
              "high_confidence_accuracy": 0.0, "pending": 0}
 
     try:
-        with sqlite3.connect(PREDICTIONS_DB) as conn:
-            conn.row_factory = sqlite3.Row
-
-            where_clause = "WHERE datetime(predicted_at) >= datetime('now', '-24 hours')"
-            params: list = []
+        with _pred_conn() as conn:
+            where_clause = "WHERE predicted_at >= datetime('now', '-24 hours')"
+            q_params: dict = {}
             if asset_filter:
-                where_clause += " AND asset = ?"
-                params.append(asset_filter)
+                where_clause += " AND asset = :asset"
+                q_params["asset"] = asset_filter
 
             total = conn.execute(
-                f"SELECT COUNT(*) FROM predictions {where_clause}", params
+                text(f"SELECT COUNT(*) FROM predictions {where_clause}"), q_params
             ).fetchone()[0]
 
             # Accuracy stats scoped to the same 24h window + asset filter
             outcome_rows = conn.execute(
-                f"SELECT outcome, confidence FROM predictions {where_clause} AND outcome != 'pending'",
-                params,
+                text(f"SELECT outcome, confidence FROM predictions {where_clause} AND outcome != 'pending'"),
+                q_params,
             ).fetchall()
             pending_count = conn.execute(
-                f"SELECT COUNT(*) FROM predictions {where_clause} AND outcome = 'pending'",
-                params,
+                text(f"SELECT COUNT(*) FROM predictions {where_clause} AND outcome = 'pending'"),
+                q_params,
             ).fetchone()[0]
 
             if outcome_rows:
@@ -138,19 +140,19 @@ def dashboard():
                 stats["pending"] = pending_count
 
             rows = conn.execute(
-                f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
+                text(f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
                            confidence, price_at_prediction, price_at_validation, predicted_at,
                            validated_at, outcome, score, source, reasoning
                     FROM predictions {where_clause}
                     ORDER BY {sort_col} {sort_order}
-                    LIMIT ? OFFSET ?""",
-                params + [per_page, offset],
-            ).fetchall()
+                    LIMIT :limit OFFSET :offset"""),
+                {**q_params, "limit": per_page, "offset": offset},
+            ).mappings().fetchall()
 
             assets = [
                 r[0]
                 for r in conn.execute(
-                    "SELECT DISTINCT asset FROM predictions ORDER BY asset"
+                    text("SELECT DISTINCT asset FROM predictions ORDER BY asset")
                 ).fetchall()
             ]
     except Exception:
@@ -204,13 +206,14 @@ def reset_predictions():
     if request.method == "POST":
         try:
             # Borrar predicciones
-            with sqlite3.connect(PREDICTIONS_DB) as conn:
-                conn.execute("DELETE FROM predictions")
+            with _pred_conn() as conn:
+                conn.execute(text("DELETE FROM predictions"))
                 conn.commit()
 
-            # Borrar caché de deduplicación (artículos recientes)
+            # Borrar caché de deduplicación (artículos recientes) — solo SQLite local
+            import sqlite3 as _sq3
             if Path(RECENT_ARTICLES_DB).exists():
-                with sqlite3.connect(RECENT_ARTICLES_DB) as conn:
+                with _sq3.connect(RECENT_ARTICLES_DB) as conn:
                     conn.execute("DELETE FROM recent_articles")
                     conn.commit()
 
@@ -232,17 +235,16 @@ def reset_predictions():
     num_predictions = 0
     num_recent_articles = 0
     try:
-        with sqlite3.connect(PREDICTIONS_DB) as conn:
-            row = conn.execute("SELECT COUNT(*) FROM predictions").fetchone()
+        with _pred_conn() as conn:
+            row = conn.execute(text("SELECT COUNT(*) FROM predictions")).fetchone()
             num_predictions = row[0] if row else 0
     except Exception:
         pass
     try:
+        import sqlite3 as _sq3
         if Path(RECENT_ARTICLES_DB).exists():
-            with sqlite3.connect(RECENT_ARTICLES_DB) as conn:
-                row = conn.execute(
-                    "SELECT COUNT(*) FROM recent_articles"
-                ).fetchone()
+            with _sq3.connect(RECENT_ARTICLES_DB) as conn:
+                row = conn.execute("SELECT COUNT(*) FROM recent_articles").fetchone()
                 num_recent_articles = row[0] if row else 0
     except Exception:
         pass

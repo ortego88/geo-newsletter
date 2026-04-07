@@ -95,6 +95,7 @@ class PredictionValidatorScheduler:
             predicted_at_str = pred.get("predicted_at", "")
             timeframe_minutes = pred.get("timeframe_minutes", 480)
             asset = pred.get("asset", "UNKNOWN")
+            verify_at_str = pred.get("verify_at")  # Mejora 3: usar verify_at si disponible
 
             try:
                 predicted_at = datetime.fromisoformat(predicted_at_str)
@@ -102,14 +103,38 @@ class PredictionValidatorScheduler:
                 logger.warning(f"Fecha inválida en predicción #{prediction_id}: {predicted_at_str}")
                 continue
 
-            elapsed_minutes = (now - predicted_at).total_seconds() / 60
-
-            if elapsed_minutes < timeframe_minutes:
-                logger.debug(
-                    f"Predicción #{prediction_id} ({asset}): "
-                    f"{elapsed_minutes:.0f}/{timeframe_minutes} min transcurridos — aún no"
-                )
-                continue
+            # Mejora 3: usar verify_at calculado cuando está disponible (respeta horario de mercado)
+            if verify_at_str:
+                try:
+                    verify_at = datetime.fromisoformat(verify_at_str.replace("Z", "+00:00"))
+                    # Strip timezone for comparison with naive datetime.utcnow()
+                    if verify_at.tzinfo is not None:
+                        import pytz as _pytz
+                        verify_at = verify_at.astimezone(_pytz.utc).replace(tzinfo=None)
+                    if now < verify_at:
+                        logger.debug(
+                            f"Predicción #{prediction_id} ({asset}): "
+                            f"verify_at={verify_at_str} — aún no"
+                        )
+                        continue
+                except (ValueError, TypeError):
+                    # Fallback al método antiguo si verify_at es inválido
+                    elapsed_minutes = (now - predicted_at).total_seconds() / 60
+                    if elapsed_minutes < timeframe_minutes:
+                        logger.debug(
+                            f"Predicción #{prediction_id} ({asset}): "
+                            f"{elapsed_minutes:.0f}/{timeframe_minutes} min — aún no"
+                        )
+                        continue
+            else:
+                # Predicciones antiguas sin verify_at: usar timeframe_minutes
+                elapsed_minutes = (now - predicted_at).total_seconds() / 60
+                if elapsed_minutes < timeframe_minutes:
+                    logger.debug(
+                        f"Predicción #{prediction_id} ({asset}): "
+                        f"{elapsed_minutes:.0f}/{timeframe_minutes} min transcurridos — aún no"
+                    )
+                    continue
 
             # Ya pasó el plazo → validar con precio actual
             current_price = self.price_fetcher.get_price(asset)
