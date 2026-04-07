@@ -30,6 +30,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("run_all")
 
+if not os.path.exists("data/app.db"):
+    logger.warning(
+        "⚠️  AVISO: data/app.db no existe. Si estás en Railway, configura un Persistent Volume "
+        "en /app/data para no perder usuarios entre deploys. Ver PERSISTENT_STORAGE.md para instrucciones."
+    )
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from src.services.pipeline_v2 import AnalysisPipeline
 from src.services.prediction_tracker import PredictionTracker
