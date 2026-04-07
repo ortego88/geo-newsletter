@@ -9,6 +9,13 @@ _logger = logging.getLogger("dashboard_web")
 
 dashboard_bp = Blueprint("dashboard_web", __name__)
 
+_PREDICTIONS_DB_PATH = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
+
+
+def _get_predictions_conn():
+    """Return a connection to the predictions SQLite database."""
+    return _sq.connect(_PREDICTIONS_DB_PATH)
+
 
 def _require_active_subscription():
     sub = current_user.get_subscription()
@@ -31,8 +38,7 @@ def index():
     # Get recent alerts from predictions DB
     alerts = []
     try:
-        pred_db_path = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
-        conn2 = _sq.connect(pred_db_path)
+        conn2 = _get_predictions_conn()
         c2 = conn2.cursor()
         c2.execute(
             """SELECT title, asset, direction, confidence, score,
@@ -50,8 +56,7 @@ def index():
     # Get accuracy stats
     accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0}
     try:
-        pred_db_path = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
-        conn2 = _sq.connect(pred_db_path)
+        conn2 = _get_predictions_conn()
         c2 = conn2.cursor()
         c2.execute("SELECT outcome FROM predictions WHERE outcome != 'pending'")
         outcomes = c2.fetchall()
