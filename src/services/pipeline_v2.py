@@ -53,6 +53,17 @@ RSS_SOURCES = [
     {"name": "Financial Times", "url": "https://feeds.ft.com/markets"},
     {"name": "GDELT", "url": "https://api.gdeltproject.org/api/v2/top10/top10?OUTPUTMODE=RSS"},
     {"name": "ACLED", "url": "https://acleddata.com/feed/"},
+    # --- Fuentes mercado español ---
+    {"name": "Expansión Mercados", "url": "https://e00-expansion.uecdn.es/rss/mercados.xml"},
+    {"name": "CincoDías Mercados", "url": "https://cincodias.elpais.com/rss/mercados/"},
+    {"name": "ElEconomista Mercados", "url": "https://www.eleconomista.es/rss/rss-mercados.php"},
+    {"name": "Investing.com España", "url": "https://es.investing.com/rss/news.rss"},
+    # --- Fuentes crypto en español ---
+    {"name": "CriptoNoticias", "url": "https://www.criptonoticias.com/feed/"},
+    {"name": "Cointelegraph ES", "url": "https://es.cointelegraph.com/rss"},
+    {"name": "BeInCrypto ES", "url": "https://es.beincrypto.com/feed/"},
+    # --- Fuente crypto adicional (inglés) ---
+    {"name": "Cointelegraph", "url": "https://cointelegraph.com/feed"},
 ]
 
 # --- Taxonomía de eventos para scoring ---
@@ -71,6 +82,7 @@ EVENT_TAXONOMY = {
             "oil", "crude", "opec", "petroleum", "barrel", "refinery",
             "pipeline", "petróleo", "brent", "wti", "energy crisis",
             "oil price", "saudi", "iraq", "iran oil", "oil production",
+            "crudo", "gasolina", "refinería", "precio del petróleo",
         ],
         "base_severity": 65,
         "category": "ENERGÍA",
@@ -88,6 +100,7 @@ EVENT_TAXONOMY = {
         "keywords": [
             "sanction", "tariff", "trade war", "embargo", "export ban",
             "import restriction", "trade deal", "wto", "customs", "protectionism",
+            "arancel", "aranceles", "guerra comercial", "sanciones",
         ],
         "base_severity": 58,
         "category": "COMERCIO",
@@ -97,6 +110,8 @@ EVENT_TAXONOMY = {
             "bitcoin", "ethereum", "crypto", "blockchain", "defi", "nft",
             "stablecoin", "exchange hack", "crypto regulation", "cbdc",
             "ripple", "xrp", "solana", "cardano", "dogecoin",
+            "criptomoneda", "criptomonedas", "moneda digital", "halving",
+            "altcoin", "minería crypto", "regulación crypto",
         ],
         "base_severity": 50,
         "category": "CRYPTO",
@@ -109,6 +124,9 @@ EVENT_TAXONOMY = {
             "ibex", "bolsa española", "bolsa madrid", "ftse", "dax",
             "s&p 500", "nasdaq", "dow jones", "wall street",
             "etf", "spy", "qqq",
+            "mercado bursátil", "tipo de interés", "banco central europeo",
+            "bce", "mercado continuo", "cnmv", "prima de riesgo",
+            "bolsa de valores", "renta variable", "renta fija",
         ],
         "base_severity": 55,
         "category": "MERCADOS",
@@ -117,6 +135,8 @@ EVENT_TAXONOMY = {
         "keywords": [
             "geopolit", "diplomatic", "tension", "protest", "coup", "election",
             "government crisis", "political instability", "civil unrest",
+            "golpe de estado", "inestabilidad política", "crisis política",
+            "elecciones", "tensión diplomática",
         ],
         "base_severity": 45,
         "category": "GEOPOLÍTICA",
