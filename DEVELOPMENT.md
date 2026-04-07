@@ -22,6 +22,18 @@ cp .env.example .env
 
 ## Ejecución
 
+### Modo desarrollo (hot-reload recomendado)
+
+Con `FLASK_ENV=development` el servidor Flask recargará automáticamente cuando detecte cambios en el código o en los templates, sin necesidad de reiniciarlo manualmente.
+
+```bash
+FLASK_ENV=development python run_all.py
+```
+
+O bien, añade `FLASK_ENV=development` a tu `.env` para que se active siempre.
+
+### Modo producción (por defecto)
+
 ```bash
 python run_all.py
 ```
