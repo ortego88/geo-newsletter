@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configuración — GEO-NEWSLETTER</title>
+  <title>Suscripción — GEO-NEWSLETTER</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-200 antialiased">
@@ -21,10 +21,10 @@
       <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
         <span>📊</span> <span data-i18n="dash.dashboard">Dashboard</span>
       </a>
-      <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
+      <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
         <span>⚙️</span> <span data-i18n="dash.settings">Configuración</span>
       </a>
-      <a href="/dashboard/subscription" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+      <a href="/dashboard/subscription" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
         <span>💳</span> <span data-i18n="dash.subscription">Suscripción</span>
       </a>
     </nav>
@@ -44,7 +44,7 @@
   <main class="flex-1 overflow-auto">
 
     <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-      <h1 class="text-white font-bold text-xl" data-i18n="dash.settings">Configuración</h1>
+      <h1 class="text-white font-bold text-xl" data-i18n="dash.subscription">Suscripción</h1>
       <!-- Compact lang switcher -->
       <div class="relative" id="dash-lang-wrapper">
         <button onclick="toggleDashLang()" class="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700" id="dash-lang-btn">
@@ -70,138 +70,94 @@
         {% endfor %}
       {% endwith %}
 
-      <form method="POST" action="/dashboard/settings" class="space-y-8">
-
-        <!-- Asset selector -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="font-bold text-white" data-i18n="settings.assets_title">Activos a monitorizar</h2>
-            <span class="text-slate-400 text-sm">
-              <span data-i18n="settings.maximum">Máximo</span>:
-              {% if plan_config.max_assets == -1 %}
-                <span class="text-emerald-400 font-semibold" data-i18n="settings.unlimited">Ilimitado</span>
-              {% else %}
-                <span class="text-emerald-400 font-semibold">{{ plan_config.max_assets }}</span>
+      <!-- Current subscription card -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
+        <h2 class="font-bold text-white text-lg mb-4">Plan actual</h2>
+        {% if sub %}
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <p class="text-white font-bold text-2xl">{{ plans[sub.plan].name }}</p>
+                {% if sub.status == 'trial' %}
+                  <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">⏳ Prueba gratuita</span>
+                {% elif sub.status == 'active' %}
+                  <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full">✅ Activo</span>
+                {% elif sub.status == 'cancelled' %}
+                  <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-2.5 py-1 rounded-full">❌ Cancelado</span>
+                {% endif %}
+              </div>
+              {% if sub.status == 'trial' and sub.trial_ends_at %}
+                <p class="text-slate-400 text-sm">Prueba gratuita hasta el <span class="text-amber-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
+              {% elif sub.status == 'active' and sub.current_period_end %}
+                <p class="text-slate-400 text-sm">Próximo cobro el <span class="text-white font-semibold">{{ sub.current_period_end[:10] }}</span></p>
               {% endif %}
-            </span>
-          </div>
-          <p class="text-slate-400 text-sm mb-5">Selecciona los activos para los que deseas recibir alertas de Telegram.</p>
-          {% if plan_config and plan_config.max_assets == -1 %}
-          <div class="flex gap-3 mb-4">
-            <button type="button" onclick="selectAllAssets()"
-              class="text-sm text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition" data-i18n="settings.select_all">
-              ✓ Seleccionar todos
-            </button>
-            <button type="button" onclick="deselectAllAssets()"
-              class="text-sm text-slate-400 hover:text-white border border-slate-600 px-3 py-1.5 rounded-lg transition" data-i18n="settings.deselect_all">
-              ✗ Quitar todos
-            </button>
-          </div>
-          {% endif %}
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {% for asset in available_assets %}
-              {% set is_selected = asset.symbol in (sub.selected_assets or []) %}
-              {% set is_locked = asset.symbol in locked_symbols %}
-              <label class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition
-                {% if is_locked %}border-slate-700 bg-slate-800/50 opacity-50 cursor-not-allowed
-                {% elif is_selected %}border-emerald-500/50 bg-emerald-500/10
-                {% else %}border-slate-700 bg-slate-800 hover:border-slate-500{% endif %}">
-                <input type="checkbox" name="assets" value="{{ asset.symbol }}"
-                  {% if is_selected %}checked{% endif %}
-                  {% if is_locked %}disabled{% endif %}
-                  class="w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
-                <span class="text-lg">{{ asset.icon }}</span>
-                <div>
-                  <p class="text-sm font-medium {% if is_locked %}text-slate-500{% else %}text-white{% endif %}">{{ asset.name }}</p>
-                  <p class="text-xs text-slate-500">{{ asset.symbol }}</p>
+              {% if plan_config %}
+                <div class="mt-3 space-y-1 text-sm text-slate-400">
+                  <p>📦 Activos: <span class="text-white">{% if plan_config.max_assets == -1 %}Ilimitados{% else %}hasta {{ plan_config.max_assets }}{% endif %}</span></p>
+                  <p>🔔 Alertas/día: <span class="text-white">{% if plan_config.max_daily_alerts == -1 %}Ilimitadas{% else %}hasta {{ plan_config.max_daily_alerts }}{% endif %}</span></p>
+                  <p>📅 Historial: <span class="text-white">{{ plan_config.history_days }} día{% if plan_config.history_days != 1 %}s{% endif %}</span></p>
                 </div>
-                {% if is_locked %}
-                  <span class="absolute top-2 right-2 text-slate-600 text-xs">🔒</span>
-                {% endif %}
-              </label>
-            {% endfor %}
-          </div>
-          {% if plan_config.max_assets != -1 %}
-            <p class="mt-4 text-xs text-slate-500">
-              <span data-i18n="settings.locked_assets_msg">Los activos bloqueados requieren un plan superior.</span>
-              <a href="/dashboard/subscription" class="text-emerald-400 hover:text-emerald-300" data-i18n="settings.upgrade_plan">Actualizar plan →</a>
-            </p>
-          {% endif %}
-        </div>
-
-        <!-- Language selector -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-4" data-i18n="settings.lang_title">Idioma de las alertas</h2>
-          <div class="flex flex-wrap gap-3">
-            {% set available_langs = plan_config.languages %}
-            {% set all_langs = [('es', '🇪🇸 Español'), ('en', '🇬🇧 English')] %}
-            {% for lang_code, lang_name in all_langs %}
-              {% set is_available = lang_code in available_langs %}
-              <label class="flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition
-                {% if not is_available %}border-slate-700 opacity-50 cursor-not-allowed
-                {% elif current_user.language == lang_code %}border-emerald-500/50 bg-emerald-500/10
-                {% else %}border-slate-700 hover:border-slate-500{% endif %}">
-                <input type="radio" name="language" value="{{ lang_code }}"
-                  {% if current_user.language == lang_code %}checked{% endif %}
-                  {% if not is_available %}disabled{% endif %}
-                  class="text-emerald-500 focus:ring-emerald-500">
-                <span class="text-sm {% if not is_available %}text-slate-500{% else %}text-white{% endif %}">{{ lang_name }}</span>
-                {% if not is_available %}
-                  <span class="text-slate-600 text-xs">🔒</span>
-                {% endif %}
-              </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- Telegram Chat ID -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-2">Telegram Chat ID</h2>
-          <p class="text-slate-400 text-sm mb-4">
-            Para recibir alertas en Telegram, necesitas tu Chat ID personal.
-            Habla con <a href="https://t.me/userinfobot" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">@userinfobot</a> en Telegram y te lo enviará.
-          </p>
-          <input type="text" name="telegram_chat_id"
-            value="{{ current_user.telegram_chat_id or '' }}"
-            placeholder="Ej: 123456789"
-            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500 transition max-w-xs">
-        </div>
-
-        <!-- Subscription management -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-4" data-i18n="settings.subscription_title">Gestión de suscripción</h2>
-          <div class="flex flex-wrap gap-4">
-            <div class="flex-1 min-w-48">
-              <p class="text-slate-400 text-sm mb-1" data-i18n="settings.current_plan">Plan actual</p>
-              <p class="text-white font-semibold">
-                {% if sub %}{{ plans[sub.plan].name }}{% else %}<span data-i18n="settings.no_subscription">Sin suscripción</span>{% endif %}
-              </p>
-              <p class="text-slate-500 text-xs mt-0.5">
-                {% if sub %}
-                  Estado: <span class="{% if sub.status == 'active' %}text-emerald-400{% elif sub.status == 'trial' %}text-amber-400{% else %}text-red-400{% endif %}">{{ sub.status }}</span>
-                {% endif %}
-              </p>
+              {% endif %}
             </div>
             <div class="flex flex-col gap-2">
-              <a href="/dashboard/subscription" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="settings.change_plan">
-                Cambiar plan
-              </a>
-              {% if sub and sub.status in ('active', 'trial') %}
+              {% if sub.status == 'trial' %}
+                <a href="/checkout/trial?plan={{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                  💳 Activar suscripción
+                </a>
+              {% elif sub.status == 'active' %}
+                <a href="/pricing" class="inline-flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                  🔄 Ver todos los planes
+                </a>
+              {% endif %}
+              {% if sub.status in ('active', 'trial') %}
                 <button type="button" onclick="openCancelModal()"
-                  class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition" data-i18n="settings.cancel_subscription">
+                  class="inline-flex items-center justify-center border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition">
                   Cancelar suscripción
                 </button>
               {% endif %}
             </div>
           </div>
+        {% else %}
+          <p class="text-slate-400">No tienes ninguna suscripción activa.</p>
+          <a href="/pricing" class="inline-flex items-center justify-center mt-4 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+            Ver planes →
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- Plans comparison table -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+        <h2 class="font-bold text-white text-lg mb-5">Comparativa de planes</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {% for plan_key, p in plans.items() %}
+            <div class="bg-slate-900 border rounded-xl p-5 flex flex-col gap-3
+              {% if sub and sub.plan == plan_key %}border-emerald-500/50{% else %}border-slate-700{% endif %}">
+              <div class="flex items-center justify-between">
+                <p class="text-white font-bold text-lg">{{ p.name }}</p>
+                {% if sub and sub.plan == plan_key %}
+                  <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">Actual</span>
+                {% endif %}
+              </div>
+              <p class="text-white font-semibold">{{ p.price_monthly }}€<span class="text-slate-400 text-xs font-normal">/mes</span></p>
+              <ul class="space-y-1.5 text-sm text-slate-400 flex-1">
+                <li>📦 {% if p.max_assets == -1 %}Activos ilimitados{% else %}Hasta {{ p.max_assets }} activo{% if p.max_assets != 1 %}s{% endif %}{% endif %}</li>
+                <li>🔔 {% if p.max_daily_alerts == -1 %}Alertas ilimitadas{% else %}Hasta {{ p.max_daily_alerts }} alertas/día{% endif %}</li>
+                <li>📅 Historial {{ p.history_days }} día{% if p.history_days != 1 %}s{% endif %}</li>
+              </ul>
+              {% if sub and sub.plan != plan_key %}
+                <a href="/subscribe/{{ plan_key }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition mt-1">
+                  Cambiar a {{ p.name }}
+                </a>
+              {% else %}
+                <div class="inline-flex items-center justify-center bg-slate-700 text-slate-400 text-xs font-semibold px-4 py-2 rounded-lg mt-1 cursor-default">
+                  Plan actual
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
         </div>
+      </div>
 
-        <button type="submit"
-          class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition" data-i18n="settings.save_btn">
-          Guardar configuración
-        </button>
-
-      </form>
     </div>
   </main>
 </div>
@@ -292,68 +248,6 @@
     }
   });
 
-  const MAX_ASSETS = {{ plan_config.max_assets if plan_config else 1 }};
-  const checkboxes = document.querySelectorAll('input[name="assets"]');
-
-  checkboxes.forEach(cb => {
-    cb.addEventListener('change', function() {
-      if (!this.checked) return;
-      const selected = [...checkboxes].filter(c => c.checked && !c.disabled);
-      if (MAX_ASSETS !== -1 && selected.length > MAX_ASSETS) {
-        if (MAX_ASSETS === 1) {
-          checkboxes.forEach(c => { if (c !== this && !c.disabled) c.checked = false; });
-          checkboxes.forEach(c => {
-            if (c.disabled) return;
-            const label = c.closest('label');
-            if (!label) return;
-            if (c.checked) {
-              label.classList.remove('border-slate-700', 'bg-slate-800');
-              label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
-            } else {
-              label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
-              label.classList.add('border-slate-700', 'bg-slate-800');
-            }
-          });
-        } else {
-          this.checked = false;
-          showToast(dashCurrentLang === 'en'
-            ? `Your plan allows up to ${MAX_ASSETS} assets. Upgrade to Pro to access all of them.`
-            : `Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
-        }
-      }
-    });
-  });
-
-  function showToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'fixed bottom-6 right-6 bg-amber-500 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-xl z-50';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 4000);
-  }
-
-  function selectAllAssets() {
-    document.querySelectorAll('input[name="assets"]:not(:disabled)').forEach(cb => {
-      cb.checked = true;
-      const label = cb.closest('label');
-      if (label) {
-        label.classList.remove('border-slate-700', 'bg-slate-800');
-        label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
-      }
-    });
-  }
-
-  function deselectAllAssets() {
-    document.querySelectorAll('input[name="assets"]:not(:disabled)').forEach(cb => {
-      cb.checked = false;
-      const label = cb.closest('label');
-      if (label) {
-        label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
-        label.classList.add('border-slate-700', 'bg-slate-800');
-      }
-    });
-  }
-
   function openCancelModal() {
     document.getElementById('cancel-modal').classList.remove('hidden');
     document.getElementById('cancel-confirm-input').value = '';
@@ -400,20 +294,6 @@
       "dash.settings": "Configuración",
       "dash.subscription": "Suscripción",
       "dash.sign_out": "Cerrar sesión",
-      "settings.assets_title": "Activos a monitorizar",
-      "settings.maximum": "Máximo",
-      "settings.unlimited": "Ilimitado",
-      "settings.select_all": "✓ Seleccionar todos",
-      "settings.deselect_all": "✗ Quitar todos",
-      "settings.locked_assets_msg": "Los activos bloqueados requieren un plan superior.",
-      "settings.upgrade_plan": "Actualizar plan →",
-      "settings.lang_title": "Idioma de las alertas",
-      "settings.subscription_title": "Gestión de suscripción",
-      "settings.current_plan": "Plan actual",
-      "settings.no_subscription": "Sin suscripción",
-      "settings.change_plan": "Cambiar plan",
-      "settings.cancel_subscription": "Cancelar suscripción",
-      "settings.save_btn": "Guardar configuración",
       "cookies.title": "🍪 Usamos cookies",
       "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
       "cookies.policy_link": "Política de cookies",
@@ -426,20 +306,6 @@
       "dash.settings": "Settings",
       "dash.subscription": "Subscription",
       "dash.sign_out": "Sign out",
-      "settings.assets_title": "Assets to monitor",
-      "settings.maximum": "Maximum",
-      "settings.unlimited": "Unlimited",
-      "settings.select_all": "✓ Select all",
-      "settings.deselect_all": "✗ Deselect all",
-      "settings.locked_assets_msg": "Locked assets require a higher plan.",
-      "settings.upgrade_plan": "Upgrade plan →",
-      "settings.lang_title": "Alert language",
-      "settings.subscription_title": "Subscription management",
-      "settings.current_plan": "Current plan",
-      "settings.no_subscription": "No subscription",
-      "settings.change_plan": "Change plan",
-      "settings.cancel_subscription": "Cancel subscription",
-      "settings.save_btn": "Save settings",
       "cookies.title": "🍪 We use cookies",
       "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
       "cookies.policy_link": "Cookie policy",

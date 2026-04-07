@@ -106,6 +106,22 @@ def settings():
     )
 
 
+@dashboard_bp.route("/dashboard/subscription")
+@login_required
+def subscription():
+    redirect_resp = _require_active_subscription()
+    if redirect_resp:
+        return redirect_resp
+    sub = current_user.get_subscription()
+    plan_config = PLANS.get(sub["plan"], PLANS["basic"]) if sub else None
+    return render_template(
+        "dashboard/subscription.html",
+        sub=sub,
+        plan_config=plan_config,
+        plans=PLANS,
+    )
+
+
 @dashboard_bp.route("/dashboard/set-language", methods=["POST"])
 @login_required
 def set_language():
