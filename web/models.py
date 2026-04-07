@@ -201,7 +201,7 @@ class User(UserMixin):
         return User(row) if row else None
 
     @staticmethod
-    def create(email, password, name, language='es'):
+    def create(email, password, name, language='es', plan='basic'):
         conn = get_conn()
         c = conn.cursor()
         pw_hash = generate_password_hash(password)
@@ -214,7 +214,7 @@ class User(UserMixin):
         trial_end = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
         c.execute(
             "INSERT INTO subscriptions (user_id,plan,status,trial_ends_at) VALUES (?,?,?,?)",
-            (user_id, "basic", "trial", trial_end)
+            (user_id, plan, "trial", trial_end)
         )
         conn.commit()
         conn.close()
