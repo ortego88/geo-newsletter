@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard — GEO-NEWSLETTER</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/responsive.css">
   <style>
     [data-tooltip] { position: relative; cursor: help; }
     [data-tooltip]:hover::after {
@@ -21,8 +22,11 @@
 
 <div class="flex min-h-screen">
 
+  <!-- Mobile sidebar overlay -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
+
   <!-- SIDEBAR -->
-  <aside class="w-56 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 sticky top-0 h-screen">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-56 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-transform duration-300">
     <div class="px-5 py-4 border-b border-slate-800">
       <p class="text-emerald-400 font-bold text-base">🌍 GEO-NEWSLETTER</p>
       <p class="text-slate-500 text-xs mt-0.5">Panel de administración</p>
@@ -49,12 +53,17 @@
   <main class="flex-1 overflow-auto">
 
     <!-- Top bar -->
-    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-      <h1 class="text-white font-bold text-xl">Dashboard Técnico</h1>
-      <span class="text-slate-500 text-xs">Últimas 24 horas · {{ total }} predicciones</span>
+    <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="text-white font-bold text-lg md:text-xl">Dashboard Técnico</h1>
+      </div>
+      <span class="hidden sm:inline text-slate-500 text-xs">Últimas 24 horas · {{ total }} predicciones</span>
     </div>
 
-    <div class="px-8 py-6">
+    <div class="px-4 md:px-8 py-4 md:py-6">
 
       <!-- Flash messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -109,15 +118,15 @@
       </div>
 
       <!-- Filters -->
-      <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 mb-4">
-        <form method="GET" action="/admin/" class="filters-form flex flex-wrap gap-3 items-center">
-          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 md:px-5 py-4 mb-4">
+        <form method="GET" action="/admin/" class="filters-form flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in assets %}
               <option value="{{ a }}" {% if asset_filter == a %}selected{% endif %}>{{ a }}</option>
             {% endfor %}
           </select>
-          <a href="/admin/" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
+          <a href="/admin/" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center min-h-[44px] flex items-center justify-center sm:w-auto">
             Limpiar
           </a>
         </form>
@@ -237,7 +246,7 @@
 
           <!-- Pagination -->
           {% if total_pages > 1 %}
-          <div class="flex items-center justify-center gap-2 px-6 py-4 border-t border-slate-700">
+          <div class="flex flex-wrap items-center justify-center gap-2 px-4 md:px-6 py-4 border-t border-slate-700">
             {% if page > 1 %}
               <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
@@ -264,6 +273,21 @@
     </div>
   </main>
 </div>
+
+<script>
+  function toggleMobileSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+  }
+  function closeMobileSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+  }
+</script>
 
 </body>
 </html>

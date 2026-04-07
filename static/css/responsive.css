@@ -1,0 +1,52 @@
+/* ===== RESPONSIVE MOBILE STYLES ===== */
+
+/* Móvil: < 768px */
+@media (max-width: 767.98px) {
+    /* Stats cards — ensure stacking */
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+
+    /* Títulos más pequeños */
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+
+    /* Tablas: scroll horizontal */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Botones full width en móvil */
+    .btn-mobile-full {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Navbar brand */
+    .navbar-brand { font-size: 1rem; }
+
+    /* Dropdowns full width */
+    select, input[type="text"], input[type="email"], input[type="password"] {
+        max-width: 100%;
+    }
+
+    /* Padding reducido en contenedores */
+    .container-fluid {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    /* Sidebar slide-in: ensure body doesn't scroll when open */
+    body.sidebar-open {
+        overflow: hidden;
+    }
+}
+
+/* Tablet: 768px - 1024px */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+    /* Give a bit more breathing room for sidebar layouts */
+    .chart-container {
+        height: 300px !important;
+    }
+}
