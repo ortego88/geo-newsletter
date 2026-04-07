@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resetear histórico — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-56 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 sticky top-0 h-screen">
+    <div class="px-5 py-4 border-b border-slate-800">
+      <p class="text-emerald-400 font-bold text-base">🌍 GEO-NEWSLETTER</p>
+      <p class="text-slate-500 text-xs mt-0.5">Panel de administración</p>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      <a href="/admin/" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        📊 Dashboard
+      </a>
+    </nav>
+    <div class="px-3 py-4 border-t border-slate-800 space-y-1">
+      <a href="/" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        ← Volver a la app
+      </a>
+      <a href="/admin/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        🚪 Cerrar sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-auto">
+
+    <!-- Top bar -->
+    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <h1 class="text-white font-bold text-xl">Resetear histórico de predicciones</h1>
+    </div>
+
+    <div class="px-8 py-8 max-w-2xl">
+
+      <!-- Warning card -->
+      <div class="bg-red-900/30 border border-red-500/50 rounded-2xl p-6 mb-6">
+        <h2 class="text-red-400 font-bold text-lg mb-2">⚠️ ATENCIÓN: Acción irreversible</h2>
+        <p class="text-slate-300 mb-4">
+          Estás a punto de borrar <strong class="text-white">todo el histórico</strong> de predicciones y noticias procesadas.
+        </p>
+        <hr class="border-red-500/30 mb-4">
+        <ul class="space-y-1 text-slate-300 text-sm">
+          <li>
+            📊 <strong class="text-white">{{ num_predictions }}</strong>
+            predicción{% if num_predictions != 1 %}es{% endif %} serán eliminadas
+          </li>
+          <li>
+            📰 <strong class="text-white">{{ num_recent_articles }}</strong>
+            artículo{% if num_recent_articles != 1 %}s{% endif %} del caché de deduplicación serán eliminados
+          </li>
+          <li class="text-emerald-400 mt-2">
+            👤 Los usuarios <strong>NO</strong> serán afectados
+          </li>
+        </ul>
+      </div>
+
+      <p class="text-slate-400 text-sm mb-6">
+        Esta acción limpiará la base de datos para empezar con un histórico limpio.
+        Solo úsala si estás seguro de que quieres comenzar desde cero.
+      </p>
+
+      <form method="POST" action="/admin/reset-predictions">
+        <div class="flex gap-3">
+          <button type="submit"
+                  class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition">
+            🗑️ Sí, borrar todo el histórico
+          </button>
+          <a href="{{ url_for('admin.dashboard') }}"
+             class="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-6 py-3 rounded-xl transition">
+            ← Cancelar
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

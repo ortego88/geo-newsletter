@@ -6,6 +6,7 @@ Completamente independiente del sistema de usuarios de la app.
 import os
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 import pytz
 from flask import (
@@ -23,6 +24,8 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me-in-production")
 PREDICTIONS_DB = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
+RECENT_ARTICLES_DB = os.getenv("RECENT_ARTICLES_DB_PATH", "data/recent_articles.db")
+SEEN_ARTICLES_FILE = os.getenv("SEEN_ARTICLES_FILE_PATH", "data/seen_articles.txt")
 
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
@@ -190,4 +193,62 @@ def dashboard():
         sort_by=sort_by,
         sort_dir=sort_dir,
         per_page=per_page,
+    )
+
+
+@admin_bp.route("/reset-predictions", methods=["GET", "POST"])
+def reset_predictions():
+    if not _admin_required():
+        return redirect(url_for("admin.login"))
+
+    if request.method == "POST":
+        try:
+            # Borrar predicciones
+            with sqlite3.connect(PREDICTIONS_DB) as conn:
+                conn.execute("DELETE FROM predictions")
+                conn.commit()
+
+            # Borrar caché de deduplicación (artículos recientes)
+            if Path(RECENT_ARTICLES_DB).exists():
+                with sqlite3.connect(RECENT_ARTICLES_DB) as conn:
+                    conn.execute("DELETE FROM recent_articles")
+                    conn.commit()
+
+            # Borrar hashes de deduplicación de nivel 1 (seen_articles.txt)
+            seen_file = Path(SEEN_ARTICLES_FILE)
+            if seen_file.exists():
+                seen_file.write_text("")
+
+            flash(
+                "✅ Histórico de predicciones y noticias borrado correctamente. "
+                "La base de datos está limpia.",
+                "success",
+            )
+        except Exception as e:
+            flash(f"❌ Error al resetear la base de datos: {str(e)}", "danger")
+        return redirect(url_for("admin.dashboard"))
+
+    # GET: mostrar página de confirmación con recuento de registros
+    num_predictions = 0
+    num_recent_articles = 0
+    try:
+        with sqlite3.connect(PREDICTIONS_DB) as conn:
+            row = conn.execute("SELECT COUNT(*) FROM predictions").fetchone()
+            num_predictions = row[0] if row else 0
+    except Exception:
+        pass
+    try:
+        if Path(RECENT_ARTICLES_DB).exists():
+            with sqlite3.connect(RECENT_ARTICLES_DB) as conn:
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM recent_articles"
+                ).fetchone()
+                num_recent_articles = row[0] if row else 0
+    except Exception:
+        pass
+
+    return render_template(
+        "admin/reset_predictions.html",
+        num_predictions=num_predictions,
+        num_recent_articles=num_recent_articles,
     )
