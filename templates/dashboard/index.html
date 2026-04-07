@@ -134,81 +134,59 @@
         </div>
       </div>
 
-      <!-- Pro: real-time dashboard / Basic/Premium: limited view -->
-      {% if plan_config and plan_config.dashboard_access %}
-        <div class="bg-slate-800 border border-emerald-500/30 rounded-2xl p-6 mb-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <h2 class="text-white font-bold" data-i18n="dash.realtime_dashboard">Dashboard en tiempo real</h2>
-            <span class="text-emerald-400 text-xs bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">PRO</span>
-          </div>
-          <p class="text-slate-400 text-sm">El dashboard completo con gráficos en tiempo real está disponible aquí.</p>
-          <a href="/api/stats" class="inline-block mt-3 text-emerald-400 hover:text-emerald-300 text-sm transition">Ver estadísticas API →</a>
-        </div>
-      {% else %}
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-white font-bold" data-i18n="dash.realtime_dashboard">Dashboard en tiempo real</h2>
-            <span class="text-slate-500 text-xs bg-slate-700 px-2 py-0.5 rounded-full" data-i18n="dash.pro_only">Solo plan Profesional</span>
-          </div>
-          <p class="text-slate-400 text-sm mb-4">Accede al dashboard en tiempo real con gráficos, mapa de calor geopolítico y API key personal.</p>
-          <a href="/dashboard/subscription" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition" data-i18n="dash.upgrade_pro">
-            Actualizar plan →
+      <!-- Filters -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 mb-4">
+        <form method="GET" action="/dashboard" class="filters-form flex flex-wrap gap-3 items-center">
+          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="">Todos los activos</option>
+            {% for a in available_assets %}
+              <option value="{{ a.symbol }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }}</option>
+            {% endfor %}
+          </select>
+          <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
+            Limpiar
           </a>
-        </div>
-      {% endif %}
+        </form>
+      </div>
 
-      <!-- Recent alerts table -->
+      <!-- Alerts table -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
-          <h2 class="font-bold text-white" data-i18n="dash.recent_alerts">Alertas recientes</h2>
-          <span class="text-slate-500 text-xs">Últimas 24h · {{ total_alerts }} señales</span>
-        </div>
-
-        <!-- Filters -->
-        <div class="px-6 py-4 border-b border-slate-700">
-          <form method="GET" action="/dashboard" class="flex flex-wrap gap-3">
-            <select name="asset" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="">Todos los activos</option>
-              {% for a in available_assets %}
-                <option value="{{ a.symbol }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }}</option>
-              {% endfor %}
-            </select>
-            <select name="sort" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="predicted_at" {% if sort_by == 'predicted_at' %}selected{% endif %}>Fecha</option>
-              <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Score</option>
-              <option value="confidence" {% if sort_by == 'confidence' %}selected{% endif %}>Confianza</option>
-              <option value="impact_percent" {% if sort_by == 'impact_percent' %}selected{% endif %}>Impacto</option>
-              <option value="price_at_prediction" {% if sort_by == 'price_at_prediction' %}selected{% endif %}>Precio activo</option>
-            </select>
-            <select name="dir" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-              <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>▼ Desc</option>
-              <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>▲ Asc</option>
-            </select>
-            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-              Filtrar
-            </button>
-            <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
-              Limpiar
-            </a>
-          </form>
-        </div>
-
         {% if alerts %}
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-xs">
               <thead>
                 <tr class="border-b border-slate-700 bg-slate-900/50">
-                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">Evento</th>
-                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
-                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_confidence">Conf.</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_score">Score</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_entry">Precio inicial</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_valid">Precio valid.</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Variación</th>
-                  <th class="text-center px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Estado</th>
-                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha (Madrid)</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">Título</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_confidence">
+                      Conf.{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_score">
+                      Score{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=impact_percent&dir={% if sort_by == 'impact_percent' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Impacto pred.{% if sort_by == 'impact_percent' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_price_entry">
+                      Precio entrada{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_valid">Precio valid.</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Cambio</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Resultado</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
+                      Fecha{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">
@@ -222,61 +200,78 @@
                   {% set predicted_at = alert[3] or '' %}
                   {% set reasoning = alert[4] or '' %}
                   {% set score = alert[5] %}
+                  {% set impact_pct = alert[6] %}
                   {% set price_entry = alert[7] %}
                   {% set price_valid = alert[8] %}
                   {% set outcome = alert[9] or 'pending' %}
                   {% set title = alert[10] or '' %}
                   {% set variation = alert[11] %}
-                  <tr class="hover:bg-slate-700/30 transition" title="{{ reasoning[:120] }}">
-                    <td class="px-4 py-4 text-slate-300 text-xs max-w-[200px] truncate">{{ title[:60] if title else '—' }}</td>
-                    <td class="px-4 py-4 font-semibold text-white">{{ asset }}</td>
-                    <td class="px-4 py-4">
+                  <tr class="hover:bg-slate-700/30 transition" title="{{ reasoning[:150] }}">
+                    <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ title[:60] if title else '—' }}</td>
+                    <td class="px-3 py-3 font-semibold text-white">{{ asset }}</td>
+                    <td class="px-3 py-3 text-center">
                       {% if direction in ('up', 'bullish', 'positive', 'alza') %}
-                        <span class="text-emerald-400 font-bold text-lg">↑</span>
-                        <span class="text-emerald-400 text-xs ml-1" data-i18n="dash.dir_up">Alza</span>
+                        <span class="text-emerald-400 font-bold text-base">↑</span>
                       {% elif direction in ('down', 'bearish', 'negative', 'baja') %}
-                        <span class="text-red-400 font-bold text-lg">↓</span>
-                        <span class="text-red-400 text-xs ml-1" data-i18n="dash.dir_down">Baja</span>
+                        <span class="text-red-400 font-bold text-base">↓</span>
                       {% else %}
                         <span class="text-slate-400">→</span>
-                        <span class="text-slate-400 text-xs ml-1" data-i18n="dash.dir_sideways">Lateral</span>
                       {% endif %}
                     </td>
-                    <td class="px-4 py-4 text-right text-slate-300 text-xs">
+                    <td class="px-3 py-3 text-right text-slate-300">
                       {% if confidence %}{{ confidence|int }}%{% else %}—{% endif %}
                     </td>
-                    <td class="px-4 py-4 text-right text-slate-300 text-xs">
+                    <td class="px-3 py-3 text-right text-slate-300">
                       {% if score %}{{ score|int }}{% else %}—{% endif %}
                     </td>
-                    <td class="px-4 py-4 text-right text-slate-300 text-xs font-mono">
-                      {% if price_entry %}
-                        {% if price_entry >= 1000 %}${{ "{:,.0f}".format(price_entry) }}{% elif price_entry >= 1 %}${{ "%.2f"|format(price_entry) }}{% else %}${{ "%.4f"|format(price_entry) }}{% endif %}
+                    <td class="px-3 py-3 text-right text-slate-400">
+                      {% if impact_pct %}
+                        <span class="{% if impact_pct > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                          {{ "%+.1f"|format(impact_pct) }}%
+                        </span>
                       {% else %}—{% endif %}
                     </td>
-                    <td class="px-4 py-4 text-right text-slate-300 text-xs font-mono">
+                    <td class="px-3 py-3 text-right font-mono text-slate-300">
+                      {% if price_entry %}
+                        {% if price_entry >= 1000 %}
+                          ${{ "{:,.0f}".format(price_entry) }}
+                        {% elif price_entry >= 1 %}
+                          ${{ "%.2f"|format(price_entry) }}
+                        {% else %}
+                          ${{ "%.4f"|format(price_entry) }}
+                        {% endif %}
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono text-slate-300">
                       {% if price_valid %}
-                        {% if price_valid >= 1000 %}${{ "{:,.0f}".format(price_valid) }}{% elif price_valid >= 1 %}${{ "%.2f"|format(price_valid) }}{% else %}${{ "%.4f"|format(price_valid) }}{% endif %}
+                        {% if price_valid >= 1000 %}
+                          ${{ "{:,.0f}".format(price_valid) }}
+                        {% elif price_valid >= 1 %}
+                          ${{ "%.2f"|format(price_valid) }}
+                        {% else %}
+                          ${{ "%.4f"|format(price_valid) }}
+                        {% endif %}
                       {% else %}<span class="text-slate-500">pendiente</span>{% endif %}
                     </td>
-                    <td class="px-4 py-4 text-right text-xs font-mono">
+                    <td class="px-3 py-3 text-right font-mono">
                       {% if variation is not none %}
                         <span class="{% if variation > 0 %}text-emerald-400{% elif variation < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
                           {{ "%+.2f"|format(variation) }}%
                         </span>
                       {% else %}
-                        <span class="text-slate-500">⏳</span>
+                        <span class="text-slate-500">pendiente</span>
                       {% endif %}
                     </td>
-                    <td class="px-4 py-4 text-center">
+                    <td class="px-3 py-3 text-center">
                       {% if outcome == 'correct' %}
-                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold text-xs px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
+                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
                       {% elif outcome == 'incorrect' %}
-                        <span class="bg-red-500/20 text-red-400 font-semibold text-xs px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
+                        <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
                       {% else %}
-                        <span class="bg-slate-700 text-slate-400 font-semibold text-xs px-2 py-0.5 rounded-full whitespace-nowrap">⏳ Pendiente</span>
+                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⏳ Pendiente</span>
                       {% endif %}
                     </td>
-                    <td class="px-4 py-4 text-slate-500 text-xs whitespace-nowrap">{{ predicted_at }}</td>
+                    <td class="px-3 py-3 text-slate-500 whitespace-nowrap">{{ predicted_at }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -304,10 +299,7 @@
         {% else %}
           <div class="px-6 py-12 text-center">
             <div class="text-4xl mb-3">📡</div>
-            <p class="text-slate-400">Aún no hay alertas. El pipeline analiza nuevos eventos cada 10 minutos.</p>
-            <a href="/dashboard/settings" class="inline-block mt-4 text-emerald-400 hover:text-emerald-300 text-sm transition">
-              Configura tus activos →
-            </a>
+            <p class="text-slate-400">No hay predicciones en las últimas 24 horas.</p>
           </div>
         {% endif %}
       </div>

@@ -18,8 +18,6 @@ from flask import (
     url_for,
 )
 
-from src.services.prediction_tracker import PredictionTracker
-
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me-in-production")
@@ -78,9 +76,6 @@ def dashboard():
     if not _admin_required():
         return redirect(url_for("admin.login"))
 
-    tracker = PredictionTracker(PREDICTIONS_DB)
-    stats = tracker.get_accuracy_stats()
-
     # Pagination & filters
     page = max(1, int(request.args.get("page", 1)))
     per_page = 20
@@ -95,6 +90,9 @@ def dashboard():
     sort_col = _SORT_FIELD_MAP[sort_by]
     sort_order = "DESC" if sort_dir == "desc" else "ASC"
 
+    stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0,
+             "high_confidence_accuracy": 0.0, "pending": 0}
+
     try:
         with sqlite3.connect(PREDICTIONS_DB) as conn:
             conn.row_factory = sqlite3.Row
@@ -108,6 +106,32 @@ def dashboard():
             total = conn.execute(
                 f"SELECT COUNT(*) FROM predictions {where_clause}", params
             ).fetchone()[0]
+
+            # Accuracy stats scoped to the same 24h window + asset filter
+            outcome_rows = conn.execute(
+                f"SELECT outcome, confidence FROM predictions {where_clause} AND outcome != 'pending'",
+                params,
+            ).fetchall()
+            pending_count = conn.execute(
+                f"SELECT COUNT(*) FROM predictions {where_clause} AND outcome = 'pending'",
+                params,
+            ).fetchone()[0]
+
+            if outcome_rows:
+                _total = len(outcome_rows)
+                _correct = sum(1 for r in outcome_rows if r[0] == "correct")
+                high_conf = [r for r in outcome_rows if (r[1] or 0) >= 70]
+                hc_correct = sum(1 for r in high_conf if r[0] == "correct")
+                stats = {
+                    "total": _total,
+                    "correct": _correct,
+                    "incorrect": _total - _correct,
+                    "accuracy_pct": round(_correct / _total * 100, 1) if _total else 0.0,
+                    "high_confidence_accuracy": round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0,
+                    "pending": pending_count,
+                }
+            else:
+                stats["pending"] = pending_count
 
             rows = conn.execute(
                 f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
