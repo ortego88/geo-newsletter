@@ -14,7 +14,7 @@ import threading
 import time
 from datetime import datetime
 
-# Crear directorio data si no existe (Railway tiene filesystem efímero)
+# Crear directorio data si no existe (Railway tiene filesystem efímero para SQLite local)
 os.makedirs("data", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
 
@@ -30,10 +30,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger("run_all")
 
-if not os.path.exists("data/app.db"):
+# Comprobar configuración de BD
+_db_url = os.getenv("DATABASE_URL", "")
+if _db_url:
+    logger.info("✅ DATABASE_URL detectada — usando PostgreSQL (datos persistentes entre deploys)")
+else:
     logger.warning(
-        "⚠️  AVISO: data/app.db no existe. Si estás en Railway, configura un Persistent Volume "
-        "en /app/data para no perder usuarios entre deploys. Ver PERSISTENT_STORAGE.md para instrucciones."
+        "⚠️  AVISO: DATABASE_URL no configurada. Usando SQLite local en data/app.db y data/predictions.db. "
+        "Los datos se perderán entre deploys en Railway. "
+        "Configura la variable de entorno DATABASE_URL con tu conexión PostgreSQL."
     )
 
 from apscheduler.schedulers.background import BackgroundScheduler

@@ -2,6 +2,7 @@ import os
 import logging
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
+from sqlalchemy import text
 from web.models import PLANS, get_conn, AVAILABLE_ASSETS
 from datetime import datetime, timezone, timedelta
 
@@ -85,7 +86,6 @@ def process_subscription():
         return redirect(url_for("billing.pricing"))
 
     conn = get_conn()
-    c = conn.cursor()
 
     if STRIPE_SECRET_KEY and payment_token:
         # Production: use real Stripe
@@ -96,7 +96,6 @@ def process_subscription():
             flash("Pago procesado correctamente", "success")
         except Exception as e:
             flash(f"Error procesando el pago: {e}", "error")
-            conn.close()
             return redirect(url_for("billing.subscribe", plan=plan))
     else:
         # Local/test mode: payment is simulated, no real charge is made
@@ -115,31 +114,35 @@ def process_subscription():
         status = "active"
         trial_end = None
 
-    # Update or create subscription
-    c.execute("SELECT id FROM subscriptions WHERE user_id=?", (current_user.id,))
-    existing = c.fetchone()
-    if existing:
-        c.execute(
-            """UPDATE subscriptions SET plan=?, billing_cycle=?, status=?,
-               trial_ends_at=?, current_period_end=?, updated_at=datetime('now')
-               WHERE user_id=?""",
-            (plan, billing_cycle, status, trial_end, period_end, current_user.id),
-        )
-    else:
-        c.execute(
-            """INSERT INTO subscriptions
-               (user_id,plan,billing_cycle,status,trial_ends_at,current_period_end)
-               VALUES (?,?,?,?,?,?)""",
-            (current_user.id, plan, billing_cycle, status, trial_end, period_end),
-        )
+    with conn:
+        # Update or create subscription
+        existing = conn.execute(
+            text("SELECT id FROM subscriptions WHERE user_id=:uid"), {"uid": current_user.id}
+        ).fetchone()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if existing:
+            conn.execute(
+                text("""UPDATE subscriptions SET plan=:plan, billing_cycle=:cycle, status=:status,
+                       trial_ends_at=:trial, current_period_end=:period, updated_at=:now
+                       WHERE user_id=:uid"""),
+                {"plan": plan, "cycle": billing_cycle, "status": status,
+                 "trial": trial_end, "period": period_end, "now": now_iso, "uid": current_user.id},
+            )
+        else:
+            conn.execute(
+                text("""INSERT INTO subscriptions
+                       (user_id,plan,billing_cycle,status,trial_ends_at,current_period_end,created_at,updated_at)
+                       VALUES (:uid,:plan,:cycle,:status,:trial,:period,:now,:now)"""),
+                {"uid": current_user.id, "plan": plan, "cycle": billing_cycle,
+                 "status": status, "trial": trial_end, "period": period_end, "now": now_iso},
+            )
 
-    # Save simulated payment method
-    c.execute(
-        "INSERT INTO payment_methods (user_id, card_last4, card_brand) VALUES (?, ?, ?)",
-        (current_user.id, "4242", "Visa (test)"),
-    )
-    conn.commit()
-    conn.close()
+        # Save simulated payment method
+        conn.execute(
+            text("INSERT INTO payment_methods (user_id, card_last4, card_brand, created_at) VALUES (:uid, :last4, :brand, :now)"),
+            {"uid": current_user.id, "last4": "4242", "brand": "Visa (test)", "now": now_iso},
+        )
+        conn.commit()
 
     flash("✅ Suscripción activada correctamente", "success")
     return redirect(url_for("billing.success"))
@@ -155,14 +158,12 @@ def success():
 @billing_bp.route("/cancel")
 @login_required
 def cancel():
-    conn = get_conn()
-    c = conn.cursor()
-    c.execute(
-        "UPDATE subscriptions SET status='cancelled' WHERE user_id=?",
-        (current_user.id,),
-    )
-    conn.commit()
-    conn.close()
+    with get_conn() as conn:
+        conn.execute(
+            text("UPDATE subscriptions SET status='cancelled' WHERE user_id=:uid"),
+            {"uid": current_user.id},
+        )
+        conn.commit()
     flash(
         "Suscripción cancelada. Seguirás teniendo acceso hasta el final del período.",
         "info",

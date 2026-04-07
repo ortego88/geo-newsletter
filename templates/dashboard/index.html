@@ -138,9 +138,9 @@
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.correct_incorrect">Correctas / Incorrectas</p>
           <p class="font-bold text-lg">
-            <span class="text-emerald-400">{{ accuracy_stats.correct }}</span>
+            <span class="text-emerald-400 cursor-pointer hover:opacity-80 transition" data-filter="correct" title="Ver solo correctas">{{ accuracy_stats.correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-red-400">{{ accuracy_stats.incorrect }}</span>
+            <span class="text-red-400 cursor-pointer hover:opacity-80 transition" data-filter="incorrect" title="Ver solo incorrectas">{{ accuracy_stats.incorrect }}</span>
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -151,7 +151,7 @@
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
-          <p class="text-amber-400 font-bold text-xl">{{ accuracy_stats.pending }}</p>
+          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-filter="pending" title="Ver solo pendientes">{{ accuracy_stats.pending }}</p>
         </div>
       </div>
 
@@ -212,7 +212,8 @@
               </thead>
               <tbody class="divide-y divide-slate-700/50">
                 {% for pred in alerts %}
-                  <tr class="hover:bg-slate-700/30 transition" title="{{ (pred.reasoning or '')[:150] }}">
+                  {% set outcome = pred.outcome or 'pending' %}
+                  <tr class="hover:bg-slate-700/30 transition" data-status="{{ outcome }}" title="{{ (pred.reasoning or '')[:150] }}">
                     <td class="px-3 py-3 text-slate-500">{{ pred.id }}</td>
                     <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
                     <td class="px-3 py-3 font-semibold text-white">
@@ -266,7 +267,6 @@
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-center">
-                      {% set outcome = pred.outcome or 'pending' %}
                       {% if outcome == 'correct' %}
                         <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
                       {% elif outcome == 'incorrect' %}
@@ -490,6 +490,39 @@
     });
     updateCookieBannerLang();
   }
+
+  // ── Filtros clickables (Mejora 2) ─────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    var filterBtns = document.querySelectorAll('[data-filter]');
+    var tableRows = document.querySelectorAll('tbody tr[data-status]');
+    var activeFilter = null;
+
+    filterBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var filter = this.dataset.filter;
+
+        if (activeFilter === filter) {
+          // Desactivar filtro — mostrar todos
+          activeFilter = null;
+          tableRows.forEach(function(row) { row.style.display = ''; });
+          filterBtns.forEach(function(b) { b.style.opacity = '1'; });
+          return;
+        }
+
+        activeFilter = filter;
+
+        // Filtrar filas por data-status
+        tableRows.forEach(function(row) {
+          row.style.display = row.dataset.status === filter ? '' : 'none';
+        });
+
+        // Destacar botón activo
+        filterBtns.forEach(function(b) {
+          b.style.opacity = b.dataset.filter === filter ? '1' : '0.35';
+        });
+      });
+    });
+  });
 
 </script>
 

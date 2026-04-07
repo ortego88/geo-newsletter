@@ -1,12 +1,16 @@
 """
 Rastreador de predicciones.
-Guarda predicciones en SQLite y las valida comparando precios.
+Guarda predicciones en SQLite/PostgreSQL y las valida comparando precios.
 """
 
-import sqlite3
 import logging
 import os
 from datetime import datetime
+
+from sqlalchemy import text
+
+from web.db_engine import get_engine
+from src.services.market_config import calculate_verification_time
 
 logger = logging.getLogger("prediction_tracker")
 
@@ -18,37 +22,65 @@ _MIN_SIGNIFICANT_MOVE = 0.15
 class PredictionTracker:
     def __init__(self, db_path: str = "data/predictions.db"):
         self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        # db_path is kept for backward compatibility; actual connection uses SQLAlchemy engine
+        os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
         self._init_db()
 
     def _get_conn(self):
-        return sqlite3.connect(self.db_path)
+        return get_engine("predictions").connect()
 
     def _init_db(self):
-        with self._get_conn() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS predictions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    event_id TEXT UNIQUE,
-                    title TEXT,
-                    category TEXT,
-                    asset TEXT,
-                    direction TEXT,
-                    impact_percent REAL,
-                    timeframe TEXT,
-                    timeframe_minutes INTEGER,
-                    confidence REAL,
-                    reasoning TEXT,
-                    price_at_prediction REAL,
-                    price_at_validation REAL,
-                    predicted_at TEXT,
-                    validated_at TEXT,
-                    outcome TEXT,
-                    score REAL,
-                    source TEXT
-                )
-            """)
-            conn.commit()
+        from sqlalchemy import (
+            MetaData, Table, Column, Integer, String, Text, Float, BigInteger,
+        )
+        engine = get_engine("predictions")
+        meta = MetaData()
+        Table("predictions", meta,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("event_id", Text, unique=True),
+            Column("title", Text),
+            Column("category", Text),
+            Column("asset", Text),
+            Column("direction", Text),
+            Column("impact_percent", Float),
+            Column("timeframe", Text),
+            Column("timeframe_minutes", Integer),
+            Column("confidence", Float),
+            Column("reasoning", Text),
+            Column("price_at_prediction", Float),
+            Column("price_at_validation", Float),
+            Column("predicted_at", Text),
+            Column("validated_at", Text),
+            Column("outcome", Text),
+            Column("score", Float),
+            Column("source", Text),
+            Column("verify_at", Text),  # cuándo verificar esta predicción (Mejora 3)
+        )
+        # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
+        meta.create_all(engine, checkfirst=True)
+        # Add verify_at column to existing tables (migration for existing DBs)
+        self._migrate_add_verify_at(engine)
+
+    def _migrate_add_verify_at(self, engine):
+        """Adds verify_at column to existing predictions tables (safe migration)."""
+        try:
+            with engine.connect() as conn:
+                # Check if column already exists
+                if engine.dialect.name == "postgresql":
+                    exists = conn.execute(text(
+                        "SELECT 1 FROM information_schema.columns "
+                        "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='verify_at'"
+                    )).fetchone()
+                else:
+                    exists = conn.execute(text(
+                        "SELECT 1 FROM pragma_table_info('predictions') WHERE name='verify_at'"
+                    )).fetchone()
+                if not exists:
+                    conn.execute(text("ALTER TABLE predictions ADD COLUMN verify_at TEXT"))
+                    conn.commit()
+                    logger.info("Migración: columna verify_at añadida a predictions")
+        except Exception as e:
+            logger.debug(f"verify_at migration note: {e}")
 
     def _timeframe_to_minutes(self, timeframe: str) -> int:
         # Capped at 3 days max to prevent stale predictions that can't be
@@ -67,6 +99,7 @@ class PredictionTracker:
     def save_prediction(self, event: dict, current_price: float) -> int | None:
         """
         Guarda una predicción. Devuelve el ID de la fila insertada, o None si ya existía.
+        Calcula verify_at según el tipo de activo y horario de mercado (Mejoras 3 & 4).
         """
         analysis = event.get("analysis", {})
         event_id = event.get("event_id") or event.get("id") or str(hash(event.get("title", "")))
@@ -82,30 +115,43 @@ class PredictionTracker:
         sources = event.get("sources", [])
         source = ", ".join(sources[:2]) if isinstance(sources, list) else str(sources)
         score = float(event.get("score", event.get("impact_score", 0)))
-        predicted_at = datetime.utcnow().isoformat()
+        predicted_at = datetime.utcnow()
+
+        # Calcular verify_at según el tipo de activo y horario de mercado (Mejoras 3 & 4)
+        try:
+            verify_dt = calculate_verification_time(asset, predicted_at)
+            verify_at = verify_dt.isoformat()
+        except Exception:
+            verify_at = None
 
         try:
             with self._get_conn() as conn:
-                cursor = conn.execute("""
+                result = conn.execute(text("""
                     INSERT INTO predictions
                     (event_id, title, category, asset, direction, impact_percent,
                      timeframe, timeframe_minutes, confidence, reasoning,
-                     price_at_prediction, predicted_at, outcome, score, source)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
-                """, (
-                    event_id, title, category, asset, direction, impact_percent,
-                    timeframe, timeframe_minutes, confidence, reasoning,
-                    current_price, predicted_at, score, source
-                ))
+                     price_at_prediction, predicted_at, outcome, score, source, verify_at)
+                    VALUES (:event_id, :title, :category, :asset, :direction, :impact_percent,
+                            :timeframe, :timeframe_minutes, :confidence, :reasoning,
+                            :price, :predicted_at, 'pending', :score, :source, :verify_at)
+                """), {
+                    "event_id": event_id, "title": title, "category": category,
+                    "asset": asset, "direction": direction, "impact_percent": impact_percent,
+                    "timeframe": timeframe, "timeframe_minutes": timeframe_minutes,
+                    "confidence": confidence, "reasoning": reasoning,
+                    "price": current_price, "predicted_at": predicted_at.isoformat(),
+                    "score": score, "source": source, "verify_at": verify_at,
+                })
                 conn.commit()
-                prediction_id = cursor.lastrowid
+                prediction_id = result.lastrowid
                 logger.info(f"Predicción guardada: ID={prediction_id} | {title[:60]}")
                 return prediction_id
-        except sqlite3.IntegrityError:
-            logger.debug(f"Predicción ya existente para event_id={event_id}, omitiendo.")
-            return None
         except Exception as e:
-            logger.error(f"Error guardando predicción: {e}")
+            err_str = str(e)
+            if "UNIQUE constraint" in err_str or "unique" in err_str.lower() or "duplicate" in err_str.lower():
+                logger.debug(f"Predicción ya existente para event_id={event_id}, omitiendo.")
+            else:
+                logger.error(f"Error guardando predicción: {e}")
             return None
 
     def validate_prediction(self, prediction_id: int, current_price: float) -> dict | None:
@@ -115,14 +161,13 @@ class PredictionTracker:
         """
         with self._get_conn() as conn:
             row = conn.execute(
-                "SELECT * FROM predictions WHERE id = ?", (prediction_id,)
-            ).fetchone()
-            cols = [d[1] for d in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+                text("SELECT * FROM predictions WHERE id = :id"), {"id": prediction_id}
+            ).mappings().fetchone()
 
         if not row:
             return None
 
-        pred = dict(zip(cols, row))
+        pred = dict(row)
 
         price_at = pred.get("price_at_prediction", 0)
         if not price_at or price_at == 0:
@@ -150,11 +195,11 @@ class PredictionTracker:
         validated_at = datetime.utcnow().isoformat()
 
         with self._get_conn() as conn:
-            conn.execute("""
+            conn.execute(text("""
                 UPDATE predictions
-                SET price_at_validation = ?, validated_at = ?, outcome = ?
-                WHERE id = ?
-            """, (current_price, validated_at, outcome, prediction_id))
+                SET price_at_validation = :price, validated_at = :validated_at, outcome = :outcome
+                WHERE id = :id
+            """), {"price": current_price, "validated_at": validated_at, "outcome": outcome, "id": prediction_id})
             conn.commit()
 
         result = {
@@ -180,18 +225,21 @@ class PredictionTracker:
         """Devuelve todas las predicciones pendientes de validación."""
         with self._get_conn() as conn:
             rows = conn.execute(
-                "SELECT * FROM predictions WHERE outcome = 'pending'"
-            ).fetchall()
-            cols = [d[1] for d in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+                text("SELECT * FROM predictions WHERE outcome = 'pending'")
+            ).mappings().fetchall()
 
-        return [dict(zip(cols, row)) for row in rows]
+        return [dict(r) for r in rows]
 
     def get_accuracy_stats(self) -> dict:
         """Devuelve estadísticas de precisión de predicciones."""
         with self._get_conn() as conn:
             rows = conn.execute(
-                "SELECT outcome, confidence, impact_percent FROM predictions WHERE outcome != 'pending'"
+                text("SELECT outcome, confidence, impact_percent FROM predictions WHERE outcome != 'pending'")
             ).fetchall()
+
+            pending = conn.execute(
+                text("SELECT COUNT(*) FROM predictions WHERE outcome = 'pending'")
+            ).fetchone()[0]
 
         if not rows:
             return {
@@ -200,7 +248,7 @@ class PredictionTracker:
                 "incorrect": 0,
                 "accuracy_pct": 0.0,
                 "high_confidence_accuracy": 0.0,
-                "pending": 0,
+                "pending": pending,
             }
 
         total = len(rows)
@@ -212,12 +260,6 @@ class PredictionTracker:
         high_conf = [r for r in rows if (r[1] or 0) >= 70]
         hc_correct = sum(1 for r in high_conf if r[0] == "correct")
         hc_accuracy = round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0
-
-        # Count pending predictions
-        with self._get_conn() as conn:
-            pending = conn.execute(
-                "SELECT COUNT(*) FROM predictions WHERE outcome = 'pending'"
-            ).fetchone()[0]
 
         return {
             "total": total,
@@ -232,8 +274,7 @@ class PredictionTracker:
         """Devuelve las N predicciones más recientes."""
         with self._get_conn() as conn:
             rows = conn.execute(
-                "SELECT * FROM predictions ORDER BY id DESC LIMIT ?", (limit,)
-            ).fetchall()
-            cols = [d[1] for d in conn.execute("PRAGMA table_info(predictions)").fetchall()]
+                text("SELECT * FROM predictions ORDER BY id DESC LIMIT :limit"), {"limit": limit}
+            ).mappings().fetchall()
 
-        return [dict(zip(cols, row)) for row in rows]
+        return [dict(r) for r in rows]
