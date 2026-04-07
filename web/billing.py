@@ -42,6 +42,7 @@ def checkout_trial():
     plan = request.args.get("plan", "basic")
     if plan not in PLANS:
         plan = "basic"
+    trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
     return render_template(
         "billing/checkout.html",
         plan=plan,
@@ -49,6 +50,7 @@ def checkout_trial():
         billing_cycle="monthly",
         is_trial=True,
         stripe_pk=STRIPE_PUBLISHABLE_KEY,
+        trial_end_date=trial_end_date,
     )
 
 

@@ -65,7 +65,7 @@
         {% if is_trial %}
           <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
             <p class="text-emerald-400 font-semibold text-sm">🎁 Prueba gratuita de 7 días</p>
-            <p class="text-slate-400 text-xs mt-1">No se realizará ningún cargo hasta el día 8. Cancela en cualquier momento.</p>
+            <p class="text-slate-400 text-xs mt-1">No se realizará ningún cargo hasta el {{ trial_end_date }}. Cancela en cualquier momento.</p>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-slate-400">Hoy pagas</span>
