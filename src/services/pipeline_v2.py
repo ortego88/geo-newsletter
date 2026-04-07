@@ -120,13 +120,17 @@ EVENT_TAXONOMY = {
 }
 
 
+_MAX_KEYWORD_BONUS = 15   # maximum bonus points from keyword hits
+_LOG_SCALE_FACTOR = 10   # scale factor for logarithmic keyword bonus
+
+
 def _score_event(article: dict) -> tuple[int, str]:
     """Devuelve (score, category) basado en la taxonomía.
 
     Scoring uses a logarithmic bonus formula so that keyword hits produce
     a more distributed score range rather than clustering near base_severity:
 
-        score = base_severity + min(15, int(log(hits + 1) * 10))
+        score = base_severity + min(_MAX_KEYWORD_BONUS, int(log(hits + 1) * _LOG_SCALE_FACTOR))
 
     This means a single-keyword match produces a noticeably lower score
     than multiple matches, and the base_severity alone no longer dominates.
@@ -145,7 +149,7 @@ def _score_event(article: dict) -> tuple[int, str]:
     for event_type, config in EVENT_TAXONOMY.items():
         hits = sum(1 for kw in config["keywords"] if kw in text)
         if hits > 0:
-            bonus = min(15, int(math.log(hits + 1) * 10))
+            bonus = min(_MAX_KEYWORD_BONUS, int(math.log(hits + 1) * _LOG_SCALE_FACTOR))
             score = min(95, config["base_severity"] + bonus)
             if score > best_score:
                 best_score = score
