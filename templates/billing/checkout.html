@@ -126,8 +126,23 @@
               class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
           </div>
 
-          <button type="submit"
-            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition mt-2">
+          <!-- Terms & Conditions checkbox -->
+          <div class="flex items-start gap-3 p-4 bg-slate-900/50 rounded-xl border border-slate-700">
+            <input type="checkbox" id="accept-terms" name="accept_terms" value="1" required
+              class="mt-0.5 w-4 h-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900 cursor-pointer flex-shrink-0">
+            <label for="accept-terms" class="text-sm text-slate-300 cursor-pointer leading-relaxed">
+              He leído y acepto los
+              <a href="/terms" target="_blank" class="text-emerald-400 hover:text-emerald-300 underline font-medium">Términos y Condiciones</a>
+              y la
+              <a href="/privacy" target="_blank" class="text-emerald-400 hover:text-emerald-300 underline font-medium">Política de Privacidad</a>.
+              {% if is_trial %}
+              Entiendo que tras el período de prueba de 7 días se cargará automáticamente {{ plan_config.price_monthly }}€/mes salvo que cancele antes.
+              {% endif %}
+            </label>
+          </div>
+
+          <button type="submit" id="submit-btn" disabled
+            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition mt-2 opacity-50 cursor-not-allowed">
             {% if is_trial %}
               🚀 Iniciar prueba gratuita
             {% else %}
@@ -162,6 +177,21 @@
       }
       input.value = value;
     }
+
+    const checkbox = document.getElementById('accept-terms');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function updateSubmitBtn() {
+      if (checkbox.checked) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+    checkbox.addEventListener('change', updateSubmitBtn);
+    updateSubmitBtn();
   </script>
 
 {% include 'partials/cookie_banner.html' %}

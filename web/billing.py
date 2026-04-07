@@ -61,6 +61,10 @@ def process_subscription():
     payment_token = request.form.get("stripe_token", "")
     is_trial = request.form.get("is_trial") == "1"
 
+    if request.form.get("accept_terms") != "1":
+        flash("Debes aceptar los Términos y Condiciones para continuar.", "error")
+        return redirect(url_for("billing.checkout_trial") if is_trial else url_for("billing.subscribe", plan=plan))
+
     if plan not in PLANS:
         flash("Plan no válido", "error")
         return redirect(url_for("billing.pricing"))

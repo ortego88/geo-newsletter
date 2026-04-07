@@ -45,6 +45,10 @@ def create_app():
     def privacy():
         return render_template("privacy.html", plans=PLANS)
 
+    @main_bp.route("/terms")
+    def terms():
+        return render_template("terms.html")
+
     @main_bp.route("/health")
     def health():
         return jsonify({"status": "ok"})
