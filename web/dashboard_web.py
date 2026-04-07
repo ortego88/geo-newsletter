@@ -1,8 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from web.models import PLANS, AVAILABLE_ASSETS, get_conn
+import logging
 import os
 import sqlite3 as _sq
+
+_logger = logging.getLogger("dashboard_web")
 
 dashboard_bp = Blueprint("dashboard_web", __name__)
 
@@ -39,9 +42,8 @@ def index():
         )
         alerts = c2.fetchall()
         conn2.close()
-    except Exception:
-        import logging
-        logging.getLogger("dashboard_web").warning("Could not load predictions", exc_info=True)
+    except _sq.Error:
+        _logger.warning("Could not load predictions", exc_info=True)
 
     return render_template(
         "dashboard/index.html",
