@@ -120,7 +120,21 @@ EVENT_TAXONOMY = {
 
 
 def _score_event(article: dict) -> tuple[int, str]:
-    """Devuelve (score, category) basado en la taxonomía."""
+    """Devuelve (score, category) basado en la taxonomía.
+
+    Scoring uses a diminishing-returns formula so that keyword hits spread
+    scores across the range instead of clustering near ``base_severity``:
+
+        score = base_severity × BASE_WEIGHT + min(MAX_HIT_BONUS, hits × HIT_LINEAR + hits² × HIT_QUADRATIC)
+
+    This means a single-keyword match produces a noticeably lower score
+    than multiple matches, and the base_severity alone no longer dominates.
+    """
+    _BASE_WEIGHT = 0.6          # portion of base_severity retained
+    _MAX_HIT_BONUS = 40         # ceiling for keyword-hit bonus points
+    _HIT_LINEAR_WEIGHT = 8      # linear coefficient per keyword hit
+    _HIT_QUADRATIC_WEIGHT = 1.5 # quadratic coefficient per keyword hit
+
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
 
@@ -135,7 +149,10 @@ def _score_event(article: dict) -> tuple[int, str]:
     for event_type, config in EVENT_TAXONOMY.items():
         hits = sum(1 for kw in config["keywords"] if kw in text)
         if hits > 0:
-            score = min(99, config["base_severity"] + hits)
+            base = config["base_severity"]
+            # Weighted base (60%) + hit bonus with diminishing returns (up to 40 pts)
+            hit_bonus = min(_MAX_HIT_BONUS, hits * _HIT_LINEAR_WEIGHT + hits * hits * _HIT_QUADRATIC_WEIGHT)
+            score = min(99, int(base * _BASE_WEIGHT + hit_bonus))
             if score > best_score:
                 best_score = score
                 best_category = config["category"]

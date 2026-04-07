@@ -52,7 +52,7 @@ ASSET ASSIGNMENT RULES (strict priority order):
    - News about Russia/Ukraine conflict → ["NATURAL_GAS", "GOLD", "WHEAT"]
    - News mentioning "market volatility" as secondary effect → use the PRIMARY subject's assets, not GOLD
    - News with "optimism", "peace", "ceasefire" in oil-producing regions → ["WTI", "BRENT"] direction=down
-   - If title contains analyst opinion words (Says, According to, Warns, Forecasts) → use confidence 50-65
+   - If title contains analyst opinion words (Says, According to, Warns, Forecasts) → use confidence 45-59
    - War/conflict in oil-producing region → ["WTI", "BRENT", "GOLD"]
    - War/conflict NOT oil-related → ["GOLD", "SPX"]
    - Strait/chokepoint disruption → ["WTI", "BRENT", "NATURAL_GAS"]
@@ -74,12 +74,13 @@ IMPACT CALIBRATION (market_impact_percent):
 - Default: ±2 to ±5%
 - NEVER use round numbers like exactly 10, 15, -10, -15
 
-CONFIDENCE CALIBRATION (0-100):
-- 85-95: Direct, unambiguous impact. Confirmed event (e.g. "OPEC cuts production by 1M barrels")
-- 70-84: Clear impact but some uncertainty about magnitude
-- 50-69: Indirect impact or event is a warning/prediction/analysis (e.g. CEO letter)
-- 30-49: Speculative, indirect or contradictory signals
-- Use 55-65 for opinion pieces, CEO letters, analyst forecasts
+CONFIDENCE CALIBRATION (0-100) — use the FULL range, do NOT cluster around one value:
+- 88-95: Direct, unambiguous, confirmed event with clear market mechanism (e.g. "OPEC cuts production by 1M barrels", "Fed raises rates 50bp")
+- 75-87: Strong causal link but some uncertainty about timing or magnitude (e.g. confirmed military strike on oil facility)
+- 60-74: Moderate link — the event is real but impact depends on market reaction (e.g. tariff announcement, earnings warning)
+- 45-59: Indirect or secondary impact — analyst opinion, forecast, political rhetoric (e.g. "CEO warns of recession", "Says", "According to")
+- 25-44: Speculative, contradictory signals, or very indirect connection to markets
+- IMPORTANT: Vary confidence meaningfully between events. Two different events should rarely get the same confidence.
 
 ALLOWED SYMBOLS ONLY: BTC, ETH, XRP, SOL, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, NASDAQ, DAX, FTSE, IBEX, AAPL, MSFT, NVDA, AMZN, TSLA, META, JPM, XOM, US10Y, WHEAT, CORN
 
@@ -93,18 +94,18 @@ Category: {category}
 Severity score: {score}/100
 
 Instructions:
-- If the title contains attribution words like "Says", "According to", "Warns" — this is an analyst opinion, cap confidence at 65
+- If the title contains attribution words like "Says", "According to", "Warns" — this is an analyst opinion, use confidence 45-59
 - Identify the PRIMARY subject: is it about a company, commodity, macro policy, or geopolitical event?
 - Assign assets based on the PRIMARY subject (not secondary effects)
 - Use realistic impact percentages (most events are ±1-5%, not ±10-15%)
-- Set confidence based on how direct and confirmed the impact is
+- Set confidence based on how direct and confirmed the impact is — use the full 25-95 range
 
 Respond with this exact JSON:
 {{
   "direction": "up|down|neutral",
   "market_impact_percent": <realistic number, avoid round numbers like 10 or 15>,
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
-  "confidence": <calibrated 0-100, most events 50-75>,
+  "confidence": <calibrated 25-95, use the FULL range — not always 60-70>,
   "most_affected_assets": [<2-3 symbols, primary subject first>],
   "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando sujeto primario y dirección>"
 }}"""
