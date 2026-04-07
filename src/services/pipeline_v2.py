@@ -1,11 +1,15 @@
 """
 Pipeline principal v2.
-Flujo: fetch RSS → deduplicar → scoring → analizar con IA → guardar predicciones.
+Flujo: fetch RSS → deduplicar → scoring → filtrar por activo → analizar con IA → guardar predicciones.
+
+Scope: IBEX 35, ETFs y Criptodivisas únicamente.
+Noticias que no hacen match con ningún activo de estas categorías son descartadas.
 """
 
 import logging
 import hashlib
 import math
+import re
 from datetime import datetime, timedelta, timezone
 
 import feedparser
@@ -23,95 +27,222 @@ VALID_ASSETS = set(CRYPTO_IDS.keys()) | set(YAHOO_TICKERS.keys())
 
 # --- Fallback de activo por categoría cuando el modelo inventa tickers ---
 CATEGORY_FALLBACK = {
-    "energía": "WTI_OIL",
-    "energy": "WTI_OIL",
     "crypto": "BTC",
-    "finance": "SPX",
-    "mercados": "SPX",
-    "financial": "SPX",
-    "commodities": "GOLD",
-    "geopolítica": "SPX",
-    "geopolitical": "SPX",
-    "conflicto": "SPX",
-    "general": "SPX",
+    "ibex35": "IBEX35",
+    "etf": "SPY",
+    "mercados": "IBEX35",
+    "financial": "IBEX35",
+    "finance": "IBEX35",
+    "general": "IBEX35",
+    "geopolítica": "IBEX35",
+    "geopolitical": "IBEX35",
+    "conflicto": "IBEX35",
+    "energía": "IBEX35",
+    "energy": "IBEX35",
+    "commodities": "GLD",
 }
 
-# --- Fuentes RSS ---
+# --- Fuentes RSS: IBEX 35 / Mercados españoles + Crypto ---
 RSS_SOURCES = [
-    {"name": "Reuters News", "url": "https://feeds.reuters.com/reuters/worldNews"},
-    {"name": "Reuters Business", "url": "https://feeds.reuters.com/reuters/businessNews"},
-    {"name": "Bloomberg News", "url": "https://feeds.bloomberg.com/markets/news.rss"},
-    {"name": "AP News", "url": "https://apnews.com/hub/world-news"},
-    {"name": "BBC News", "url": "http://feeds.bbc.co.uk/news/world/rss.xml"},
-    {"name": "Sky News", "url": "http://feeds.skynews.com/feeds/rss/world.xml"},
-    {"name": "Reuters Energy", "url": "https://feeds.reuters.com/reuters/businessNews?taxonomy=10207"},
-    {"name": "Oil & Gas Journal", "url": "https://www.ogj.com/feed"},
-    {"name": "OPEC Official", "url": "https://www.opec.org/rss/feeds"},
-    {"name": "CoinMarketCap", "url": "https://coinmarketcap.com/feed"},
-    {"name": "MarketWatch", "url": "https://feeds.marketwatch.com/marketwatch/topstories/"},
-    {"name": "CNBC", "url": "https://www.cnbc.com/id/100003114/device/rss/rss.html"},
-    {"name": "Financial Times", "url": "https://feeds.ft.com/markets"},
-    {"name": "GDELT", "url": "https://api.gdeltproject.org/api/v2/top10/top10?OUTPUTMODE=RSS"},
-    {"name": "ACLED", "url": "https://acleddata.com/feed/"},
-    # --- Fuentes mercado español ---
+    # --- Mercado español / IBEX 35 ---
     {"name": "Expansión Mercados", "url": "https://e00-expansion.uecdn.es/rss/mercados.xml"},
-    {"name": "CincoDías Mercados", "url": "https://cincodias.elpais.com/rss/mercados/"},
-    {"name": "ElEconomista Mercados", "url": "https://www.eleconomista.es/rss/rss-mercados.php"},
+    {"name": "CincoDías Mercados", "url": "https://cincodias.elpais.com/rss/cincodias/mercados.xml"},
+    {"name": "ElEconomista Bolsa", "url": "https://www.eleconomista.es/rss/rss-bolsa-mercados.php"},
+    {"name": "Bolsamanía", "url": "https://www.bolsamania.com/rss/todas-las-noticias.xml"},
+    {"name": "El Confidencial Mercados", "url": "https://rss.elconfidencial.com/mercados/"},
     {"name": "Investing.com España", "url": "https://es.investing.com/rss/news.rss"},
-    # --- Fuentes crypto en español ---
-    {"name": "CriptoNoticias", "url": "https://www.criptonoticias.com/feed/"},
+    # --- Crypto (inglés) ---
+    {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
+    {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss"},
+    {"name": "Decrypt", "url": "https://decrypt.co/feed"},
+    {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/.rss/full/"},
+    # --- Crypto (español) ---
     {"name": "Cointelegraph ES", "url": "https://es.cointelegraph.com/rss"},
+    {"name": "CriptoNoticias", "url": "https://www.criptonoticias.com/feed/"},
     {"name": "BeInCrypto ES", "url": "https://es.beincrypto.com/feed/"},
-    # --- Fuente crypto adicional (inglés) ---
-    {"name": "Cointelegraph", "url": "https://cointelegraph.com/feed"},
 ]
 
-# --- Taxonomía de eventos para scoring ---
+# ---------------------------------------------------------------------------
+# ASSET_KEYWORDS — diccionario de activos con sus palabras clave de detección.
+# Clave: ticker del activo. Valor: lista de keywords (case-insensitive).
+# Se usa para asignar el activo primario a una noticia y para filtrar noticias
+# que no son relevantes para IBEX 35, ETFs o Criptodivisas.
+# ---------------------------------------------------------------------------
+ASSET_KEYWORDS: dict[str, list[str]] = {
+    # ── IBEX 35 — índice general ────────────────────────────────────────────
+    "IBEX35": [
+        "ibex", "ibex35", "ibex 35", "bolsa española", "bolsa de madrid",
+        "bolsa madrid", "mercado continuo", "bme", "bmex", "cnmv",
+        "bolsa de valores española", "renta variable española",
+    ],
+    # ── IBEX 35 — empresas ──────────────────────────────────────────────────
+    "ACS": ["acs actividades", "grupo acs"],
+    "ACX": ["acerinox", "acx"],
+    "AENA": ["aena", "aeropuertos españoles", "aeropuerto adolfo suárez", "aeropuerto barajas"],
+    "ALM": ["almirall"],
+    "AMS": ["amadeus it", "amadeus"],
+    "ANA": ["acciona"],
+    "BBVA": ["bbva", "banco bilbao vizcaya", "bilbao vizcaya argentaria"],
+    "BKT": ["bankinter"],
+    "CABK": ["caixabank", "la caixa"],
+    "CLNX": ["cellnex"],
+    "COL": ["inmobiliaria colonial", "colonial reit"],
+    "ELE": ["endesa"],
+    "ENG": ["enagás", "enagas"],
+    "FDR": ["fluidra"],
+    "FER": ["ferrovial"],
+    "GRF": ["grifols"],
+    "IAG": ["iag", "iberia airlines", "british airways", "vueling"],
+    "IBE": ["iberdrola"],
+    "IDR": ["indra sistemas", "indra"],
+    "ITX": ["inditex", "grupo inditex", "zara", "amancio ortega"],
+    "LOG": ["logista", "compañía de distribución integral logista"],
+    "MAP": ["mapfre"],
+    "MEL": ["meliá hotels", "melia hotels", "meliá"],
+    "MRL": ["merlin properties"],
+    "MTS": ["arcelormittal"],
+    "NTGY": ["naturgy", "gas natural fenosa"],
+    "PHM": ["puig brands", "puig beauty"],
+    "RED": ["red eléctrica", "red electrica", "ree"],
+    "REP": ["repsol"],
+    "ROVI": ["laboratorios rovi", "rovi pharma", "rovi"],
+    "SAB": ["banco sabadell", "sabadell"],
+    "SAN": ["banco santander", "grupo santander"],
+    "SGRE": ["siemens gamesa", "gamesa"],
+    "TEF": ["telefónica", "telefonica", "movistar"],
+    # ── ETFs ────────────────────────────────────────────────────────────────
+    "SPY": ["spy etf", "spdr s&p 500", "s&p 500 etf"],
+    "QQQ": ["qqq etf", "invesco qqq", "nasdaq etf", "invesco nasdaq"],
+    "GLD": ["gld etf", "spdr gold", "gold etf", "etf oro"],
+    "SLV": ["slv etf", "ishares silver", "silver etf", "etf plata"],
+    "IWM": ["iwm etf", "russell 2000 etf", "ishares russell 2000"],
+    "EWZ": ["ewz etf", "brazil etf", "ishares msci brazil"],
+    "EEM": ["eem etf", "emerging markets etf", "ishares msci emerging", "mercados emergentes etf"],
+    "VIX": ["vix index", "cboe vix", "fear index", "volatility index", "índice de volatilidad"],
+    "ARKK": ["arkk etf", "ark innovation", "cathie wood"],
+    "TLT": ["tlt etf", "ishares 20+ year treasury", "treasury bond etf"],
+    "XLF": ["xlf etf", "financial select sector", "financial sector etf"],
+    "XLE": ["xle etf", "energy select sector etf"],
+    # ── Criptodivisas ───────────────────────────────────────────────────────
+    "BTC": [
+        "bitcoin", "btc", "criptomoneda", "criptomonedas", "crypto",
+        "blockchain", "defi", "nft", "stablecoin", "halving",
+        "altcoin", "moneda digital", "activo digital",
+    ],
+    "ETH": ["ethereum", "ether", "eth", "erc-20", "erc20"],
+    "XRP": ["ripple", "xrp"],
+    "SOL": ["solana"],
+    "BNB": ["binance coin", "bnb", "binance smart chain"],
+    "ADA": ["cardano"],
+    "DOGE": ["dogecoin", "doge"],
+    "DOT": ["polkadot"],
+    "AVAX": ["avalanche", "avax"],
+    "MATIC": ["polygon matic", "polygon network"],
+    "LINK": ["chainlink"],
+    "UNI": ["uniswap"],
+    "LTC": ["litecoin"],
+    "ATOM": ["cosmos hub", "cosmos network", "cosmos blockchain"],
+    "XLM": ["stellar lumens", "stellar xlm"],
+    "ALGO": ["algorand"],
+    "FIL": ["filecoin"],
+    "NEAR": ["near protocol"],
+    "ARB": ["arbitrum"],
+    "OP": ["optimism rollup", "optimism network", "optimism l2", "optimism blockchain"],
+}
+
+
+
+# Tickers that serve as "generic fallback" — only win ties if no specific ticker matches.
+# Specific tickers (company names, individual cryptos) take priority over these.
+_GENERIC_TICKERS = frozenset({"BTC", "IBEX35"})
+
+
+def _kw_matches(keyword: str, text: str) -> bool:
+    """
+    Comprueba si un keyword está presente en el texto con límite de palabra.
+
+    Para keywords de más de 5 caracteres se usa búsqueda simple (substring)
+    ya que la probabilidad de falso positivo es baja.
+    Para keywords cortos (≤5 chars) se usa regex con límite de palabra (\b)
+    para evitar falsos positivos (ej. 'OP' en 'compra', 'SOL' en 'absoluto').
+    """
+    if len(keyword) <= 5:
+        return bool(re.search(r"\b" + re.escape(keyword) + r"\b", text, re.IGNORECASE))
+    return keyword in text
+
+
+def _match_asset(article: dict) -> tuple[str | None, list[str]]:
+    """
+    Busca keywords de ASSET_KEYWORDS en el título + descripción del artículo.
+
+    Devuelve (primary_ticker, [all_matched_tickers]).
+    - primary_ticker: el ticker con más keywords coincidentes (None si no hay match).
+    - all_matched_tickers: lista de todos los tickers con al menos 1 keyword coincidente.
+
+    Tiebreaker: specific tickers (individual company/crypto) beat generic fallbacks
+    (BTC, IBEX35) when both have the same hit count.
+    """
+    title = article.get("title") or ""
+    description = article.get("description") or article.get("summary") or ""
+    text = (title + " " + description).lower()
+
+    hits_per_ticker: dict[str, int] = {}
+    for ticker, keywords in ASSET_KEYWORDS.items():
+        count = sum(1 for kw in keywords if _kw_matches(kw, text))
+        if count > 0:
+            hits_per_ticker[ticker] = count
+
+    if not hits_per_ticker:
+        return None, []
+
+    # Sort by: 1) hit count descending, 2) generic tickers come last on ties
+    sorted_tickers = sorted(
+        hits_per_ticker.items(),
+        key=lambda x: (x[1], 0 if x[0] not in _GENERIC_TICKERS else -1),
+        reverse=True,
+    )
+    all_matched = [t for t, _ in sorted_tickers]
+    primary = sorted_tickers[0][0]
+
+    return primary, all_matched
+
+
+# --- Taxonomía de eventos para scoring de calidad ---
 EVENT_TAXONOMY = {
-    "chokepoints_disruption": {
+    "ibex35_companies": {
         "keywords": [
-            "strait of hormuz", "hormuz", "suez canal", "suez", "strait of malacca",
-            "malacca", "bosporus", "bab el-mandeb", "strait", "chokepoint",
-            "tanker", "shipping lane", "maritime", "naval blockade", "ormuz",
-        ],
-        "base_severity": 75,
-        "category": "ENERGÍA",
-    },
-    "oil_supply_shock": {
-        "keywords": [
-            "oil", "crude", "opec", "petroleum", "barrel", "refinery",
-            "pipeline", "petróleo", "brent", "wti", "energy crisis",
-            "oil price", "saudi", "iraq", "iran oil", "oil production",
-            "crudo", "gasolina", "refinería", "precio del petróleo",
-        ],
-        "base_severity": 65,
-        "category": "ENERGÍA",
-    },
-    "military_conflict": {
-        "keywords": [
-            "war", "attack", "missile", "bomb", "military", "troops", "invasion",
-            "ceasefire", "airstrike", "combat", "offensive", "armed forces",
-            "conflict", "battlefield", "weapon", "nuclear",
-        ],
-        "base_severity": 70,
-        "category": "CONFLICTO",
-    },
-    "sanctions_trade": {
-        "keywords": [
-            "sanction", "tariff", "trade war", "embargo", "export ban",
-            "import restriction", "trade deal", "wto", "customs", "protectionism",
-            "arancel", "aranceles", "guerra comercial", "sanciones",
+            # Empresas IBEX 35 (nombres completos y abreviados)
+            "inditex", "zara", "santander", "bbva", "iberdrola", "telefónica", "telefonica",
+            "repsol", "caixabank", "bankinter", "sabadell", "mapfre", "endesa", "ferrovial",
+            "acciona", "amadeus", "cellnex", "grifols", "acerinox", "aena", "almirall",
+            "enagás", "enagas", "fluidra", "logista", "meliá", "melia", "arcelormittal",
+            "naturgy", "puig", "red eléctrica", "rovi", "laboratorios rovi", "siemens gamesa",
+            "colonial", "indra", "merlin properties", "vueling", "iberia", "movistar",
+            "grupo acs", "acs actividades", "acerinox", "ferrovial", "inmobiliaria colonial",
+            "fluidra", "merlin", "siemens gamesa", "gamesa", "bankinter", "naturgy",
+            # IBEX genérico
+            "ibex", "ibex 35", "bolsa española", "bolsa de madrid", "mercado continuo",
+            "bolsa madrid", "bme", "cnmv", "prima de riesgo", "bono español",
         ],
         "base_severity": 58,
-        "category": "COMERCIO",
+        "category": "IBEX35",
+    },
+    "etf_market": {
+        "keywords": [
+            "etf", "spy", "qqq", "gld", "slv", "iwm", "eem", "ewz",
+            "arkk", "tlt", "xlf", "xle", "vix", "ishares", "spdr", "invesco",
+            "fondo cotizado", "exchange traded fund",
+        ],
+        "base_severity": 52,
+        "category": "ETF",
     },
     "crypto_market": {
         "keywords": [
             "bitcoin", "ethereum", "crypto", "blockchain", "defi", "nft",
-            "stablecoin", "exchange hack", "crypto regulation", "cbdc",
-            "ripple", "xrp", "solana", "cardano", "dogecoin",
+            "stablecoin", "ripple", "xrp", "solana", "cardano", "dogecoin",
             "criptomoneda", "criptomonedas", "moneda digital", "halving",
-            "altcoin", "minería crypto", "regulación crypto",
+            "altcoin", "binance", "polkadot", "avalanche", "chainlink",
+            "uniswap", "litecoin", "algorand", "filecoin", "arbitrum",
         ],
         "base_severity": 50,
         "category": "CRYPTO",
@@ -119,27 +250,13 @@ EVENT_TAXONOMY = {
     "financial_market": {
         "keywords": [
             "stock market", "fed", "interest rate", "inflation", "recession",
-            "bank failure", "central bank", "bond market", "yield curve",
-            "credit rating", "debt ceiling", "gdp", "unemployment",
-            "ibex", "bolsa española", "bolsa madrid", "ftse", "dax",
+            "central bank", "bond market", "yield curve",
             "s&p 500", "nasdaq", "dow jones", "wall street",
-            "etf", "spy", "qqq",
             "mercado bursátil", "tipo de interés", "banco central europeo",
-            "bce", "mercado continuo", "cnmv", "prima de riesgo",
-            "bolsa de valores", "renta variable", "renta fija",
+            "bce", "bolsa de valores", "renta variable", "renta fija",
         ],
-        "base_severity": 55,
+        "base_severity": 48,
         "category": "MERCADOS",
-    },
-    "geopolitical_tension": {
-        "keywords": [
-            "geopolit", "diplomatic", "tension", "protest", "coup", "election",
-            "government crisis", "political instability", "civil unrest",
-            "golpe de estado", "inestabilidad política", "crisis política",
-            "elecciones", "tensión diplomática",
-        ],
-        "base_severity": 45,
-        "category": "GEOPOLÍTICA",
     },
 }
 
@@ -264,6 +381,23 @@ class AnalysisPipeline:
         scored.sort(key=lambda x: x["score"], reverse=True)
         logger.info(f"   ✅ {len(scored)} eventos con score >= {min_score}")
 
+        # Paso 3b: Filtrar por activo IBEX35 / ETF / Crypto
+        logger.info("🎯 PASO 3b: Filtrando por activos IBEX35/ETF/Crypto...")
+        relevant = []
+        for article in scored:
+            primary_asset, matched_assets = _match_asset(article)
+            if primary_asset is None:
+                logger.debug(f"   ⛔ Sin activo match: {article.get('title', '')[:60]}")
+                continue
+            article["suggested_asset"] = primary_asset
+            article["matched_assets"] = matched_assets
+            relevant.append(article)
+        logger.info(
+            f"   ✅ {len(relevant)} eventos relevantes (IBEX35/ETF/Crypto) "
+            f"de {len(scored)} totales"
+        )
+        scored = relevant
+
         if not scored:
             return []
 
@@ -287,13 +421,21 @@ class AnalysisPipeline:
 
             # Validar el activo primario contra la lista conocida
             if primary_asset.upper() not in VALID_ASSETS:
-                category = event.get("category", "general").lower()
-                fallback = CATEGORY_FALLBACK.get(category, "SPX")
-                logger.warning(
-                    f"   Activo desconocido '{primary_asset}' → usando fallback '{fallback}' "
-                    f"(categoría: {category})"
-                )
-                primary_asset = fallback
+                # Usar el activo identificado por keywords como fallback (no el fallback por categoría)
+                suggested = event.get("suggested_asset", "")
+                if suggested and suggested.upper() in VALID_ASSETS:
+                    logger.warning(
+                        f"   Activo IA '{primary_asset}' desconocido → usando keyword match '{suggested}'"
+                    )
+                    primary_asset = suggested
+                else:
+                    category = event.get("category", "general").lower()
+                    fallback = CATEGORY_FALLBACK.get(category, "IBEX35")
+                    logger.warning(
+                        f"   Activo desconocido '{primary_asset}' → usando fallback '{fallback}' "
+                        f"(categoría: {category})"
+                    )
+                    primary_asset = fallback
 
             current_price = self.price_fetcher.get_price(primary_asset)
             if current_price is None:
