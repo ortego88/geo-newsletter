@@ -22,7 +22,7 @@ from src.services.prediction_tracker import PredictionTracker
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-me-in-production")
 PREDICTIONS_DB = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
 
 _MADRID_TZ = pytz.timezone("Europe/Madrid")

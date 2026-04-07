@@ -82,28 +82,13 @@
 
       <!-- Filters -->
       <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 mb-4">
-        <form method="GET" action="/admin/" class="flex flex-wrap gap-3 items-center">
-          <select name="asset" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+        <form method="GET" action="/admin/" class="filters-form flex flex-wrap gap-3 items-center">
+          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
             <option value="">Todos los activos</option>
             {% for a in assets %}
               <option value="{{ a }}" {% if asset_filter == a %}selected{% endif %}>{{ a }}</option>
             {% endfor %}
           </select>
-          <select name="sort" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="predicted_at" {% if sort_by == 'predicted_at' %}selected{% endif %}>Fecha</option>
-            <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Score</option>
-            <option value="confidence" {% if sort_by == 'confidence' %}selected{% endif %}>Confianza</option>
-            <option value="impact_percent" {% if sort_by == 'impact_percent' %}selected{% endif %}>Impacto %</option>
-            <option value="price_at_prediction" {% if sort_by == 'price_at_prediction' %}selected{% endif %}>Precio activo</option>
-            <option value="price_at_validation" {% if sort_by == 'price_at_validation' %}selected{% endif %}>Variación precio</option>
-          </select>
-          <select name="dir" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>▼ DESC</option>
-            <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>▲ ASC</option>
-          </select>
-          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-            Aplicar filtros
-          </button>
           <a href="/admin/" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
             Limpiar
           </a>
@@ -121,14 +106,38 @@
                   <th class="text-left px-3 py-3 text-slate-400 font-medium">Título</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium">Activo</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium">Dir</th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Conf.</th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Score</th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Impacto pred.</th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio inicial</th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio validado</th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Variación real</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Conf.{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Score{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=impact_percent&dir={% if sort_by == 'impact_percent' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Impacto pred.{% if sort_by == 'impact_percent' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Precio entrada{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=price_at_validation&dir={% if sort_by == 'price_at_validation' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Precio valid.{% if sort_by == 'price_at_validation' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Cambio</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium">Resultado</th>
-                  <th class="text-left px-3 py-3 text-slate-400 font-medium">Fecha (Madrid)</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
+                    <a href="?page=1&asset={{ asset_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition">
+                      Fecha{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">

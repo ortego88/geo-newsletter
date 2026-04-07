@@ -61,9 +61,22 @@ def process_subscription():
     payment_token = request.form.get("stripe_token", "")
     is_trial = request.form.get("is_trial") == "1"
 
+    card_number = request.form.get("card_number", "").replace(" ", "")
+    card_expiry = request.form.get("card_expiry", "").strip()
+    card_cvc = request.form.get("card_cvc", "").strip()
+    card_name = request.form.get("card_name", "").strip()
+
+    if not card_number or not card_expiry or not card_cvc or not card_name:
+        flash("Por favor, introduce los datos de tu tarjeta para continuar.", "error")
+        if is_trial:
+            return redirect(url_for("billing.checkout_trial", plan=plan))
+        return redirect(url_for("billing.subscribe", plan=plan))
+
     if request.form.get("accept_terms") != "1":
         flash("Debes aceptar los Términos y Condiciones para continuar.", "error")
-        return redirect(url_for("billing.checkout_trial") if is_trial else url_for("billing.subscribe", plan=plan))
+        if is_trial:
+            return redirect(url_for("billing.checkout_trial", plan=plan))
+        return redirect(url_for("billing.subscribe", plan=plan))
 
     if plan not in PLANS:
         flash("Plan no válido", "error")
