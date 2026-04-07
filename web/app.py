@@ -25,10 +25,12 @@ def create_app():
     init_db()
 
     # Blueprints
+    from web.admin import admin_bp
     from web.auth import auth_bp
     from web.billing import billing_bp
     from web.dashboard_web import dashboard_bp
 
+    app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(dashboard_bp)

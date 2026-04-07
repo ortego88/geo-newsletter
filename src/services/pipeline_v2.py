@@ -62,7 +62,7 @@ EVENT_TAXONOMY = {
             "malacca", "bosporus", "bab el-mandeb", "strait", "chokepoint",
             "tanker", "shipping lane", "maritime", "naval blockade", "ormuz",
         ],
-        "base_severity": 88,
+        "base_severity": 75,
         "category": "ENERGÍA",
     },
     "oil_supply_shock": {
@@ -71,7 +71,7 @@ EVENT_TAXONOMY = {
             "pipeline", "petróleo", "brent", "wti", "energy crisis",
             "oil price", "saudi", "iraq", "iran oil", "oil production",
         ],
-        "base_severity": 82,
+        "base_severity": 65,
         "category": "ENERGÍA",
     },
     "military_conflict": {
@@ -80,7 +80,7 @@ EVENT_TAXONOMY = {
             "ceasefire", "airstrike", "combat", "offensive", "armed forces",
             "conflict", "battlefield", "weapon", "nuclear",
         ],
-        "base_severity": 85,
+        "base_severity": 70,
         "category": "CONFLICTO",
     },
     "sanctions_trade": {
@@ -88,7 +88,7 @@ EVENT_TAXONOMY = {
             "sanction", "tariff", "trade war", "embargo", "export ban",
             "import restriction", "trade deal", "wto", "customs", "protectionism",
         ],
-        "base_severity": 75,
+        "base_severity": 58,
         "category": "COMERCIO",
     },
     "crypto_market": {
@@ -96,7 +96,7 @@ EVENT_TAXONOMY = {
             "bitcoin", "ethereum", "crypto", "blockchain", "defi", "nft",
             "stablecoin", "exchange hack", "crypto regulation", "cbdc",
         ],
-        "base_severity": 70,
+        "base_severity": 50,
         "category": "CRYPTO",
     },
     "financial_market": {
@@ -105,7 +105,7 @@ EVENT_TAXONOMY = {
             "bank failure", "central bank", "bond market", "yield curve",
             "credit rating", "debt ceiling", "gdp", "unemployment",
         ],
-        "base_severity": 72,
+        "base_severity": 55,
         "category": "MERCADOS",
     },
     "geopolitical_tension": {
@@ -113,7 +113,7 @@ EVENT_TAXONOMY = {
             "geopolit", "diplomatic", "tension", "protest", "coup", "election",
             "government crisis", "political instability", "civil unrest",
         ],
-        "base_severity": 65,
+        "base_severity": 45,
         "category": "GEOPOLÍTICA",
     },
 }
@@ -122,18 +122,15 @@ EVENT_TAXONOMY = {
 def _score_event(article: dict) -> tuple[int, str]:
     """Devuelve (score, category) basado en la taxonomía.
 
-    Scoring uses a diminishing-returns formula so that keyword hits spread
-    scores across the range instead of clustering near ``base_severity``:
+    Scoring uses a logarithmic bonus formula so that keyword hits produce
+    a more distributed score range rather than clustering near base_severity:
 
-        score = base_severity × BASE_WEIGHT + min(MAX_HIT_BONUS, hits × HIT_LINEAR + hits² × HIT_QUADRATIC)
+        score = base_severity + min(15, int(log(hits + 1) * 10))
 
     This means a single-keyword match produces a noticeably lower score
     than multiple matches, and the base_severity alone no longer dominates.
     """
-    _BASE_WEIGHT = 0.6          # portion of base_severity retained
-    _MAX_HIT_BONUS = 40         # ceiling for keyword-hit bonus points
-    _HIT_LINEAR_WEIGHT = 8      # linear coefficient per keyword hit
-    _HIT_QUADRATIC_WEIGHT = 1.5 # quadratic coefficient per keyword hit
+    import math
 
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
@@ -149,10 +146,8 @@ def _score_event(article: dict) -> tuple[int, str]:
     for event_type, config in EVENT_TAXONOMY.items():
         hits = sum(1 for kw in config["keywords"] if kw in text)
         if hits > 0:
-            base = config["base_severity"]
-            # Weighted base (60%) + hit bonus with diminishing returns (up to 40 pts)
-            hit_bonus = min(_MAX_HIT_BONUS, hits * _HIT_LINEAR_WEIGHT + hits * hits * _HIT_QUADRATIC_WEIGHT)
-            score = min(99, int(base * _BASE_WEIGHT + hit_bonus))
+            bonus = min(15, int(math.log(hits + 1) * 10))
+            score = min(95, config["base_severity"] + bonus)
             if score > best_score:
                 best_score = score
                 best_category = config["category"]

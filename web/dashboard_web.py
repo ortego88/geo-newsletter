@@ -4,17 +4,35 @@ from web.models import PLANS, AVAILABLE_ASSETS, get_conn
 import logging
 import os
 import sqlite3 as _sq
+from datetime import datetime
+import pytz
 
 _logger = logging.getLogger("dashboard_web")
 
 dashboard_bp = Blueprint("dashboard_web", __name__)
 
 _PREDICTIONS_DB_PATH = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
+_MADRID_TZ = pytz.timezone("Europe/Madrid")
+
+_VALID_SORTS = ["predicted_at", "score", "confidence", "impact_percent", "price_at_prediction"]
 
 
 def _get_predictions_conn():
     """Return a connection to the predictions SQLite database."""
     return _sq.connect(_PREDICTIONS_DB_PATH)
+
+
+def _to_madrid_time(dt_str: str) -> str:
+    """Convert an ISO datetime string (UTC) to Madrid time formatted as dd/mm HH:MM."""
+    if not dt_str:
+        return "—"
+    try:
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=pytz.utc)
+        return dt.astimezone(_MADRID_TZ).strftime("%d/%m %H:%M")
+    except Exception:
+        return dt_str[:16]
 
 
 def _require_active_subscription():
@@ -35,23 +53,64 @@ def index():
     sub = current_user.get_subscription()
     plan_config = PLANS.get(sub["plan"], PLANS["basic"])
 
-    # Get recent alerts from predictions DB
+    # Pagination & filters
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 20
+    offset = (page - 1) * per_page
+    asset_filter = request.args.get("asset", "")
+    sort_by = request.args.get("sort", "predicted_at")
+    sort_dir = request.args.get("dir", "desc")
+
+    if sort_by not in _VALID_SORTS:
+        sort_by = "predicted_at"
+
+    # Get recent alerts from predictions DB (last 24h)
     alerts = []
+    total_alerts = 0
+    total_pages = 1
     try:
         conn2 = _get_predictions_conn()
         c2 = conn2.cursor()
+
+        where = "WHERE datetime(predicted_at) >= datetime('now', '-24 hours')"
+        params: list = []
+        if asset_filter:
+            where += " AND asset = ?"
+            params.append(asset_filter)
+
+        total_alerts = c2.execute(
+            f"SELECT COUNT(*) FROM predictions {where}", params
+        ).fetchone()[0]
+        total_pages = max(1, (total_alerts + per_page - 1) // per_page)
+
         c2.execute(
-            """SELECT title, asset, direction, confidence, score,
-                      price_at_prediction, price_at_validation, outcome,
-                      predicted_at, reasoning
-               FROM predictions
-               ORDER BY predicted_at DESC
-               LIMIT 20"""
+            f"""SELECT asset, direction, confidence, predicted_at, reasoning,
+                       score, impact_percent, price_at_prediction, price_at_validation, outcome, title
+                FROM predictions {where}
+                ORDER BY {sort_by} {'DESC' if sort_dir == 'desc' else 'ASC'}
+                LIMIT ? OFFSET ?""",
+            params + [per_page, offset],
         )
-        alerts = c2.fetchall()
+        alerts_raw = c2.fetchall()
         conn2.close()
     except _sq.Error:
         _logger.warning("Could not load predictions", exc_info=True)
+        alerts_raw = []
+
+    # Convert dates to Madrid time and compute price variation
+    processed_alerts = []
+    for row in alerts_raw:
+        row = list(row)
+        row[3] = _to_madrid_time(row[3])  # predicted_at → Madrid time
+        price_initial = row[7]   # price_at_prediction
+        price_validated = row[8]  # price_at_validation
+        if price_initial and price_validated and price_initial > 0:
+            variation = round((price_validated - price_initial) / price_initial * 100, 2)
+        else:
+            variation = None
+        row.append(variation)  # index 11
+        processed_alerts.append(tuple(row))
+    alerts = processed_alerts
 
     # Get accuracy stats
     accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0}
@@ -81,6 +140,13 @@ def index():
         alerts=alerts,
         accuracy_stats=accuracy_stats,
         available_assets=AVAILABLE_ASSETS,
+        page=page,
+        total_pages=total_pages,
+        total_alerts=total_alerts,
+        asset_filter=asset_filter,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        per_page=per_page,
     )
 
 

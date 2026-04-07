@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased min-h-screen flex items-center justify-center">
+
+  <div class="w-full max-w-sm px-6">
+    <div class="text-center mb-8">
+      <p class="text-emerald-400 font-bold text-2xl">🌍 GEO-NEWSLETTER</p>
+      <p class="text-slate-500 text-sm mt-1">Panel de administración</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="mb-4 p-3 rounded-lg text-sm
+          {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+          {% else %}bg-amber-500/10 border border-amber-500/30 text-amber-400{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
+      <h1 class="text-white font-bold text-lg mb-6 text-center">Acceso restringido</h1>
+      <form method="POST" action="/admin/login">
+        <div class="mb-5">
+          <label for="password" class="block text-slate-400 text-sm mb-2">Contraseña</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autofocus
+            class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            placeholder="Introduce la contraseña de admin"
+          >
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition text-sm">
+          Entrar →
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center mt-6">
+      <a href="/" class="text-slate-500 hover:text-slate-300 text-sm transition">← Volver a la app</a>
+    </p>
+  </div>
+
+</body>
+</html>

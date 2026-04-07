@@ -125,12 +125,14 @@ class PredictionTracker:
         predicted_change = pred.get("impact_percent", 0)
         direction = pred.get("direction", "neutral")
 
-        # Determinar si la predicción fue correcta
+        _MIN_SIGNIFICANT_MOVE = 0.3  # minimum 0.3% move to consider a valid signal
+
+        # Determine if the prediction was correct (with minimum movement threshold)
         if direction in ("up", "bullish", "positive", "alza"):
-            correct = actual_change > 0
+            correct = actual_change >= _MIN_SIGNIFICANT_MOVE
         elif direction in ("down", "bearish", "negative", "baja"):
-            correct = actual_change < 0
-        else:
+            correct = actual_change <= -_MIN_SIGNIFICANT_MOVE
+        else:  # neutral
             correct = abs(actual_change) < 1.0
 
         # Calcular precisión del porcentaje
@@ -183,7 +185,7 @@ class PredictionTracker:
         """Devuelve estadísticas de precisión de predicciones."""
         with self._get_conn() as conn:
             rows = conn.execute(
-                "SELECT outcome FROM predictions WHERE outcome != 'pending'"
+                "SELECT outcome, confidence, impact_percent FROM predictions WHERE outcome != 'pending'"
             ).fetchall()
 
         if not rows:
@@ -192,6 +194,8 @@ class PredictionTracker:
                 "correct": 0,
                 "incorrect": 0,
                 "accuracy_pct": 0.0,
+                "high_confidence_accuracy": 0.0,
+                "pending": 0,
             }
 
         total = len(rows)
@@ -199,11 +203,24 @@ class PredictionTracker:
         incorrect = total - correct
         accuracy = round(correct / total * 100, 1) if total > 0 else 0.0
 
+        # Accuracy for high-confidence predictions (>= 70%)
+        high_conf = [r for r in rows if (r[1] or 0) >= 70]
+        hc_correct = sum(1 for r in high_conf if r[0] == "correct")
+        hc_accuracy = round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0
+
+        # Count pending predictions
+        with self._get_conn() as conn:
+            pending = conn.execute(
+                "SELECT COUNT(*) FROM predictions WHERE outcome = 'pending'"
+            ).fetchone()[0]
+
         return {
             "total": total,
             "correct": correct,
             "incorrect": incorrect,
             "accuracy_pct": accuracy,
+            "high_confidence_accuracy": hc_accuracy,
+            "pending": pending,
         }
 
     def get_recent_predictions(self, limit: int = 10) -> list[dict]:
