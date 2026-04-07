@@ -14,7 +14,7 @@ dashboard_bp = Blueprint("dashboard_web", __name__)
 _PREDICTIONS_DB_PATH = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
-_VALID_SORTS = ["predicted_at", "score", "confidence", "impact_percent", "price_at_prediction"]
+_VALID_SORTS = ["predicted_at", "score", "confidence", "impact_percent", "price_at_prediction", "price_at_validation"]
 
 # Allowlist mapping of sort parameter values to SQL column names (prevents SQL injection)
 _SORT_FIELD_MAP = {s: s for s in _VALID_SORTS}
