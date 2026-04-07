@@ -32,15 +32,16 @@ def index():
         conn2 = _sq.connect(pred_db_path)
         c2 = conn2.cursor()
         c2.execute(
-            """SELECT asset, direction, confidence, created_at, reasoning
+            """SELECT asset, direction, confidence, predicted_at, reasoning
                FROM predictions
-               ORDER BY created_at DESC
+               ORDER BY predicted_at DESC
                LIMIT 20"""
         )
         alerts = c2.fetchall()
         conn2.close()
     except Exception:
-        pass
+        import logging
+        logging.getLogger("dashboard_web").warning("Could not load predictions", exc_info=True)
 
     return render_template(
         "dashboard/index.html",
