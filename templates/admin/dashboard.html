@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- SIDEBAR -->
+  <aside class="w-56 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 sticky top-0 h-screen">
+    <div class="px-5 py-4 border-b border-slate-800">
+      <p class="text-emerald-400 font-bold text-base">🌍 GEO-NEWSLETTER</p>
+      <p class="text-slate-500 text-xs mt-0.5">Panel de administración</p>
+    </div>
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      <a href="/admin/" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 text-white font-medium text-sm">
+        📊 Dashboard
+      </a>
+    </nav>
+    <div class="px-3 py-4 border-t border-slate-800 space-y-1">
+      <a href="/" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        ← Volver a la app
+      </a>
+      <a href="/admin/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
+        🚪 Cerrar sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 overflow-auto">
+
+    <!-- Top bar -->
+    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <h1 class="text-white font-bold text-xl">Dashboard Técnico</h1>
+      <span class="text-slate-500 text-xs">Últimas 24 horas · {{ total }} predicciones</span>
+    </div>
+
+    <div class="px-8 py-6">
+
+      <!-- Stats cards -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Total (24h)</p>
+          <p class="text-white font-bold text-2xl">{{ total }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">% Aciertos</p>
+          <p class="font-bold text-2xl
+            {% if stats.accuracy_pct >= 60 %}text-emerald-400
+            {% elif stats.accuracy_pct >= 50 %}text-amber-400
+            {% else %}text-red-400{% endif %}">
+            {% if stats.total > 0 %}{{ stats.accuracy_pct }}%{% else %}—{% endif %}
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Correctas / Incorrectas</p>
+          <p class="font-bold text-lg">
+            <span class="text-emerald-400">{{ stats.correct }}</span>
+            <span class="text-slate-500 font-normal mx-1">/</span>
+            <span class="text-red-400">{{ stats.incorrect }}</span>
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Conf. alta (≥70%)</p>
+          <p class="font-bold text-2xl
+            {% if stats.high_confidence_accuracy >= 60 %}text-emerald-400
+            {% elif stats.high_confidence_accuracy >= 50 %}text-amber-400
+            {% else %}text-red-400{% endif %}">
+            {% if stats.total > 0 %}{{ stats.high_confidence_accuracy }}%{% else %}—{% endif %}
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Pendientes</p>
+          <p class="text-amber-400 font-bold text-2xl">{{ stats.pending }}</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 mb-4">
+        <form method="GET" action="/admin/" class="flex flex-wrap gap-3 items-center">
+          <select name="asset" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="">Todos los activos</option>
+            {% for a in assets %}
+              <option value="{{ a }}" {% if asset_filter == a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+          </select>
+          <select name="sort" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="predicted_at" {% if sort_by == 'predicted_at' %}selected{% endif %}>Fecha</option>
+            <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Score</option>
+            <option value="confidence" {% if sort_by == 'confidence' %}selected{% endif %}>Confianza</option>
+            <option value="impact_percent" {% if sort_by == 'impact_percent' %}selected{% endif %}>Impacto %</option>
+            <option value="price_at_prediction" {% if sort_by == 'price_at_prediction' %}selected{% endif %}>Precio activo</option>
+            <option value="price_at_validation" {% if sort_by == 'price_at_validation' %}selected{% endif %}>Variación precio</option>
+          </select>
+          <select name="dir" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+            <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>▼ DESC</option>
+            <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>▲ ASC</option>
+          </select>
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+            Aplicar filtros
+          </button>
+          <a href="/admin/" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
+            Limpiar
+          </a>
+        </form>
+      </div>
+
+      <!-- Predictions table -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+        {% if predictions %}
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-slate-700 bg-slate-900/50">
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">#</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">Título</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">Activo</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium">Dir</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Conf.</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Score</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Impacto pred.</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio inicial</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio validado</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Variación real</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium">Resultado</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">Fecha (Madrid)</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                {% for pred in predictions %}
+                  <tr class="hover:bg-slate-700/30 transition" title="{{ (pred.reasoning or '')[:150] }}">
+                    <td class="px-3 py-3 text-slate-500">{{ pred.id }}</td>
+                    <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
+                    <td class="px-3 py-3 font-semibold text-white">{{ pred.asset or '—' }}</td>
+                    <td class="px-3 py-3 text-center">
+                      {% set dir = pred.direction or 'neutral' %}
+                      {% if dir in ('up', 'bullish', 'positive', 'alza') %}
+                        <span class="text-emerald-400 font-bold text-base">↑</span>
+                      {% elif dir in ('down', 'bearish', 'negative', 'baja') %}
+                        <span class="text-red-400 font-bold text-base">↓</span>
+                      {% else %}
+                        <span class="text-slate-400">→</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-slate-300">
+                      {% if pred.confidence %}{{ pred.confidence|int }}%{% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-slate-300">
+                      {% if pred.score %}{{ pred.score|int }}{% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-slate-400">
+                      {% if pred.impact_percent %}
+                        <span class="{% if pred.impact_percent > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                          {{ "%+.1f"|format(pred.impact_percent) }}%
+                        </span>
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono text-slate-300">
+                      {% if pred.price_at_prediction %}
+                        {% if pred.price_at_prediction >= 1000 %}
+                          ${{ "{:,.0f}".format(pred.price_at_prediction) }}
+                        {% elif pred.price_at_prediction >= 1 %}
+                          ${{ "%.2f"|format(pred.price_at_prediction) }}
+                        {% else %}
+                          ${{ "%.4f"|format(pred.price_at_prediction) }}
+                        {% endif %}
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono text-slate-300">
+                      {% if pred.price_at_validation %}
+                        {% if pred.price_at_validation >= 1000 %}
+                          ${{ "{:,.0f}".format(pred.price_at_validation) }}
+                        {% elif pred.price_at_validation >= 1 %}
+                          ${{ "%.2f"|format(pred.price_at_validation) }}
+                        {% else %}
+                          ${{ "%.4f"|format(pred.price_at_validation) }}
+                        {% endif %}
+                      {% else %}<span class="text-slate-500">pendiente</span>{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono">
+                      {% if pred.price_change_pct is not none %}
+                        <span class="{% if pred.price_change_pct > 0 %}text-emerald-400{% elif pred.price_change_pct < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+                          {{ "%+.2f"|format(pred.price_change_pct) }}%
+                        </span>
+                      {% else %}
+                        <span class="text-slate-500">pendiente</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-center">
+                      {% set outcome = pred.outcome or 'pending' %}
+                      {% if outcome == 'correct' %}
+                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
+                      {% elif outcome == 'incorrect' %}
+                        <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
+                      {% else %}
+                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⏳ Pendiente</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-slate-500 whitespace-nowrap">{{ pred.predicted_at_madrid or '—' }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+          <div class="flex items-center justify-center gap-2 px-6 py-4 border-t border-slate-700">
+            {% if page > 1 %}
+              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+              <a href="?page={{ p }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+                 class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
+            {% endfor %}
+            {% if page < total_pages %}
+              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+        {% else %}
+          <div class="px-6 py-12 text-center">
+            <div class="text-4xl mb-3">📡</div>
+            <p class="text-slate-400">No hay predicciones en las últimas 24 horas.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </main>
+</div>
+
+</body>
+</html>

@@ -202,6 +202,8 @@ class User(UserMixin):
 
     @staticmethod
     def create(email, password, name, language='es', plan='basic'):
+        if plan not in ('basic', 'premium', 'pro'):
+            plan = 'basic'
         conn = get_conn()
         c = conn.cursor()
         pw_hash = generate_password_hash(password)

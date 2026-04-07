@@ -164,48 +164,81 @@
       <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
           <h2 class="font-bold text-white" data-i18n="dash.recent_alerts">Alertas recientes</h2>
-          <span class="text-slate-500 text-xs">Últimas {{ alerts|length if alerts else 0 }} señales</span>
+          <span class="text-slate-500 text-xs">Últimas 24h · {{ total_alerts }} señales</span>
         </div>
+
+        <!-- Filters -->
+        <div class="px-6 py-4 border-b border-slate-700">
+          <form method="GET" action="/dashboard" class="flex flex-wrap gap-3">
+            <select name="asset" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="">Todos los activos</option>
+              {% for a in available_assets %}
+                <option value="{{ a.symbol }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }}</option>
+              {% endfor %}
+            </select>
+            <select name="sort" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="predicted_at" {% if sort_by == 'predicted_at' %}selected{% endif %}>Fecha</option>
+              <option value="score" {% if sort_by == 'score' %}selected{% endif %}>Score</option>
+              <option value="confidence" {% if sort_by == 'confidence' %}selected{% endif %}>Confianza</option>
+              <option value="impact_percent" {% if sort_by == 'impact_percent' %}selected{% endif %}>Impacto</option>
+              <option value="price_at_prediction" {% if sort_by == 'price_at_prediction' %}selected{% endif %}>Precio activo</option>
+            </select>
+            <select name="dir" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+              <option value="desc" {% if sort_dir == 'desc' %}selected{% endif %}>▼ Desc</option>
+              <option value="asc" {% if sort_dir == 'asc' %}selected{% endif %}>▲ Asc</option>
+            </select>
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+              Filtrar
+            </button>
+            <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
+              Limpiar
+            </a>
+          </form>
+        </div>
+
         {% if alerts %}
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-700 bg-slate-900/50">
-                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">Evento</th>
                   <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
                   <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
                   <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_confidence">Conf.</th>
                   <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_score">Score</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_entry">Precio entrada</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_entry">Precio inicial</th>
                   <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_price_valid">Precio valid.</th>
-                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Cambio</th>
-                  <th class="text-center px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Estado</th>
-                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha</th>
+                  <th class="text-right px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Variación</th>
+                  <th class="text-left px-4 py-3 text-slate-400 font-medium" data-i18n="dash.col_date">Fecha (Madrid)</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-700/50">
-                {# alert tuple: (title, asset, direction, confidence, score, price_at_prediction, price_at_validation, outcome, predicted_at, reasoning) #}
+                {# alert tuple: (asset[0], direction[1], confidence[2], predicted_at_madrid[3], reasoning[4],
+                                 score[5], impact_percent[6], price_at_prediction[7], price_at_validation[8],
+                                 outcome[9], title[10], variation[11]) #}
                 {% for alert in alerts %}
-                  {% set title = alert[0] or '—' %}
-                  {% set asset = alert[1] or '—' %}
-                  {% set direction = alert[2] or 'neutral' %}
-                  {% set confidence = alert[3] %}
-                  {% set score = alert[4] %}
-                  {% set price_entry = alert[5] %}
-                  {% set price_valid = alert[6] %}
-                  {% set outcome = alert[7] or 'pending' %}
-                  {% set predicted_at = alert[8] or '' %}
-                  {% set reasoning = alert[9] or '' %}
+                  {% set asset = alert[0] or '—' %}
+                  {% set direction = alert[1] or 'neutral' %}
+                  {% set confidence = alert[2] %}
+                  {% set predicted_at = alert[3] or '' %}
+                  {% set reasoning = alert[4] or '' %}
+                  {% set score = alert[5] %}
+                  {% set price_entry = alert[7] %}
+                  {% set price_valid = alert[8] %}
+                  {% set outcome = alert[9] or 'pending' %}
+                  {% set title = alert[10] or '' %}
+                  {% set variation = alert[11] %}
                   <tr class="hover:bg-slate-700/30 transition" title="{{ reasoning[:120] }}">
-                    <td class="px-4 py-4 text-slate-300 text-xs max-w-[200px] truncate">{{ title[:60] }}</td>
                     <td class="px-4 py-4 font-semibold text-white">{{ asset }}</td>
                     <td class="px-4 py-4">
                       {% if direction in ('up', 'bullish', 'positive', 'alza') %}
-                        <span class="text-emerald-400">📈</span>
+                        <span class="text-emerald-400 font-bold text-lg">↑</span>
+                        <span class="text-emerald-400 text-xs ml-1" data-i18n="dash.dir_up">Alza</span>
                       {% elif direction in ('down', 'bearish', 'negative', 'baja') %}
-                        <span class="text-red-400">📉</span>
+                        <span class="text-red-400 font-bold text-lg">↓</span>
+                        <span class="text-red-400 text-xs ml-1" data-i18n="dash.dir_down">Baja</span>
                       {% else %}
-                        <span class="text-slate-400">➡️</span>
+                        <span class="text-slate-400">→</span>
+                        <span class="text-slate-400 text-xs ml-1" data-i18n="dash.dir_sideways">Lateral</span>
                       {% endif %}
                     </td>
                     <td class="px-4 py-4 text-right text-slate-300 text-xs">
@@ -222,31 +255,42 @@
                     <td class="px-4 py-4 text-right text-slate-300 text-xs font-mono">
                       {% if price_valid %}
                         {% if price_valid >= 1000 %}${{ "{:,.0f}".format(price_valid) }}{% elif price_valid >= 1 %}${{ "%.2f"|format(price_valid) }}{% else %}${{ "%.4f"|format(price_valid) }}{% endif %}
-                      {% else %}—{% endif %}
+                      {% else %}<span class="text-slate-500">pendiente</span>{% endif %}
                     </td>
                     <td class="px-4 py-4 text-right text-xs font-mono">
-                      {% if price_valid and price_entry and price_entry > 0 %}
-                        {% set change = ((price_valid - price_entry) / price_entry * 100) %}
-                        <span class="{% if change > 0 %}text-emerald-400{% elif change < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
-                          {{ "%+.2f"|format(change) }}%
+                      {% if variation is not none %}
+                        <span class="{% if variation > 0 %}text-emerald-400{% elif variation < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+                          {{ "%+.2f"|format(variation) }}%
                         </span>
-                      {% else %}—{% endif %}
-                    </td>
-                    <td class="px-4 py-4 text-center">
-                      {% if outcome == 'correct' %}
-                        <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">✅</span>
-                      {% elif outcome == 'incorrect' %}
-                        <span class="bg-red-500/20 text-red-400 text-xs font-semibold px-2 py-0.5 rounded-full">❌</span>
                       {% else %}
-                        <span class="bg-slate-700 text-slate-400 text-xs font-semibold px-2 py-0.5 rounded-full">⏳</span>
+                        <span class="text-slate-500">⏳</span>
                       {% endif %}
                     </td>
-                    <td class="px-4 py-4 text-slate-500 text-xs whitespace-nowrap">{{ predicted_at[:16] if predicted_at else '—' }}</td>
+                    <td class="px-4 py-4 text-slate-500 text-xs whitespace-nowrap">{{ predicted_at }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+          <div class="flex items-center justify-center gap-2 px-6 py-4 border-t border-slate-700">
+            {% if page > 1 %}
+              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+              <a href="?page={{ p }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+                 class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
+            {% endfor %}
+            {% if page < total_pages %}
+              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
+            {% endif %}
+          </div>
+          {% endif %}
+
         {% else %}
           <div class="px-6 py-12 text-center">
             <div class="text-4xl mb-3">📡</div>

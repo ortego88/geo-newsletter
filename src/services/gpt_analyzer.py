@@ -75,11 +75,13 @@ IMPACT CALIBRATION (market_impact_percent):
 - NEVER use round numbers like exactly 10, 15, -10, -15
 
 CONFIDENCE CALIBRATION (0-100) — use the FULL range, do NOT cluster around one value:
-- 88-95: Direct, unambiguous, confirmed event with clear market mechanism (e.g. "OPEC cuts production by 1M barrels", "Fed raises rates 50bp")
-- 75-87: Strong causal link but some uncertainty about timing or magnitude (e.g. confirmed military strike on oil facility)
-- 60-74: Moderate link — the event is real but impact depends on market reaction (e.g. tariff announcement, earnings warning)
-- 45-59: Indirect or secondary impact — analyst opinion, forecast, political rhetoric (e.g. "CEO warns of recession", "Says", "According to")
+- 80-95: Direct, unambiguous, confirmed event with clear market mechanism (e.g. "OPEC cuts production by 1M barrels", "Fed raises rates 50bp")
+- 65-79: Strong causal link but some uncertainty about timing or magnitude (e.g. confirmed military strike on oil facility)
+- 50-64: Moderate link — the event is real but impact depends on market reaction (e.g. tariff announcement, earnings warning)
+- 35-49: Indirect or secondary impact — analyst opinion, forecast, political rhetoric (e.g. "CEO warns of recession", "Says", "According to")
 - 25-44: Speculative, contradictory signals, or very indirect connection to markets
+- Use 60-70 for opinion pieces, CEO letters, analyst forecasts (NOT 55-65)
+- AVOID clustering predictions near 40-50; spread confidence based on event quality
 - IMPORTANT: Vary confidence meaningfully between events. Two different events should rarely get the same confidence.
 
 ALLOWED SYMBOLS ONLY: BTC, ETH, XRP, SOL, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, NASDAQ, DAX, FTSE, IBEX, AAPL, MSFT, NVDA, AMZN, TSLA, META, JPM, XOM, US10Y, WHEAT, CORN
@@ -105,7 +107,7 @@ Respond with this exact JSON:
   "direction": "up|down|neutral",
   "market_impact_percent": <realistic number, avoid round numbers like 10 or 15>,
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
-  "confidence": <calibrated 25-95, use the FULL range — not always 60-70>,
+  "confidence": <calibrated 0-100; direct confirmed events 70-85, indirect/opinions 55-70, speculative 35-55>,
   "most_affected_assets": [<2-3 symbols, primary subject first>],
   "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando sujeto primario y dirección>"
 }}"""
@@ -185,9 +187,9 @@ def _validate_analysis(data: dict) -> dict:
     _MAX_IMPACT = 15.0
     _MAX_MODERATE_IMPACT = 8.0  # cap for events with score < 80
     _MODERATE_SCORE_THRESHOLD = 80
-    _LOW_IMPACT_THRESHOLD = 3.0
-    _HIGH_CONFIDENCE_THRESHOLD = 75.0
-    _CAPPED_CONFIDENCE = 70.0
+    _LOW_IMPACT_THRESHOLD = 2.0
+    _HIGH_CONFIDENCE_THRESHOLD = 80.0
+    _CAPPED_CONFIDENCE = 65.0
 
     impact = float(data.get("market_impact_percent", 2))
     score = data.get("_event_score", 50)  # passed through if available
