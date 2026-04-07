@@ -17,6 +17,7 @@ from flask import (
     session,
     url_for,
 )
+from src.services.alert_formatter import ASSET_NAMES
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -181,6 +182,7 @@ def dashboard():
         predictions=predictions,
         stats=stats,
         assets=assets,
+        asset_names=ASSET_NAMES,
         page=page,
         total_pages=total_pages,
         total=total,

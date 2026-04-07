@@ -56,18 +56,47 @@ PLANS = {
 }
 
 AVAILABLE_ASSETS = [
+    # Índices
+    {"symbol": "SPX", "name": "S&P 500", "icon": "📈"},
+    {"symbol": "NASDAQ", "name": "Nasdaq 100", "icon": "💻"},
+    {"symbol": "DAX", "name": "DAX 40", "icon": "🇩🇪"},
+    {"symbol": "IBEX35", "name": "IBEX 35", "icon": "🇪🇸"},
+    {"symbol": "FTSE", "name": "FTSE 100", "icon": "🇬🇧"},
+    # Commodities
     {"symbol": "WTI", "name": "WTI Oil", "icon": "🛢️"},
     {"symbol": "BRENT", "name": "Brent Oil", "icon": "⚫"},
     {"symbol": "GOLD", "name": "Oro", "icon": "🥇"},
     {"symbol": "SILVER", "name": "Plata", "icon": "🥈"},
+    {"symbol": "NATURAL_GAS", "name": "Gas Natural", "icon": "🔥"},
+    {"symbol": "COPPER", "name": "Cobre", "icon": "🟤"},
+    {"symbol": "WHEAT", "name": "Trigo", "icon": "🌾"},
+    {"symbol": "CORN", "name": "Maíz", "icon": "🌽"},
+    # Crypto
     {"symbol": "BTC", "name": "Bitcoin", "icon": "🪙"},
     {"symbol": "ETH", "name": "Ethereum", "icon": "🔷"},
-    {"symbol": "SPX", "name": "S&P 500", "icon": "📈"},
-    {"symbol": "NASDAQ", "name": "Nasdaq", "icon": "💻"},
-    {"symbol": "DAX", "name": "DAX", "icon": "🇩🇪"},
-    {"symbol": "NATURAL_GAS", "name": "Gas Natural", "icon": "🔥"},
-    {"symbol": "US10Y", "name": "Bono Tesoro 10Y", "icon": "📊"},
+    {"symbol": "XRP", "name": "Ripple", "icon": "💧"},
+    {"symbol": "SOL", "name": "Solana", "icon": "☀️"},
+    {"symbol": "ADA", "name": "Cardano", "icon": "🔵"},
+    {"symbol": "DOGE", "name": "Dogecoin", "icon": "🐶"},
+    # ETFs
+    {"symbol": "SPY", "name": "SPDR S&P 500 ETF", "icon": "📊"},
+    {"symbol": "QQQ", "name": "Invesco Nasdaq 100 ETF", "icon": "📊"},
+    {"symbol": "GLD", "name": "SPDR Gold ETF", "icon": "📊"},
+    {"symbol": "SLV", "name": "iShares Silver ETF", "icon": "📊"},
+    {"symbol": "IWM", "name": "iShares Russell 2000 ETF", "icon": "📊"},
+    {"symbol": "DIA", "name": "SPDR Dow Jones ETF", "icon": "📊"},
+    # Acciones
     {"symbol": "NVDA", "name": "NVIDIA", "icon": "🖥️"},
+    {"symbol": "AAPL", "name": "Apple", "icon": "🍎"},
+    {"symbol": "MSFT", "name": "Microsoft", "icon": "🪟"},
+    {"symbol": "TSLA", "name": "Tesla", "icon": "🚗"},
+    {"symbol": "AMZN", "name": "Amazon", "icon": "📦"},
+    {"symbol": "META", "name": "Meta", "icon": "🌐"},
+    {"symbol": "GOOGL", "name": "Google", "icon": "🔍"},
+    {"symbol": "JPM", "name": "JPMorgan", "icon": "🏦"},
+    {"symbol": "XOM", "name": "ExxonMobil", "icon": "⛽"},
+    # Bonos
+    {"symbol": "US10Y", "name": "Bono Tesoro 10Y", "icon": "📊"},
 ]
 
 

@@ -72,10 +72,16 @@ YAHOO_TICKERS = {
     "US10Y": "^TNX",
     "US2Y": "^IRX",
     "BONDS": "^TNX",
-    # ETFs legacy
+    # ETFs
     "GLD": "GLD",
     "SLV": "SLV",
     "USO": "USO",
+    "SPY": "SPY",
+    "QQQ": "QQQ",
+    "IWM": "IWM",
+    "DIA": "DIA",
+    "EEM": "EEM",
+    "VTI": "VTI",
 }
 
 
