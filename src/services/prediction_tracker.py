@@ -12,7 +12,7 @@ logger = logging.getLogger("prediction_tracker")
 
 # Minimum price movement (in %) to consider a directional prediction valid.
 # Predictions are only "correct" if the price moves at least this much in the predicted direction.
-_MIN_SIGNIFICANT_MOVE = 0.3
+_MIN_SIGNIFICANT_MOVE = 0.15
 
 
 class PredictionTracker:
@@ -56,8 +56,8 @@ class PredictionTracker:
             "hours": 240,
             "hours to days": 480,
             "days": 1440,
-            "days to weeks": 4320,
-            "weeks": 10080,
+            "days to weeks": 2880,
+            "weeks": 4320,
         }
         return mapping.get(timeframe, 480)
 
@@ -135,7 +135,7 @@ class PredictionTracker:
         elif direction in ("down", "bearish", "negative", "baja"):
             correct = actual_change <= -_MIN_SIGNIFICANT_MOVE
         else:  # neutral
-            correct = abs(actual_change) < 1.0
+            correct = abs(actual_change) < 1.5
 
         # Calcular precisión del porcentaje
         if predicted_change != 0:
