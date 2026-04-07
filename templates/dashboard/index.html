@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — GEO-NEWSLETTER</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/responsive.css">
   <style>
     [data-tooltip] { position: relative; cursor: help; }
     [data-tooltip]:hover::after {
@@ -21,8 +22,11 @@
 
 <div class="flex min-h-screen">
 
+  <!-- Mobile sidebar overlay -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
+
   <!-- SIDEBAR -->
-  <aside class="w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 sticky top-0 h-screen">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-transform duration-300">
     <div class="px-6 py-5 border-b border-slate-800">
       <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
       <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
@@ -55,19 +59,22 @@
   <main class="flex-1 overflow-auto">
 
     <!-- Top bar -->
-    <div class="bg-slate-950 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+    <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
       <div class="flex items-center gap-3">
-        <h1 class="text-white font-bold text-xl" data-i18n="dash.dashboard">Dashboard</h1>
-        <span class="text-slate-500 text-xs">Últimas 24h · {{ total_alerts }} predicciones</span>
+        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.dashboard">Dashboard</h1>
+        <span class="hidden sm:inline text-slate-500 text-xs">Últimas 24h · {{ total_alerts }} predicciones</span>
       </div>
       <div class="flex items-center gap-3">
         {% if sub %}
           {% if sub.status == 'trial' %}
-            <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <span class="hidden sm:inline bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full">
               🔔 <span data-i18n="dash.trial_active">Período de prueba activo</span>
             </span>
           {% elif sub.status == 'active' %}
-            <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+            <span class="hidden sm:inline bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
               ✅ Plan {{ plans[sub.plan].name }}
             </span>
           {% endif %}
@@ -84,7 +91,7 @@
       </div>
     </div>
 
-    <div class="px-8 py-6">
+    <div class="px-4 md:px-8 py-4 md:py-6">
 
       <!-- Flash messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -100,7 +107,7 @@
 
       <!-- Trial/subscription banner -->
       {% if sub and sub.status == 'trial' %}
-        <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 mb-6 flex items-center justify-between">
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 md:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p class="text-amber-400 font-semibold">⏳ Período de prueba activo</p>
             <p class="text-slate-400 text-sm mt-1">
@@ -110,7 +117,7 @@
               Añade tu método de pago para no perder el acceso.
             </p>
           </div>
-          <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0">
+          <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0 w-full sm:w-auto text-center">
             Activar plan
           </a>
         </div>
@@ -149,15 +156,15 @@
       </div>
 
       <!-- Filters -->
-      <div class="bg-slate-800 border border-slate-700 rounded-xl px-5 py-4 mb-4">
-        <form method="GET" action="/dashboard" class="filters-form flex flex-wrap gap-3 items-center">
-          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white">
+      <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 md:px-5 py-4 mb-4">
+        <form method="GET" action="/dashboard" class="filters-form flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
               <option value="{{ a.symbol }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
-          <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2 rounded-lg border border-slate-600 transition">
+          <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
             Limpiar
           </a>
         </form>
@@ -277,7 +284,7 @@
 
           <!-- Pagination -->
           {% if total_pages > 1 %}
-          <div class="flex items-center justify-center gap-2 px-6 py-4 border-t border-slate-700">
+          <div class="flex flex-wrap items-center justify-center gap-2 px-4 md:px-6 py-4 border-t border-slate-700">
             {% if page > 1 %}
               <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
@@ -306,6 +313,21 @@
 </div>
 
 <script>
+  function toggleMobileSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+    document.body.classList.toggle('sidebar-open');
+  }
+  function closeMobileSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+    document.body.classList.remove('sidebar-open');
+  }
+
   var DASH_LANG_META = {
     es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }
   };

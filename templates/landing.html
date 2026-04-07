@@ -7,6 +7,7 @@
   <meta name="description" content="GEO-NEWSLETTER analiza eventos geopolíticos con inteligencia artificial para generar alertas de trading en tiempo real. Nuestro modelo de IA aprende continuamente para mejorar la precisión de sus predicciones sobre activos financieros.">
   <meta name="keywords" content="alertas geopolíticas, trading IA, inteligencia artificial trading, señales forex, alertas mercados, GPT trading, predicciones geopolíticas, newsletter trader">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/responsive.css">
   <script>
     tailwind.config = {
       theme: {
@@ -23,9 +24,10 @@
 
   <!-- NAV -->
   <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-      <span class="text-emerald-400 font-bold text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
-      <div class="flex items-center gap-4">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+      <span class="text-emerald-400 font-bold text-lg md:text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
+      <!-- Desktop nav links -->
+      <div class="hidden md:flex items-center gap-4">
         <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
         <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
         {% if current_user.is_authenticated %}
@@ -52,6 +54,29 @@
         </a>
         {% endif %}
       </div>
+      <!-- Mobile: CTA + hamburger -->
+      <div class="flex md:hidden items-center gap-3">
+        {% if not current_user.is_authenticated %}
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+          Empezar gratis
+        </a>
+        {% endif %}
+        <button id="mobile-nav-btn" onclick="toggleMobileNav()" class="p-1 text-slate-400 hover:text-white transition" aria-label="Abrir menú">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile dropdown menu -->
+    <div id="mobile-nav-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 py-3 space-y-1">
+      <a href="#precios" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.pricing">Precios</a>
+      <a href="#faq" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.faq">FAQ</a>
+      {% if current_user.is_authenticated %}
+        <a href="/dashboard" class="block py-2.5 text-sm text-slate-300 hover:text-white transition">👤 Área personal</a>
+        <button onclick="document.getElementById('logout-modal').classList.remove('hidden'); closeMobileNav()"
+          class="block w-full text-left py-2.5 text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
+      {% else %}
+        <a href="/login" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+      {% endif %}
     </div>
   </nav>
 
@@ -678,6 +703,15 @@
       }
       if (el('cookie-essential-btn')) el('cookie-essential-btn').textContent = isEn ? 'Essential only' : 'Solo esenciales';
       if (el('cookie-accept-btn')) el('cookie-accept-btn').textContent = isEn ? 'Accept all' : 'Aceptar todas';
+    }
+
+    function toggleMobileNav() {
+      var menu = document.getElementById('mobile-nav-menu');
+      menu.classList.toggle('hidden');
+    }
+    function closeMobileNav() {
+      var menu = document.getElementById('mobile-nav-menu');
+      menu.classList.add('hidden');
     }
 
     function toggleLangMenu() {
