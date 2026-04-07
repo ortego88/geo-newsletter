@@ -39,10 +39,13 @@ def subscribe(plan):
 @login_required
 def checkout_trial():
     """Captura datos de pago para el período de prueba gratuita."""
+    plan = request.args.get("plan", "basic")
+    if plan not in PLANS:
+        plan = "basic"
     return render_template(
         "billing/checkout.html",
-        plan="basic",
-        plan_config=PLANS["basic"],
+        plan=plan,
+        plan_config=PLANS[plan],
         billing_cycle="monthly",
         is_trial=True,
         stripe_pk=STRIPE_PUBLISHABLE_KEY,

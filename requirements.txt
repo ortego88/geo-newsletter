@@ -112,3 +112,4 @@ websocket-client==1.9.0
 wrapt==2.1.2
 xyzservices==2025.11.0
 yfinance>=0.2.0
+twilio>=8.0.0

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEO-NEWSLETTER — Resumen semanal</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:'Segoe UI',Arial,sans-serif;color:#e2e8f0;">
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0f172a;">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+
+        <!-- Main container -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#064e3b 0%,#065f46 50%,#0f172a 100%);border-radius:16px 16px 0 0;padding:40px 40px 32px 40px;text-align:center;">
+              <p style="margin:0 0 8px 0;font-size:32px;line-height:1;">🌍</p>
+              <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">GEO-NEWSLETTER</h1>
+              <p style="margin:0;font-size:14px;color:#6ee7b7;font-weight:500;letter-spacing:1px;text-transform:uppercase;">Tu resumen semanal de alertas geopolíticas</p>
+            </td>
+          </tr>
+
+          <!-- Date bar -->
+          <tr>
+            <td style="background-color:#1e293b;padding:12px 40px;text-align:center;border-left:1px solid #334155;border-right:1px solid #334155;">
+              <p style="margin:0;font-size:13px;color:#94a3b8;">
+                📅 Resumen del <strong style="color:#e2e8f0;">{{ week_start }}</strong> al <strong style="color:#e2e8f0;">{{ week_end }}</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="background-color:#1e293b;padding:32px 40px 24px 40px;border-left:1px solid #334155;border-right:1px solid #334155;">
+              <p style="margin:0 0 12px 0;font-size:16px;color:#e2e8f0;">Hola <strong style="color:#34d399;">{{ user_name }}</strong>,</p>
+              <p style="margin:0;font-size:14px;color:#94a3b8;line-height:1.6;">
+                Aquí tienes el resumen de las alertas geopolíticas más relevantes de esta semana.
+                Mantente informado y toma decisiones con ventaja.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Stats bar -->
+          <tr>
+            <td style="background-color:#1e293b;padding:0 40px 32px 40px;border-left:1px solid #334155;border-right:1px solid #334155;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="33%" style="text-align:center;padding:16px 8px;background-color:#0f172a;border-radius:12px;margin-right:8px;">
+                    <p style="margin:0;font-size:28px;font-weight:800;color:#e2e8f0;">{{ total_alerts }}</p>
+                    <p style="margin:4px 0 0 0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Total alertas</p>
+                  </td>
+                  <td width="4px"></td>
+                  <td width="33%" style="text-align:center;padding:16px 8px;background-color:#0f172a;border-radius:12px;">
+                    <p style="margin:0;font-size:28px;font-weight:800;color:#ef4444;">{{ critical_alerts }}</p>
+                    <p style="margin:4px 0 0 0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Críticas</p>
+                  </td>
+                  <td width="4px"></td>
+                  <td width="33%" style="text-align:center;padding:16px 8px;background-color:#0f172a;border-radius:12px;">
+                    <p style="margin:0;font-size:28px;font-weight:800;color:#f97316;">{{ high_alerts }}</p>
+                    <p style="margin:4px 0 0 0;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Altas</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          {% if top_assets %}
+          <!-- Top assets -->
+          <tr>
+            <td style="background-color:#1e293b;padding:0 40px 32px 40px;border-left:1px solid #334155;border-right:1px solid #334155;">
+              <p style="margin:0 0 12px 0;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Activos más mencionados</p>
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  {% for asset in top_assets %}
+                  <td style="padding-right:8px;">
+                    <span style="display:inline-block;background-color:#064e3b;color:#34d399;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;border:1px solid #065f46;">{{ asset }}</span>
+                  </td>
+                  {% endfor %}
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          {% if events %}
+          <!-- Section title: Alerts -->
+          <tr>
+            <td style="background-color:#1e293b;padding:0 40px 16px 40px;border-left:1px solid #334155;border-right:1px solid #334155;">
+              <h2 style="margin:0;font-size:18px;font-weight:700;color:#ffffff;">📊 Alertas más relevantes de la semana</h2>
+            </td>
+          </tr>
+
+          <!-- Alert cards -->
+          {% for event in events %}
+          {% set analysis = event.get('analysis', {}) if event.get('analysis') else {} %}
+          {% set score = event.get('score', event.get('impact_score', 0)) | int %}
+          {% set direction = analysis.get('direction', 'neutral') %}
+          {% set assets = analysis.get('most_affected_assets', []) %}
+
+          <tr>
+            <td style="background-color:#1e293b;padding:0 40px 16px 40px;border-left:1px solid #334155;border-right:1px solid #334155;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="background-color:#0f172a;border-radius:12px;border:1px solid #1e3a5f;overflow:hidden;">
+                <tr>
+                  <!-- Score/criticality indicator -->
+                  <td width="6" style="background-color:{% if score >= 85 %}#ef4444{% elif score >= 70 %}#f97316{% elif score >= 50 %}#eab308{% else %}#3b82f6{% endif %};border-radius:12px 0 0 12px;">
+                  </td>
+                  <td style="padding:16px 20px;">
+                    <!-- Header row -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td>
+                          <span style="font-size:11px;font-weight:700;color:{% if score >= 85 %}#ef4444{% elif score >= 70 %}#f97316{% elif score >= 50 %}#eab308{% else %}#3b82f6{% endif %};text-transform:uppercase;letter-spacing:0.5px;">
+                            {% if score >= 85 %}🔴 CRÍTICO{% elif score >= 70 %}🟠 ALTO{% elif score >= 50 %}🟡 MEDIO{% else %}🔵 BAJO{% endif %}
+                          </span>
+                        </td>
+                        <td style="text-align:right;">
+                          <span style="font-size:20px;font-weight:800;color:#e2e8f0;">{{ score }}</span>
+                          <span style="font-size:11px;color:#64748b;"> /100</span>
+                        </td>
+                      </tr>
+                    </table>
+                    <!-- Title -->
+                    <p style="margin:8px 0 6px 0;font-size:14px;font-weight:600;color:#e2e8f0;line-height:1.4;">
+                      {{ event.get('title', 'Sin título')[:100] }}
+                    </p>
+                    <!-- Meta row -->
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        {% if direction %}
+                        <td style="padding-right:12px;">
+                          <span style="font-size:12px;color:{% if direction in ('up','bullish','positive','alza') %}#34d399{% elif direction in ('down','bearish','negative','baja') %}#f87171{% else %}#94a3b8{% endif %};">
+                            {% if direction in ('up','bullish','positive','alza') %}▲ Alcista{% elif direction in ('down','bearish','negative','baja') %}▼ Bajista{% else %}→ Neutral{% endif %}
+                          </span>
+                        </td>
+                        {% endif %}
+                        {% if assets %}
+                        <td>
+                          <span style="font-size:12px;color:#94a3b8;">
+                            📌 {{ assets[:3] | join(', ') }}
+                          </span>
+                        </td>
+                        {% endif %}
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <!-- No alerts -->
+          <tr>
+            <td style="background-color:#1e293b;padding:24px 40px;border-left:1px solid #334155;border-right:1px solid #334155;text-align:center;">
+              <p style="margin:0;font-size:14px;color:#64748b;">No hubo alertas relevantes esta semana.</p>
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- CTA button -->
+          <tr>
+            <td style="background-color:#1e293b;padding:32px 40px;border-left:1px solid #334155;border-right:1px solid #334155;text-align:center;">
+              <a href="https://geo-newsletter.up.railway.app/dashboard"
+                style="display:inline-block;background-color:#10b981;color:#ffffff;font-weight:700;font-size:15px;padding:14px 36px;border-radius:12px;text-decoration:none;">
+                Ver dashboard completo →
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#0a0f1e;border-radius:0 0 16px 16px;padding:28px 40px;text-align:center;border:1px solid #1e293b;">
+              <p style="margin:0 0 8px 0;font-size:13px;font-weight:700;color:#34d399;">🌍 GEO-NEWSLETTER</p>
+              <p style="margin:0 0 16px 0;font-size:12px;color:#475569;">Alertas geopolíticas para traders profesionales</p>
+              <p style="margin:0;font-size:11px;color:#334155;line-height:1.6;">
+                © 2025 GEO-NEWSLETTER · Estás recibiendo este email como usuario {{ "Premium" if plan == "premium" else "Profesional" }}.
+                <br>Para dejar de recibir este resumen, accede a la configuración de tu cuenta.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

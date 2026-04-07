@@ -40,6 +40,7 @@
 
       <form method="POST" action="/register" class="space-y-5">
         <input type="hidden" name="preferred_lang" id="preferred_lang_input" value="es">
+        <input type="hidden" name="plan" id="plan_input" value="{{ plan | default('basic') }}">
         <div>
           <label class="block text-sm font-medium text-slate-300 mb-1.5">Nombre completo</label>
           <input type="text" name="name" required autocomplete="name"

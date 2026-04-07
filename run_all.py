@@ -106,6 +106,16 @@ def _send_pipeline_alerts(events: list):
 
     logger.info(f"📤 Total enviadas: {sent}/{len(resolved)}")
 
+    # Enviar también por WhatsApp si está configurado
+    try:
+        from src.services.whatsapp_sender import send_whatsapp, is_whatsapp_configured
+        if is_whatsapp_configured():
+            for event in resolved:
+                msg = format_telegram_alert(event, event["analysis"])
+                send_whatsapp(msg)
+    except Exception as e:
+        logger.warning(f"Error en envío WhatsApp: {e}")
+
 
 def run_pipeline_cycle():
     logger.info("=" * 60)
@@ -139,8 +149,19 @@ def start_scheduler():
         id="pipeline_cycle",
         next_run_time=datetime.now(),
     )
+    # Weekly digest: every Sunday at 10:00 AM (Madrid time) for Premium/Pro users
+    from src.services.weekly_digest import send_weekly_digest
+    scheduler.add_job(
+        lambda: send_weekly_digest(DB_PATH, os.getenv("APP_DB_PATH", "data/app.db")),
+        "cron",
+        day_of_week="sun",
+        hour=10,
+        minute=0,
+        timezone="Europe/Madrid",
+        id="weekly_digest",
+    )
     scheduler.start()
-    logger.info("✅ Scheduler iniciado (pipeline cada 10 minutos)")
+    logger.info("✅ Scheduler iniciado (pipeline cada 10 minutos, resumen semanal domingos 10:00 AM)")
     return scheduler
 
 
