@@ -29,8 +29,13 @@ DEFAULT_RECENT_DB = "data/recent_articles.db"
 MAX_AGE_DAYS = 7        # Purgar hashes del Nivel 1 más antiguos de N días
 RECENT_HOURS = 48       # Ventana para deduplicación semántica (Nivel 2)
 
-# Umbral de similitud coseno — fácilmente ajustable
+# Máximo de caracteres de descripción a incluir en el texto de comparación
+MAX_DESCRIPTION_LENGTH = 500
+
+# Umbral de similitud coseno para TF-IDF — fácilmente ajustable
 DEDUP_SIMILARITY_THRESHOLD = 0.75
+# Umbral de ratio para el fallback difflib (escala ligeramente diferente a coseno)
+DEDUP_DIFFLIB_THRESHOLD = 0.80
 
 
 # ---------------------------------------------------------------------------
@@ -86,9 +91,9 @@ def is_duplicate_news(
     if not existing_recent_news:
         return False, 0.0
 
-    new_text = normalize_text(f"{new_title} {new_description[:500]}")
+    new_text = normalize_text(f"{new_title} {new_description[:MAX_DESCRIPTION_LENGTH]}")
     existing_texts = [
-        normalize_text(f"{t} {d[:500]}") for t, d in existing_recent_news
+        normalize_text(f"{t} {d[:MAX_DESCRIPTION_LENGTH]}") for t, d in existing_recent_news
     ]
 
     all_texts = [new_text] + existing_texts
@@ -103,7 +108,7 @@ def is_duplicate_news(
         max_similarity = float(similarities.max()) if similarities.size > 0 else 0.0
         return max_similarity > threshold, max_similarity
 
-    except Exception:
+    except (ImportError, ValueError):
         # Fallback: comparación simple con difflib
         from difflib import SequenceMatcher
 
@@ -112,8 +117,7 @@ def is_duplicate_news(
             ratio = SequenceMatcher(None, new_text, existing_text).ratio()
             if ratio > max_ratio:
                 max_ratio = ratio
-        # difflib ratios are slightly different — use 0.80 as fallback threshold
-        return max_ratio > 0.80, max_ratio
+        return max_ratio > DEDUP_DIFFLIB_THRESHOLD, max_ratio
 
 
 # ---------------------------------------------------------------------------
@@ -132,7 +136,7 @@ class RecentArticleStore:
         self._init_db()
 
     def _get_conn(self):
-        return sqlite3.connect(self.db_path, check_same_thread=False)
+        return sqlite3.connect(self.db_path)
 
     def _init_db(self):
         with self._get_conn() as conn:
@@ -149,6 +153,10 @@ class RecentArticleStore:
             conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_ticker_stored "
                 "ON recent_articles(ticker, stored_at)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_title_hash "
+                "ON recent_articles(title_hash)"
             )
             conn.commit()
 
