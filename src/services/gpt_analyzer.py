@@ -137,7 +137,7 @@ Instructions:
 
 Respond with this exact JSON:
 {{
-  "direction": "up|down|neutral (neutral should be <10% of cases — only for truly non-directional events)",
+  "direction": "up|down|neutral",
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
   "confidence": <calibrated 0-100; direct confirmed events 70-85, indirect/opinions 55-70, speculative 35-55>,
   "most_affected_assets": [<2-3 symbols from ALLOWED SYMBOLS, primary subject first>],
@@ -276,8 +276,10 @@ def _fallback_analysis(event: dict) -> dict:
         "deterioro", "castigo", "sanción", "quiebra", "impago",
     ]
 
-    bull_hits = sum(1 for w in bullish_words if w in text)
-    bear_hits = sum(1 for w in bearish_words if w in text)
+    bull_positions = {w: text.find(w) for w in bullish_words if w in text}
+    bear_positions = {w: text.find(w) for w in bearish_words if w in text}
+    bull_hits = len(bull_positions)
+    bear_hits = len(bear_positions)
 
     if bear_hits > bull_hits:
         direction = "down"
@@ -285,8 +287,8 @@ def _fallback_analysis(event: dict) -> dict:
         direction = "up"
     elif bull_hits == bear_hits and bull_hits > 0:
         # Tie with hits on both sides — pick based on which appears first (headline bias)
-        first_bull = min((text.find(w) for w in bullish_words if w in text), default=9999)
-        first_bear = min((text.find(w) for w in bearish_words if w in text), default=9999)
+        first_bull = min(bull_positions.values(), default=9999)
+        first_bear = min(bear_positions.values(), default=9999)
         direction = "down" if first_bear < first_bull else "up"
     else:
         # No keyword hits at all — use score to infer direction

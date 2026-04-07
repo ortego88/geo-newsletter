@@ -51,6 +51,9 @@ class PredictionTracker:
             conn.commit()
 
     def _timeframe_to_minutes(self, timeframe: str) -> int:
+        # Capped at 3 days max to prevent stale predictions that can't be
+        # validated with current prices.  Original values were much longer
+        # (days_to_weeks=4320, weeks=10080) but led to predictions going stale.
         mapping = {
             "immediate": 60,
             "hours": 240,
