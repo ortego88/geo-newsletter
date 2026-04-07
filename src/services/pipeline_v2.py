@@ -401,6 +401,24 @@ class AnalysisPipeline:
         if not scored:
             return []
 
+        # Paso 3c: Deduplicación semántica (Nivel 2) — últimas 48h, mismo ticker
+        logger.info("🧠 PASO 3c: Deduplicación semántica (TF-IDF) por ticker...")
+        self.deduplicator.purge_old_recent()
+        non_duplicate = []
+        for article in scored:
+            ticker = article.get("suggested_asset", "")
+            if self.deduplicator.check_semantic(article, ticker):
+                continue
+            non_duplicate.append(article)
+        logger.info(
+            f"   ✅ {len(non_duplicate)} noticias únicas tras dedup semántica "
+            f"(descartadas: {len(scored) - len(non_duplicate)})"
+        )
+        scored = non_duplicate
+
+        if not scored:
+            return []
+
         # Paso 4: Analizar con IA
         logger.info("🤖 PASO 4: Analizando con IA (Ollama)...")
         analyzed = []
