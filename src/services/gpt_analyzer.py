@@ -59,8 +59,12 @@ ASSET ASSIGNMENT RULES (strict priority order):
    - Sanctions/tariffs/trade war → ["SPX", "NASDAQ", "US10Y"]
 
 6. News about STOCK INDICES broadly:
-   - Global markets/Wall Street/S&P → ["SPX", "NASDAQ"]
-   - European markets → ["DAX", "FTSE", "IBEX"]
+   - Global markets/Wall Street/S&P → ["SPX", "SPY", "NASDAQ"]
+   - European markets → ["DAX", "FTSE", "IBEX35"]
+   - Spanish markets/IBEX → ["IBEX35", "SPX"]
+   - If the news is about ETFs specifically → use the ETF ticker (SPY, QQQ, GLD, SLV, IWM, DIA)
+   - Gold ETF news → ["GLD", "GOLD"]
+   - Silver ETF news → ["SLV", "SILVER"]
 
 IMPACT CALIBRATION (market_impact_percent):
 - CEO letter/statement/outlook → ±1 to ±3%
@@ -84,7 +88,7 @@ CONFIDENCE CALIBRATION (0-100) — use the FULL range, do NOT cluster around one
 - AVOID clustering predictions near 40-50; spread confidence based on event quality
 - IMPORTANT: Vary confidence meaningfully between events. Two different events should rarely get the same confidence.
 
-ALLOWED SYMBOLS ONLY: BTC, ETH, XRP, SOL, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, SPX, NASDAQ, DAX, FTSE, IBEX, AAPL, MSFT, NVDA, AMZN, TSLA, META, JPM, XOM, US10Y, WHEAT, CORN
+ALLOWED SYMBOLS ONLY: BTC, ETH, XRP, SOL, ADA, DOGE, WTI, BRENT, GOLD, SILVER, NATURAL_GAS, COPPER, WHEAT, CORN, SPX, NASDAQ, DAX, FTSE, IBEX35, SPY, QQQ, GLD, SLV, IWM, DIA, AAPL, MSFT, NVDA, AMZN, TSLA, META, GOOGL, JPM, XOM, US10Y
 
 Respond ONLY with valid JSON, no explanations."""
 

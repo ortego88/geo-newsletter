@@ -42,6 +42,8 @@ MOCK_PRICES = {
     "SILVER": 28.50,
     "NATURAL_GAS": 2.85,
     "COPPER": 4.20,
+    "WHEAT": 5.60,
+    "CORN": 4.50,
     "SPX": 5210.0,
     "SP500": 5210.0,
     "INDU": 38500.0,
@@ -49,15 +51,29 @@ MOCK_PRICES = {
     "NASDAQ": 16400.0,
     "FTSE": 7800.0,
     "DAX": 17500.0,
+    "IBEX35": 11200.0,
+    "IBEX": 11200.0,
     "AAPL": 185.0,
     "GOOGL": 175.0,
     "MSFT": 415.0,
     "AMZN": 192.0,
     "TSLA": 175.0,
+    "META": 500.0,
     "NVDA": 870.0,
+    "JPM": 195.0,
+    "XOM": 115.0,
     "US10Y": 4.35,
     "US2Y": 4.85,
     "BONDS": 4.35,
+    # ETFs
+    "SPY": 520.0,
+    "QQQ": 440.0,
+    "GLD": 215.0,
+    "SLV": 25.0,
+    "IWM": 200.0,
+    "DIA": 385.0,
+    "EEM": 42.0,
+    "VTI": 250.0,
 }
 
 # --- Iconos por tipo de activo ---
@@ -76,6 +92,8 @@ ASSET_ICONS = {
     "SILVER": "🥈",
     "NATURAL_GAS": "🔥",
     "COPPER": "🟤",
+    "WHEAT": "🌾",
+    "CORN": "🌽",
     "SPX": "📈",
     "SP500": "📈",
     "INDU": "🏭",
@@ -83,15 +101,29 @@ ASSET_ICONS = {
     "NASDAQ": "💻",
     "FTSE": "🇬🇧",
     "DAX": "🇩🇪",
+    "IBEX35": "🇪🇸",
+    "IBEX": "🇪🇸",
     "AAPL": "🍎",
     "GOOGL": "🔍",
     "MSFT": "🪟",
     "AMZN": "📦",
     "TSLA": "🚗",
+    "META": "🌐",
     "NVDA": "🖥️",
+    "JPM": "🏦",
+    "XOM": "⛽",
     "US10Y": "📊",
     "US2Y": "📊",
     "BONDS": "📊",
+    # ETFs
+    "SPY": "📊",
+    "QQQ": "📊",
+    "GLD": "📊",
+    "SLV": "📊",
+    "IWM": "📊",
+    "DIA": "📊",
+    "EEM": "📊",
+    "VTI": "📊",
 }
 
 # --- Nombres legibles en español ---
@@ -110,22 +142,38 @@ ASSET_NAMES = {
     "SILVER": "Plata",
     "NATURAL_GAS": "Gas Natural",
     "COPPER": "Cobre",
+    "WHEAT": "Trigo",
+    "CORN": "Maíz",
     "SPX": "S&P 500",
     "SP500": "S&P 500",
     "INDU": "Dow Jones",
     "CCMP": "Nasdaq",
-    "NASDAQ": "Nasdaq",
+    "NASDAQ": "Nasdaq 100",
     "FTSE": "FTSE 100",
-    "DAX": "DAX",
+    "DAX": "DAX 40",
+    "IBEX35": "IBEX 35",
+    "IBEX": "IBEX 35",
     "AAPL": "Apple",
     "GOOGL": "Google",
     "MSFT": "Microsoft",
     "AMZN": "Amazon",
     "TSLA": "Tesla",
+    "META": "Meta",
     "NVDA": "NVIDIA",
+    "JPM": "JPMorgan",
+    "XOM": "ExxonMobil",
     "US10Y": "Bono Tesoro 10Y",
     "US2Y": "Bono Tesoro 2Y",
     "BONDS": "Bonos USA",
+    # ETFs
+    "SPY": "SPDR S&P 500 ETF",
+    "QQQ": "Invesco Nasdaq 100 ETF",
+    "GLD": "SPDR Gold ETF",
+    "SLV": "iShares Silver ETF",
+    "IWM": "iShares Russell 2000 ETF",
+    "DIA": "SPDR Dow Jones ETF",
+    "EEM": "iShares Emerging Markets ETF",
+    "VTI": "Vanguard Total Stock Market ETF",
 }
 
 # --- Traducción básica de inglés a español para el campo reasoning ---
@@ -395,7 +443,6 @@ def format_alert(event: dict, analysis: dict) -> str:
     lines.append("📊 IMPACTO DE MERCADO:")
     lines.append("")
     lines.append(f"{direction_icon} {direction_text}")
-    lines.append(f"Cambio esperado: {'+' if impact_pct > 0 else ''}{impact_pct}%")
     lines.append(f"Plazo: {timeframe_es}")
     lines.append(f"Confianza: {confidence}%")
     lines.append("")
@@ -408,12 +455,8 @@ def format_alert(event: dict, analysis: dict) -> str:
         asset_upper = asset.upper()
         icon = ASSET_ICONS.get(asset_upper, "💹")
         name = ASSET_NAMES.get(asset_upper, asset_upper)
-        current_price = fetcher.get_price(asset_upper)
-        projected = current_price * (1 + impact_pct / 100)
         formatted_current = fetcher.get_formatted_price(asset_upper)
-        formatted_projected = f"{projected:,.0f}" if projected >= 100 else f"{projected:.2f}"
-        lines.append(f"  • {icon} {name}")
-        lines.append(f"    Ahora: {formatted_current} → {formatted_projected} ({'+' if impact_pct > 0 else ''}{impact_pct}%)")
+        lines.append(f"  • {icon} {name} — {formatted_current}")
 
     lines.append("")
     lines.append("━" * 60)
@@ -455,11 +498,11 @@ def format_telegram_alert(event: dict, analysis: dict) -> str:
     if direction in ("up", "bullish", "positive", "alza"):
         impact_pct = abs(impact_pct)
         direction_icon = "📈"
-        direction_label = f"Subida esperada: +{impact_pct}%"
+        direction_label = "Subida esperada"
     elif direction in ("down", "bearish", "negative", "baja"):
         impact_pct = -abs(impact_pct)
         direction_icon = "📉"
-        direction_label = f"Bajada esperada: {impact_pct}%"
+        direction_label = "Bajada esperada"
     else:
         impact_pct = 0
         direction_icon = "➡️"
@@ -554,13 +597,13 @@ def format_cycle_summary(events: list) -> str:
             icon = "🟢"
 
         if direction in ("up", "bullish", "positive", "alza"):
-            dir_str = f"+{abs(impact_pct)}%"
+            dir_str = "↑"
             asset_str = affected_assets[0].upper() if affected_assets else ""
         elif direction in ("down", "bearish", "negative", "baja"):
-            dir_str = f"-{abs(impact_pct)}%"
+            dir_str = "↓"
             asset_str = affected_assets[0].upper() if affected_assets else ""
         else:
-            dir_str = "→0%"
+            dir_str = "→"
             asset_str = affected_assets[0].upper() if affected_assets else ""
 
         asset_part = f"{asset_str} {dir_str}" if asset_str else dir_str
