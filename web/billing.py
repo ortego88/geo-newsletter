@@ -119,27 +119,28 @@ def process_subscription():
         existing = conn.execute(
             text("SELECT id FROM subscriptions WHERE user_id=:uid"), {"uid": current_user.id}
         ).fetchone()
+        now_iso = datetime.now(timezone.utc).isoformat()
         if existing:
             conn.execute(
                 text("""UPDATE subscriptions SET plan=:plan, billing_cycle=:cycle, status=:status,
-                       trial_ends_at=:trial, current_period_end=:period, updated_at=CURRENT_TIMESTAMP
+                       trial_ends_at=:trial, current_period_end=:period, updated_at=:now
                        WHERE user_id=:uid"""),
                 {"plan": plan, "cycle": billing_cycle, "status": status,
-                 "trial": trial_end, "period": period_end, "uid": current_user.id},
+                 "trial": trial_end, "period": period_end, "now": now_iso, "uid": current_user.id},
             )
         else:
             conn.execute(
                 text("""INSERT INTO subscriptions
-                       (user_id,plan,billing_cycle,status,trial_ends_at,current_period_end)
-                       VALUES (:uid,:plan,:cycle,:status,:trial,:period)"""),
+                       (user_id,plan,billing_cycle,status,trial_ends_at,current_period_end,created_at,updated_at)
+                       VALUES (:uid,:plan,:cycle,:status,:trial,:period,:now,:now)"""),
                 {"uid": current_user.id, "plan": plan, "cycle": billing_cycle,
-                 "status": status, "trial": trial_end, "period": period_end},
+                 "status": status, "trial": trial_end, "period": period_end, "now": now_iso},
             )
 
         # Save simulated payment method
         conn.execute(
-            text("INSERT INTO payment_methods (user_id, card_last4, card_brand) VALUES (:uid, :last4, :brand)"),
-            {"uid": current_user.id, "last4": "4242", "brand": "Visa (test)"},
+            text("INSERT INTO payment_methods (user_id, card_last4, card_brand, created_at) VALUES (:uid, :last4, :brand, :now)"),
+            {"uid": current_user.id, "last4": "4242", "brand": "Visa (test)", "now": now_iso},
         )
         conn.commit()
 

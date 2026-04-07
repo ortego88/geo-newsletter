@@ -146,7 +146,7 @@ def init_db():
     """
     from sqlalchemy import (
         MetaData, Table, Column, Integer, String, Text, BigInteger,
-        ForeignKey, inspect as sa_inspect,
+        ForeignKey,
     )
 
     engine = get_engine("app")
@@ -159,7 +159,7 @@ def init_db():
         Column("name", Text, nullable=False),
         Column("telegram_chat_id", Text),
         Column("language", String(10), server_default="es"),
-        Column("created_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+        Column("created_at", Text),
         Column("is_active", Integer, server_default="1"),
     )
 
@@ -174,8 +174,8 @@ def init_db():
         Column("stripe_subscription_id", Text),
         Column("stripe_customer_id", Text),
         Column("selected_assets", Text, server_default=""),
-        Column("created_at", Text, server_default=text("CURRENT_TIMESTAMP")),
-        Column("updated_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+        Column("created_at", Text),
+        Column("updated_at", Text),
     )
 
     Table("payment_methods", meta,
@@ -187,7 +187,7 @@ def init_db():
         Column("card_exp_month", Integer),
         Column("card_exp_year", Integer),
         Column("is_default", Integer, server_default="1"),
-        Column("created_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+        Column("created_at", Text),
     )
 
     Table("alert_log", meta,
@@ -196,7 +196,7 @@ def init_db():
         Column("asset", Text),
         Column("direction", Text),
         Column("score", Integer),
-        Column("sent_at", Text, server_default=text("CURRENT_TIMESTAMP")),
+        Column("sent_at", Text),
     )
 
     # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
@@ -268,16 +268,17 @@ class User(UserMixin):
         if plan not in ('basic', 'premium', 'pro'):
             plan = 'basic'
         pw_hash = generate_password_hash(password)
+        now = datetime.now(timezone.utc).isoformat()
         trial_end = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
         with get_conn() as conn:
             result = conn.execute(
-                text("INSERT INTO users (email,password_hash,name,language) VALUES (:email,:pw,:name,:lang)"),
-                {"email": email, "pw": pw_hash, "name": name, "lang": language},
+                text("INSERT INTO users (email,password_hash,name,language,created_at) VALUES (:email,:pw,:name,:lang,:created_at)"),
+                {"email": email, "pw": pw_hash, "name": name, "lang": language, "created_at": now},
             )
             user_id = result.lastrowid
             conn.execute(
-                text("INSERT INTO subscriptions (user_id,plan,status,trial_ends_at) VALUES (:uid,:plan,:status,:trial)"),
-                {"uid": user_id, "plan": plan, "status": "trial", "trial": trial_end},
+                text("INSERT INTO subscriptions (user_id,plan,status,trial_ends_at,created_at,updated_at) VALUES (:uid,:plan,:status,:trial,:now,:now)"),
+                {"uid": user_id, "plan": plan, "status": "trial", "trial": trial_end, "now": now},
             )
             conn.commit()
         return User.get_by_id(user_id)
