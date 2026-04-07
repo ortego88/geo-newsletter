@@ -1,8 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from web.models import PLANS, AVAILABLE_ASSETS, get_conn
+import logging
 import os
 import sqlite3 as _sq
+
+_logger = logging.getLogger("dashboard_web")
 
 dashboard_bp = Blueprint("dashboard_web", __name__)
 
@@ -32,15 +35,15 @@ def index():
         conn2 = _sq.connect(pred_db_path)
         c2 = conn2.cursor()
         c2.execute(
-            """SELECT asset, direction, confidence, created_at, reasoning
+            """SELECT asset, direction, confidence, predicted_at, reasoning
                FROM predictions
-               ORDER BY created_at DESC
+               ORDER BY predicted_at DESC
                LIMIT 20"""
         )
         alerts = c2.fetchall()
         conn2.close()
-    except Exception:
-        pass
+    except _sq.Error:
+        _logger.warning("Could not load predictions", exc_info=True)
 
     return render_template(
         "dashboard/index.html",
