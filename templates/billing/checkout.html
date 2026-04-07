@@ -180,8 +180,8 @@
   </main>
 
   <script>
-    var PRICE_MONTHLY = {{ plan_config.price_monthly }};
-    var PRICE_YEARLY = {{ plan_config.price_yearly }};
+    var PRICE_MONTHLY = {{ plan_config.price_monthly|tojson }};
+    var PRICE_YEARLY = {{ plan_config.price_yearly|tojson }};
     var currentCycle = '{{ billing_cycle }}';
 
     function setCycle(cycle) {
