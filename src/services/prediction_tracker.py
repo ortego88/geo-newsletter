@@ -18,14 +18,6 @@ logger = logging.getLogger("prediction_tracker")
 # Predictions are only "correct" if the price moves at least this much in the predicted direction.
 _MIN_SIGNIFICANT_MOVE = 0.15
 
-# Known columns in the predictions table (used to build result dicts)
-_PREDICTION_COLUMNS = [
-    "id", "event_id", "title", "category", "asset", "direction", "impact_percent",
-    "timeframe", "timeframe_minutes", "confidence", "reasoning", "price_at_prediction",
-    "price_at_validation", "predicted_at", "validated_at", "outcome", "score", "source",
-    "verify_at",
-]
-
 
 class PredictionTracker:
     def __init__(self, db_path: str = "data/predictions.db"):
@@ -77,7 +69,7 @@ class PredictionTracker:
                 if engine.dialect.name == "postgresql":
                     exists = conn.execute(text(
                         "SELECT 1 FROM information_schema.columns "
-                        "WHERE table_name='predictions' AND column_name='verify_at'"
+                        "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='verify_at'"
                     )).fetchone()
                 else:
                     exists = conn.execute(text(

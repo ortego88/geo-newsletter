@@ -6,7 +6,7 @@ from web.db_engine import get_engine
 from src.services.alert_formatter import ASSET_NAMES
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 _logger = logging.getLogger("dashboard_web")
@@ -75,9 +75,12 @@ def index():
     total_alerts = 0
     total_pages = 1
     try:
+        # Use Python-computed cutoff for cross-database compatibility (works for both SQLite and PostgreSQL
+        # since predicted_at is stored as ISO text and ISO strings sort lexicographically)
+        cutoff_24h = (datetime.utcnow() - timedelta(hours=24)).isoformat()
         with _get_predictions_conn() as conn2:
-            where = "WHERE predicted_at >= datetime('now', '-24 hours')"
-            extra_params: dict = {}
+            where = "WHERE predicted_at >= :cutoff"
+            extra_params: dict = {"cutoff": cutoff_24h}
             if asset_filter:
                 where += " AND asset = :asset"
                 extra_params["asset"] = asset_filter
@@ -119,8 +122,8 @@ def index():
     accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0, "pending": 0}
     try:
         with _get_predictions_conn() as conn2:
-            stats_where = "WHERE predicted_at >= datetime('now', '-24 hours')"
-            stats_params: dict = {}
+            stats_where = "WHERE predicted_at >= :cutoff"
+            stats_params: dict = {"cutoff": cutoff_24h}
             if asset_filter:
                 stats_where += " AND asset = :asset"
                 stats_params["asset"] = asset_filter
