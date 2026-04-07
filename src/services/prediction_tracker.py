@@ -10,6 +10,10 @@ from datetime import datetime
 
 logger = logging.getLogger("prediction_tracker")
 
+# Minimum price movement (in %) to consider a directional prediction valid.
+# Predictions are only "correct" if the price moves at least this much in the predicted direction.
+_MIN_SIGNIFICANT_MOVE = 0.3
+
 
 class PredictionTracker:
     def __init__(self, db_path: str = "data/predictions.db"):
@@ -124,8 +128,6 @@ class PredictionTracker:
         actual_change = ((current_price - price_at) / price_at) * 100
         predicted_change = pred.get("impact_percent", 0)
         direction = pred.get("direction", "neutral")
-
-        _MIN_SIGNIFICANT_MOVE = 0.3  # minimum 0.3% move to consider a valid signal
 
         # Determine if the prediction was correct (with minimum movement threshold)
         if direction in ("up", "bullish", "positive", "alza"):

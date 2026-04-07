@@ -5,6 +5,7 @@ Flujo: fetch RSS → deduplicar → scoring → analizar con IA → guardar pred
 
 import logging
 import hashlib
+import math
 from datetime import datetime, timedelta, timezone
 
 import feedparser
@@ -130,8 +131,6 @@ def _score_event(article: dict) -> tuple[int, str]:
     This means a single-keyword match produces a noticeably lower score
     than multiple matches, and the base_severity alone no longer dominates.
     """
-    import math
-
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
 

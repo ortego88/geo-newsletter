@@ -22,20 +22,20 @@ from src.services.prediction_tracker import PredictionTracker
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 PREDICTIONS_DB = os.getenv("PREDICTIONS_DB_PATH", "data/predictions.db")
 
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
-# Valid fields for ORDER BY (used to prevent SQL injection)
-_VALID_SORT_FIELDS = [
-    "predicted_at",
-    "score",
-    "confidence",
-    "impact_percent",
-    "price_at_prediction",
-    "price_at_validation",
-]
+# Allowlist mapping of sort parameter values to SQL column names (prevents SQL injection)
+_SORT_FIELD_MAP = {
+    "predicted_at": "predicted_at",
+    "score": "score",
+    "confidence": "confidence",
+    "impact_percent": "impact_percent",
+    "price_at_prediction": "price_at_prediction",
+    "price_at_validation": "price_at_validation",
+}
 
 
 def _admin_required() -> bool:
@@ -58,7 +58,9 @@ def _to_madrid(dt_str: str) -> str:
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        if request.form.get("password") == ADMIN_PASSWORD:
+        password = request.form.get("password", "")
+        # Login only succeeds when ADMIN_PASSWORD is set and matches
+        if ADMIN_PASSWORD and password == ADMIN_PASSWORD:
             session["admin_logged_in"] = True
             return redirect(url_for("admin.dashboard"))
         flash("Contraseña incorrecta", "error")
@@ -88,9 +90,10 @@ def dashboard():
     sort_by = request.args.get("sort", "predicted_at")
     sort_dir = request.args.get("dir", "desc")
 
-    if sort_by not in _VALID_SORT_FIELDS:
+    if sort_by not in _SORT_FIELD_MAP:
         sort_by = "predicted_at"
-    sort_sql = f"{sort_by} {'DESC' if sort_dir == 'desc' else 'ASC'}"
+    sort_col = _SORT_FIELD_MAP[sort_by]
+    sort_order = "DESC" if sort_dir == "desc" else "ASC"
 
     try:
         with sqlite3.connect(PREDICTIONS_DB) as conn:
@@ -111,7 +114,7 @@ def dashboard():
                            confidence, price_at_prediction, price_at_validation, predicted_at,
                            validated_at, outcome, score, source, reasoning
                     FROM predictions {where_clause}
-                    ORDER BY {sort_sql}
+                    ORDER BY {sort_col} {sort_order}
                     LIMIT ? OFFSET ?""",
                 params + [per_page, offset],
             ).fetchall()

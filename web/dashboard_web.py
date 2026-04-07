@@ -16,6 +16,9 @@ _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
 _VALID_SORTS = ["predicted_at", "score", "confidence", "impact_percent", "price_at_prediction"]
 
+# Allowlist mapping of sort parameter values to SQL column names (prevents SQL injection)
+_SORT_FIELD_MAP = {s: s for s in _VALID_SORTS}
+
 
 def _get_predictions_conn():
     """Return a connection to the predictions SQLite database."""
@@ -61,8 +64,10 @@ def index():
     sort_by = request.args.get("sort", "predicted_at")
     sort_dir = request.args.get("dir", "desc")
 
-    if sort_by not in _VALID_SORTS:
+    if sort_by not in _SORT_FIELD_MAP:
         sort_by = "predicted_at"
+    sort_col = _SORT_FIELD_MAP[sort_by]
+    sort_order = "DESC" if sort_dir == "desc" else "ASC"
 
     # Get recent alerts from predictions DB (last 24h)
     alerts = []
@@ -87,7 +92,7 @@ def index():
             f"""SELECT asset, direction, confidence, predicted_at, reasoning,
                        score, impact_percent, price_at_prediction, price_at_validation, outcome, title
                 FROM predictions {where}
-                ORDER BY {sort_by} {'DESC' if sort_dir == 'desc' else 'ASC'}
+                ORDER BY {sort_col} {sort_order}
                 LIMIT ? OFFSET ?""",
             params + [per_page, offset],
         )
