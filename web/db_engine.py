@@ -1,11 +1,12 @@
 """
 web/db_engine.py — Fábrica de engines SQLAlchemy.
 
-Soporta SQLite (desarrollo local) y PostgreSQL (producción en Railway).
-Detecta automáticamente el tipo de BD a través de DATABASE_URL.
+Usa PostgreSQL exclusivamente (obligatorio en todos los entornos).
+DATABASE_URL debe estar configurada — si no, la app no arranca.
 
-# NEVER use db.drop_all() in production
-# Usar siempre db.create_all() / CREATE TABLE IF NOT EXISTS (idempotente)
+# IMPORTANTE: En startup, usar SOLO meta.create_all() (idempotente).
+# NUNCA meta.drop_all() — borraría todos los datos en producción.
+# Para resetear datos usar el endpoint /admin/reset-predictions
 """
 import os
 
@@ -15,63 +16,44 @@ from sqlalchemy.engine import Engine
 _engines: dict[str, Engine] = {}
 
 
-def _build_engine(url: str) -> Engine:
-    """Crea un engine SQLAlchemy para la URL dada."""
-    if "sqlite" in url:
-        return create_engine(url, connect_args={"check_same_thread": False})
-    # PostgreSQL: habilitar pool con reconexión automática
-    return create_engine(url, pool_pre_ping=True, pool_size=5, max_overflow=10)
-
-
-def _resolve_url(env_key: str, fallback_path: str) -> str:
+def _get_database_url() -> str:
     """
-    Resuelve la URL de conexión a la BD:
-    - Si DATABASE_URL está definida → usa PostgreSQL (Railway)
-    - En caso contrario → SQLite local en la ruta indicada
+    Obtiene y valida la URL de conexión a PostgreSQL.
+    Raises RuntimeError si DATABASE_URL no está definida.
     """
     database_url = os.getenv("DATABASE_URL", "").strip()
-    if database_url:
-        # Railway usa el prefijo legacy 'postgres://' — SQLAlchemy requiere 'postgresql://'
-        if database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
-        return database_url
-
-    # SQLite local
-    db_path = os.getenv(env_key, fallback_path)
-    abs_path = os.path.abspath(db_path)
-    os.makedirs(os.path.dirname(abs_path), exist_ok=True)
-    return f"sqlite:///{abs_path}"
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL environment variable is not set. "
+            "PostgreSQL is required in all environments. "
+            "Set DATABASE_URL=postgresql://user:password@host:5432/dbname"
+        )
+    # Railway a veces da URLs con 'postgres://' (deprecated) — corregir a 'postgresql://'
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    return database_url
 
 
 def get_engine(name: str = "app") -> Engine:
     """
-    Obtiene (o crea) el engine SQLAlchemy para la base de datos indicada.
+    Obtiene (o crea) el engine SQLAlchemy para PostgreSQL.
 
     Args:
-        name: 'app' para la BD de usuarios, 'predictions' para predicciones.
+        name: 'app' o 'predictions' — ambas usan el mismo PostgreSQL.
 
     Returns:
         SQLAlchemy Engine listo para usar.
     """
-    # En producción (DATABASE_URL configurada), ambas BD comparten el mismo PostgreSQL
-    database_url = os.getenv("DATABASE_URL", "").strip()
-    if database_url:
-        cache_key = "postgres"
-    else:
-        cache_key = name
-
+    # Todas las BDs comparten el mismo PostgreSQL
+    cache_key = "postgres"
     if cache_key not in _engines:
-        if name == "app":
-            url = _resolve_url("APP_DB_PATH", "data/app.db")
-        elif name == "predictions":
-            url = _resolve_url("PREDICTIONS_DB_PATH", "data/predictions.db")
-        else:
-            raise ValueError(f"Engine desconocido: {name!r}")
-        _engines[cache_key] = _build_engine(url)
-
+        url = _get_database_url()
+        _engines[cache_key] = create_engine(
+            url, pool_pre_ping=True, pool_size=5, max_overflow=10
+        )
     return _engines[cache_key]
 
 
 def is_postgres() -> bool:
-    """Devuelve True si la BD configurada es PostgreSQL."""
-    return bool(os.getenv("DATABASE_URL", "").strip())
+    """Siempre True — PostgreSQL es obligatorio en todos los entornos."""
+    return True

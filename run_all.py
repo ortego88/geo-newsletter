@@ -3,6 +3,7 @@ run_all.py — Punto de entrada para producción en Railway.
 Lanza el scheduler en un thread y Flask dashboard en el proceso principal.
 
 Variables de entorno requeridas:
+  DATABASE_URL    — conexión PostgreSQL (obligatorio en todos los entornos)
   OPENAI_API_KEY  — clave de OpenAI
   PORT            — puerto para el dashboard (Railway lo asigna automáticamente)
   DASHBOARD_PORT  — alternativa, por defecto 8080
@@ -14,7 +15,7 @@ import threading
 import time
 from datetime import datetime
 
-# Crear directorio data si no existe (Railway tiene filesystem efímero para SQLite local)
+# Crear directorio data si no existe (para logs y caché de deduplicación)
 os.makedirs("data", exist_ok=True)
 os.makedirs("templates", exist_ok=True)
 
@@ -30,16 +31,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger("run_all")
 
-# Comprobar configuración de BD
-_db_url = os.getenv("DATABASE_URL", "")
-if _db_url:
-    logger.info("✅ DATABASE_URL detectada — usando PostgreSQL (datos persistentes entre deploys)")
-else:
-    logger.warning(
-        "⚠️  AVISO: DATABASE_URL no configurada. Usando SQLite local en data/app.db y data/predictions.db. "
-        "Los datos se perderán entre deploys en Railway. "
-        "Configura la variable de entorno DATABASE_URL con tu conexión PostgreSQL."
+# Comprobar configuración de BD — DATABASE_URL es obligatorio
+_db_url = os.getenv("DATABASE_URL", "").strip()
+if not _db_url:
+    logger.error(
+        "❌ FATAL: DATABASE_URL no configurada. "
+        "PostgreSQL es obligatorio en todos los entornos. "
+        "Configura DATABASE_URL=postgresql://user:password@host:5432/dbname"
     )
+    sys.exit(1)
+logger.info("✅ DATABASE_URL detectada — usando PostgreSQL (datos persistentes entre deploys)")
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from src.services.pipeline_v2 import AnalysisPipeline

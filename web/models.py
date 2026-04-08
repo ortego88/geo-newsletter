@@ -1,6 +1,6 @@
 """
 Modelos de base de datos para el sistema de suscripciones.
-Usa SQLAlchemy para soportar tanto SQLite (local) como PostgreSQL (Railway).
+Usa SQLAlchemy con PostgreSQL (obligatorio en todos los entornos).
 """
 import os
 from datetime import datetime, timezone, timedelta
@@ -133,7 +133,7 @@ AVAILABLE_ASSETS = [
 
 def get_conn():
     """
-    Devuelve una conexión DBAPI de SQLAlchemy (compatible con sqlite3 y PostgreSQL).
+    Devuelve una conexión DBAPI de SQLAlchemy para PostgreSQL.
     Uso: with get_conn() as conn: conn.execute(text(...))
     """
     return get_engine("app").connect()
