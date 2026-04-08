@@ -272,10 +272,10 @@ class User(UserMixin):
         trial_end = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
         with get_conn() as conn:
             result = conn.execute(
-                text("INSERT INTO users (email,password_hash,name,language,created_at) VALUES (:email,:pw,:name,:lang,:created_at)"),
+                text("INSERT INTO users (email,password_hash,name,language,created_at) VALUES (:email,:pw,:name,:lang,:created_at) RETURNING id"),
                 {"email": email, "pw": pw_hash, "name": name, "lang": language, "created_at": now},
             )
-            user_id = result.lastrowid
+            user_id = result.fetchone()[0]
             conn.execute(
                 text("INSERT INTO subscriptions (user_id,plan,status,trial_ends_at,created_at,updated_at) VALUES (:uid,:plan,:status,:trial,:now,:now)"),
                 {"uid": user_id, "plan": plan, "status": "trial", "trial": trial_end, "now": now},
