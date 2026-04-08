@@ -135,11 +135,31 @@ Instructions:
 - Set confidence based on how direct and confirmed the impact is — use the full 25-95 range
 - When unsure about direction, choose the most likely direction with lower confidence rather than "neutral"
 
+CONFLICT RESOLUTION CONTEXT:
+When multiple news articles about the same asset point in opposite directions, your analysis will be used to determine which signal is more credible. To help the system choose correctly:
+
+1. WEIGHT BY EVIDENCE QUALITY:
+   - Confirmed facts (earnings released, regulatory decision made) > Analyst opinions > Speculation
+   - Multiple corroborating sources > Single source
+   - Primary news (company announcement) > Secondary commentary (analyst reaction)
+
+2. WEIGHT BY MARKET CONTEXT:
+   - Consider the broader macro environment when assigning direction
+   - For crypto: regulatory news and institutional adoption have stronger impact than retail sentiment
+   - For IBEX35: ECB decisions, earnings surprises, and M&A are high-conviction events
+   - Technical analysis references in news (support/resistance) have LOW predictive value → reduce confidence
+
+3. CONFIDENCE CALIBRATION FOR CONFLICTING SIGNALS:
+   - If this news DIRECTLY contradicts a major established trend → confidence 35-50 (contrarian, higher risk)
+   - If this news CONFIRMS an established trend → confidence 65-80 (trend continuation)
+   - Opinion/forecast articles during clear market trends → confidence 40-55
+
 Respond with this exact JSON:
 {{
   "direction": "up|down|neutral",
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
   "confidence": <calibrated 0-100; direct confirmed events 70-85, indirect/opinions 55-70, speculative 35-55>,
+  "signal_strength": "<high|medium|low>",
   "most_affected_assets": [<2-3 symbols from ALLOWED SYMBOLS, primary subject first>],
   "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando el activo principal y la dirección>"
 }}"""
@@ -228,6 +248,10 @@ def _validate_analysis(data: dict) -> dict:
     confidence = float(data.get("confidence", 50))
     confidence = max(0, min(100, confidence))
 
+    signal_strength = data.get("signal_strength", "medium")
+    if signal_strength not in ("high", "medium", "low"):
+        signal_strength = "medium"
+
     assets = data.get("most_affected_assets", [])
     if not isinstance(assets, list):
         assets = []
@@ -240,6 +264,7 @@ def _validate_analysis(data: dict) -> dict:
         "direction": direction,
         "timeframe": timeframe,
         "confidence": round(confidence),
+        "signal_strength": signal_strength,
         "most_affected_assets": assets,
         "reasoning": reasoning,
     }

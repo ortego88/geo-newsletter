@@ -5,7 +5,7 @@ Guarda predicciones en PostgreSQL y las valida comparando precios.
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import text
 
@@ -91,9 +91,23 @@ class PredictionTracker:
         }
         return mapping.get(timeframe, 480)
 
+    def _has_recent_prediction(self, asset: str, hours: int = 2) -> bool:
+        """Comprueba si ya existe una predicción pendiente reciente para este activo."""
+        cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+        with self._get_conn() as conn:
+            row = conn.execute(text("""
+                SELECT id FROM predictions
+                WHERE asset = :asset
+                AND outcome = 'pending'
+                AND predicted_at >= :cutoff
+                ORDER BY id DESC LIMIT 1
+            """), {"asset": asset, "cutoff": cutoff}).fetchone()
+        return row is not None
+
     def save_prediction(self, event: dict, current_price: float) -> int | None:
         """
-        Guarda una predicción. Devuelve el ID de la fila insertada, o None si ya existía.
+        Guarda una predicción. Devuelve el ID de la fila insertada, o None si ya existía
+        o si ya existe una predicción pendiente reciente para el mismo activo.
         Calcula verify_at según el tipo de activo y horario de mercado (Mejoras 3 & 4).
         """
         analysis = event.get("analysis", {})
@@ -101,6 +115,12 @@ class PredictionTracker:
         title = event.get("title", "")
         category = event.get("category", "")
         asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
+
+        # Comprobar si ya existe predicción reciente para este activo (ventana 2h)
+        if self._has_recent_prediction(asset, hours=2):
+            logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
+            return None
+
         direction = analysis.get("direction", "neutral")
         impact_percent = float(analysis.get("market_impact_percent", 0))
         timeframe = analysis.get("timeframe", "hours")
