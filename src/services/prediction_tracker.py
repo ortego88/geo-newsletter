@@ -1,6 +1,6 @@
 """
 Rastreador de predicciones.
-Guarda predicciones en SQLite/PostgreSQL y las valida comparando precios.
+Guarda predicciones en PostgreSQL y las valida comparando precios.
 """
 
 import logging
@@ -65,16 +65,11 @@ class PredictionTracker:
         """Adds verify_at column to existing predictions tables (safe migration)."""
         try:
             with engine.connect() as conn:
-                # Check if column already exists
-                if engine.dialect.name == "postgresql":
-                    exists = conn.execute(text(
-                        "SELECT 1 FROM information_schema.columns "
-                        "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='verify_at'"
-                    )).fetchone()
-                else:
-                    exists = conn.execute(text(
-                        "SELECT 1 FROM pragma_table_info('predictions') WHERE name='verify_at'"
-                    )).fetchone()
+                # Check if column already exists (PostgreSQL only)
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='verify_at'"
+                )).fetchone()
                 if not exists:
                     conn.execute(text("ALTER TABLE predictions ADD COLUMN verify_at TEXT"))
                     conn.commit()

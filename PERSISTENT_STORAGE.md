@@ -1,53 +1,49 @@
-# Configuración de almacenamiento persistente en Railway
+# Almacenamiento persistente en Railway
 
-## Problema
+## Solución adoptada: PostgreSQL
 
-Railway destruye el filesystem del contenedor en cada redeploy. Esto significa que los archivos generados en tiempo de ejecución — como las bases de datos SQLite — se **pierden en cada deploy**.
+La app usa **PostgreSQL** (servicio de Railway) para almacenar todos los datos críticos.
+PostgreSQL es un servicio externo administrado por Railway y **persiste entre deploys** automáticamente.
 
-Archivos afectados:
-- `data/app.db` — Base de datos de usuarios, suscripciones y métodos de pago.
-- `data/predictions.db` — Base de datos de predicciones y alertas geopolíticas.
+## Por qué no SQLite
 
-Si no se configura almacenamiento persistente, **todos los usuarios registrados y sus datos se borrarán** en cada redeploy.
+Railway destruye el filesystem del contenedor en cada redeploy. Si la app usara SQLite
+(un fichero `.db` local), todos los datos se perderían en cada deploy.
 
-## Solución: Configurar un Persistent Volume en Railway
+## Configuración en Railway
 
-### Pasos
+1. En tu proyecto Railway: *New* → *Database* → **PostgreSQL**
+2. Railway creará automáticamente la variable `DATABASE_URL` en tu servicio web
+3. Si no aparece automáticamente:
+   - Ve a tu servicio web → *Variables*
+   - Añade `DATABASE_URL` con el valor de conexión del servicio PostgreSQL
+4. En el próximo deploy, la app usará PostgreSQL y el histórico se conservará entre deploys ✅
 
-1. Entra en el panel de Railway: [railway.app](https://railway.app)
-2. Selecciona tu proyecto y servicio **geo-newsletter**
-3. Ve a la pestaña **"Volumes"** (o "Storage")
-4. Haz clic en **"+ New Volume"**
-5. Configura:
-   - **Mount Path:** `/app/data`
-   - **Size:** 1 GB (suficiente para SQLite)
-6. Haz clic en **"Create"**
-7. Railway reiniciará el servicio automáticamente
+## Datos que se conservan entre deploys
 
-A partir de ese momento, el directorio `/app/data` (y por tanto `data/app.db` y `data/predictions.db`) **sobrevivirá entre deploys**.
+Con PostgreSQL configurado, los siguientes datos son persistentes:
+- `users` — usuarios registrados y autenticación
+- `subscriptions` — planes y suscripciones
+- `payment_methods` — métodos de pago
+- `alert_log` — historial de alertas enviadas
+- `predictions` — histórico de predicciones y análisis
 
-### Verificación
+## Datos efímeros (no críticos)
 
-Una vez configurado el volumen, al hacer deploy el log de arranque **no debería mostrar** el aviso:
+El directorio `data/` contiene archivos auxiliares que son efímeros (se pierden en cada deploy),
+pero no son críticos porque se regeneran automáticamente:
+- `data/scheduler.log` — logs del scheduler
+- `data/recent_articles.db` — caché de deduplicación de noticias (ventana de 48h)
+- `data/seen_articles.txt` — hashes de noticias ya procesadas
+
+## Borrar histórico de predicciones
+
+El único modo de borrar datos es a través del endpoint de administración:
 
 ```
-⚠️  AVISO: data/app.db no existe. Si estás en Railway, configura un Persistent Volume...
+/admin/reset-predictions
 ```
 
-Si el aviso sigue apareciendo, comprueba que el Mount Path del volumen es exactamente `/app/data`.
-
-## Variable de entorno alternativa
-
-Si prefieres usar una ruta diferente para la base de datos, puedes configurar la variable de entorno `APP_DB_PATH` en Railway:
-
-```
-APP_DB_PATH=/app/data/app.db
-```
-
-Esto permite mover la base de datos a cualquier ruta montada en un volumen persistente.
-
-## Nota sobre backups
-
-Railway Volumes no incluye backups automáticos en todos los planes. Se recomienda:
-- Hacer exportaciones periódicas de los datos.
-- Considerar migrar a PostgreSQL (Railway ofrece un addon de PostgreSQL con backups automáticos) para proyectos en producción con datos críticos.
+Accede con la contraseña de administrador (`ADMIN_PASSWORD`).
+Este endpoint borra las predicciones en PostgreSQL y limpia la caché de deduplicación.
+**Los deploys NUNCA borran datos automáticamente.**

@@ -17,7 +17,7 @@ class Settings:
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
     
     # Database Configuration
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./geo_newsletter.db")
+    DATABASE_URL = os.getenv("DATABASE_URL", "")
     
     # Redis Configuration
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
