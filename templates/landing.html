@@ -49,7 +49,7 @@
           </div>
         </div>
         {% if not current_user.is_authenticated %}
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
+        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
           Empezar gratis
         </a>
         {% endif %}
@@ -57,7 +57,7 @@
       <!-- Mobile: CTA + hamburger -->
       <div class="flex md:hidden items-center gap-3">
         {% if not current_user.is_authenticated %}
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+        <a href="#precios" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
           Empezar gratis
         </a>
         {% endif %}
@@ -95,7 +95,7 @@
         Nuestro modelo de inteligencia artificial monitoriza eventos geopolíticos globales, los analiza y te envía señales de trading instantáneas en Telegram o WhatsApp. Un sistema que aprende cada día para ofrecerte predicciones más precisas.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary">
+        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary">
           🚀 Empezar gratis — 7 días
         </a>
         <a href="#precios" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition" data-i18n="hero.cta_secondary">
@@ -399,7 +399,7 @@
     <div class="max-w-2xl mx-auto text-center">
       <h2 class="text-3xl font-bold text-white mb-4" data-i18n="cta.title">Opera con ventaja geopolítica e inteligencia artificial</h2>
       <p class="text-slate-400 mb-8" data-i18n="cta.subtitle">7 días gratis, sin compromiso. Cancela cuando quieras. Únete a los traders que ya usan IA para anticiparse al mercado.</p>
-      <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="cta.button">
+      <a href="#precios" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="cta.button">
         Crear cuenta gratis →
       </a>
     </div>
@@ -413,7 +413,7 @@
     <div class="flex justify-center gap-6">
       <a href="/pricing" class="hover:text-slate-300 transition" data-i18n="nav.pricing">Precios</a>
       <a href="/login" class="hover:text-slate-300 transition" data-i18n="nav.login">Iniciar sesión</a>
-      <a href="/register" class="hover:text-slate-300 transition" data-i18n="nav.start_free">Registrarse</a>
+      <a href="#precios" class="hover:text-slate-300 transition" data-i18n="nav.start_free">Registrarse</a>
     </div>
     <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto" data-i18n="footer.ai_desc">GEO-NEWSLETTER utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.</p>
     <p class="mt-3 text-xs text-slate-600" data-i18n="footer.disclaimer">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
