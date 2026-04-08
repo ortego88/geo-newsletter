@@ -170,7 +170,8 @@ _PRIORITY_TIERS = [
 
 
 def _get_ticker_tier(ticker: str) -> int:
-    """Devuelve el tier de prioridad de un ticker (0=máxima prioridad, 3=mínima)."""
+    """Devuelve el tier de prioridad de un ticker (0=máxima prioridad, 3=mínima).
+    Tickers desconocidos reciben tier 4 (fuera de los tiers definidos)."""
     for i, tier in enumerate(_PRIORITY_TIERS):
         if ticker in tier:
             return i
@@ -470,15 +471,19 @@ class AnalysisPipeline:
 
             # Validar el activo primario contra la lista conocida
             if primary_asset.upper() not in VALID_ASSETS:
-                # Preferir el mejor match por tier entre todos los activos detectados
+                # Preferir el mejor match por tier entre todos los activos detectados.
+                # matched_assets ya está ordenado por tier (ascendente) y hits (descendente)
+                # desde _match_asset(), por lo que el primer válido es el mejor candidato.
                 suggested = event.get("suggested_asset", "")
                 matched = event.get("matched_assets", [])
 
-                all_candidates = ([suggested] if suggested else []) + matched
+                all_candidates = ([suggested] if suggested else []) + [
+                    a for a in matched if a != suggested
+                ]
                 valid_candidates = [a for a in all_candidates if a.upper() in VALID_ASSETS]
 
                 if valid_candidates:
-                    best = min(valid_candidates, key=lambda a: _get_ticker_tier(a.upper()))
+                    best = valid_candidates[0]
                     logger.warning(
                         f"   Activo IA '{primary_asset}' desconocido → usando mejor match '{best}' "
                         f"(tier={_get_ticker_tier(best.upper())})"
