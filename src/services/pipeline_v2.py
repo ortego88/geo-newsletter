@@ -76,40 +76,40 @@ ASSET_KEYWORDS: dict[str, list[str]] = {
         "bolsa de valores española", "renta variable española",
     ],
     # ── IBEX 35 — empresas ──────────────────────────────────────────────────
-    "ACS": ["acs actividades", "grupo acs"],
-    "ACX": ["acerinox", "acx"],
-    "AENA": ["aena", "aeropuertos españoles", "aeropuerto adolfo suárez", "aeropuerto barajas"],
+    "ACS": ["acs actividades", "grupo acs", "acs construccion", "hochtief"],
+    "ACX": ["acerinox", "acerinox sa", "columbus stainless"],
+    "AENA": ["aena", "aeropuertos españoles", "aeropuerto adolfo suárez", "aeropuerto barajas", "aena sa"],
     "ALM": ["almirall"],
     "AMS": ["amadeus it", "amadeus"],
-    "ANA": ["acciona"],
-    "BBVA": ["bbva", "banco bilbao vizcaya", "bilbao vizcaya argentaria"],
-    "BKT": ["bankinter"],
-    "CABK": ["caixabank", "la caixa"],
-    "CLNX": ["cellnex"],
+    "ANA": ["acciona", "acciona energia", "acciona sa"],
+    "BBVA": ["bbva", "banco bilbao vizcaya", "bilbao vizcaya argentaria", "banco bilbao"],
+    "BKT": ["bankinter", "bankinter sa", "bankinter bank"],
+    "CABK": ["caixabank", "la caixa", "caixa bank", "caixabank sa"],
+    "CLNX": ["cellnex", "cellnex telecom", "cellnex towers"],
     "COL": ["inmobiliaria colonial", "colonial reit"],
-    "ELE": ["endesa"],
-    "ENG": ["enagás", "enagas"],
+    "ELE": ["endesa", "endesa sa", "enel endesa"],
+    "ENG": ["enagás", "enagas", "enagas sa", "enagás transporte"],
     "FDR": ["fluidra"],
-    "FER": ["ferrovial"],
-    "GRF": ["grifols"],
-    "IAG": ["iag", "iberia airlines", "british airways", "vueling"],
-    "IBE": ["iberdrola"],
-    "IDR": ["indra sistemas", "indra"],
-    "ITX": ["inditex", "grupo inditex", "zara", "amancio ortega"],
+    "FER": ["ferrovial", "ferrovial sa", "cintra", "heathrow airport"],
+    "GRF": ["grifols", "grifols sa", "grifols plasma"],
+    "IAG": ["iag", "iberia airlines", "british airways", "vueling", "aer lingus", "iberia express", "international airlines group"],
+    "IBE": ["iberdrola", "iberdrola renovables", "scottish power"],
+    "IDR": ["indra sistemas", "indra", "indra sa"],
+    "ITX": ["inditex", "grupo inditex", "zara", "amancio ortega", "pull&bear", "massimo dutti", "bershka", "stradivarius"],
     "LOG": ["logista", "compañía de distribución integral logista"],
-    "MAP": ["mapfre"],
-    "MEL": ["meliá hotels", "melia hotels", "meliá"],
+    "MAP": ["mapfre", "mapfre sa", "mapfre seguros"],
+    "MEL": ["meliá hotels", "melia hotels", "meliá", "melia international", "sol meliá"],
     "MRL": ["merlin properties"],
-    "MTS": ["arcelormittal"],
-    "NTGY": ["naturgy", "gas natural fenosa"],
+    "MTS": ["arcelormittal", "arcelor mittal", "arcelor", "mittal steel"],
+    "NTGY": ["naturgy", "gas natural fenosa", "naturgy energy"],
     "PHM": ["puig brands", "puig beauty"],
-    "RED": ["red eléctrica", "red electrica", "ree"],
-    "REP": ["repsol"],
+    "RED": ["red eléctrica", "red electrica", "ree", "red eléctrica de españa", "redeia"],
+    "REP": ["repsol", "repsol ypf", "repsol sinopec"],
     "ROVI": ["laboratorios rovi", "rovi pharma", "rovi"],
-    "SAB": ["banco sabadell", "sabadell"],
-    "SAN": ["banco santander", "grupo santander"],
-    "SGRE": ["siemens gamesa", "gamesa"],
-    "TEF": ["telefónica", "telefonica", "movistar"],
+    "SAB": ["banco sabadell", "sabadell", "tsb bank", "banco sabadell sa"],
+    "SAN": ["banco santander", "grupo santander", "santander bank", "santander"],
+    "SGRE": ["siemens gamesa", "gamesa", "siemens gamesa renewable", "sgre"],
+    "TEF": ["telefónica", "telefonica", "movistar", "o2 telefonica", "telefónica españa"],
     # ── ETFs ────────────────────────────────────────────────────────────────
     "SPY": ["spy etf", "spdr s&p 500", "s&p 500 etf"],
     "QQQ": ["qqq etf", "invesco qqq", "nasdaq etf", "invesco nasdaq"],
@@ -152,9 +152,30 @@ ASSET_KEYWORDS: dict[str, list[str]] = {
 
 
 
-# Tickers that serve as "generic fallback" — only win ties if no specific ticker matches.
-# Specific tickers (company names, individual cryptos) take priority over these.
-_GENERIC_TICKERS = frozenset({"BTC", "IBEX35"})
+# Tiers de prioridad — un ticker de Nivel 1 siempre gana sobre Nivel 2, etc.
+_PRIORITY_TIERS = [
+    # Tier 1: Empresas específicas IBEX35
+    frozenset({"ACS", "ACX", "AENA", "ALM", "AMS", "ANA", "BBVA", "BKT", "CABK",
+               "CLNX", "COL", "ELE", "ENG", "FDR", "FER", "GRF", "IAG", "IBE",
+               "IDR", "ITX", "LOG", "MAP", "MEL", "MRL", "MTS", "NTGY", "PHM",
+               "RED", "REP", "ROVI", "SAB", "SAN", "SGRE", "TEF"}),
+    # Tier 2: Criptos específicas (no BTC)
+    frozenset({"ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "DOT", "AVAX", "MATIC",
+               "LINK", "UNI", "LTC", "ATOM", "XLM", "ALGO", "FIL", "NEAR", "ARB", "OP"}),
+    # Tier 3: ETFs específicos
+    frozenset({"SPY", "QQQ", "GLD", "SLV", "IWM", "EWZ", "EEM", "VIX", "ARKK", "TLT", "XLF", "XLE"}),
+    # Tier 4: Genéricos — solo si no hay nada en tiers superiores
+    frozenset({"IBEX35", "BTC"}),
+]
+
+
+def _get_ticker_tier(ticker: str) -> int:
+    """Devuelve el tier de prioridad de un ticker (0=máxima prioridad, 3=mínima).
+    Tickers desconocidos reciben tier 4 (fuera de los tiers definidos)."""
+    for i, tier in enumerate(_PRIORITY_TIERS):
+        if ticker in tier:
+            return i
+    return len(_PRIORITY_TIERS)  # desconocido → mínima prioridad
 
 
 def _kw_matches(keyword: str, text: str) -> bool:
@@ -175,12 +196,12 @@ def _match_asset(article: dict) -> tuple[str | None, list[str]]:
     """
     Busca keywords de ASSET_KEYWORDS en el título + descripción del artículo.
 
-    Devuelve (primary_ticker, [all_matched_tickers]).
-    - primary_ticker: el ticker con más keywords coincidentes (None si no hay match).
-    - all_matched_tickers: lista de todos los tickers con al menos 1 keyword coincidente.
+    Prioridad de selección:
+    1. Tier más alto (empresa específica > crypto específica > ETF > genérico)
+    2. Dentro del mismo tier: mayor número de keyword hits
+    3. En empate de hits dentro del mismo tier: el primero en ASSET_KEYWORDS
 
-    Tiebreaker: specific tickers (individual company/crypto) beat generic fallbacks
-    (BTC, IBEX35) when both have the same hit count.
+    Devuelve (primary_ticker, [all_matched_tickers]).
     """
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
@@ -195,14 +216,25 @@ def _match_asset(article: dict) -> tuple[str | None, list[str]]:
     if not hits_per_ticker:
         return None, []
 
-    # Sort by: 1) hit count descending, 2) generic tickers come last on ties
+    # Ordenar por: 1) tier ascendente (0=mejor), 2) hits descendente
     sorted_tickers = sorted(
         hits_per_ticker.items(),
-        key=lambda x: (x[1], 0 if x[0] not in _GENERIC_TICKERS else -1),
-        reverse=True,
+        key=lambda x: (_get_ticker_tier(x[0]), -x[1]),
     )
+
     all_matched = [t for t, _ in sorted_tickers]
     primary = sorted_tickers[0][0]
+
+    # Log cuando hay override de genérico por específico
+    if len(sorted_tickers) > 1:
+        second = sorted_tickers[1][0]
+        primary_tier = _get_ticker_tier(primary)
+        second_tier = _get_ticker_tier(second)
+        if primary_tier < second_tier:
+            logger.debug(
+                f"Tier override: {primary}(tier={primary_tier}, hits={hits_per_ticker[primary]}) "
+                f"> {second}(tier={second_tier}, hits={hits_per_ticker[second]})"
+            )
 
     return primary, all_matched
 
@@ -439,19 +471,29 @@ class AnalysisPipeline:
 
             # Validar el activo primario contra la lista conocida
             if primary_asset.upper() not in VALID_ASSETS:
-                # Usar el activo identificado por keywords como fallback (no el fallback por categoría)
+                # Preferir el mejor match por tier entre todos los activos detectados.
+                # matched_assets ya está ordenado por tier (ascendente) y hits (descendente)
+                # desde _match_asset(), por lo que el primer válido es el mejor candidato.
                 suggested = event.get("suggested_asset", "")
-                if suggested and suggested.upper() in VALID_ASSETS:
+                matched = event.get("matched_assets", [])
+
+                all_candidates = ([suggested] if suggested else []) + [
+                    a for a in matched if a != suggested
+                ]
+                valid_candidates = [a for a in all_candidates if a.upper() in VALID_ASSETS]
+
+                if valid_candidates:
+                    best = valid_candidates[0]
                     logger.warning(
-                        f"   Activo IA '{primary_asset}' desconocido → usando keyword match '{suggested}'"
+                        f"   Activo IA '{primary_asset}' desconocido → usando mejor match '{best}' "
+                        f"(tier={_get_ticker_tier(best.upper())})"
                     )
-                    primary_asset = suggested
+                    primary_asset = best
                 else:
                     category = event.get("category", "general").lower()
                     fallback = CATEGORY_FALLBACK.get(category, "IBEX35")
                     logger.warning(
-                        f"   Activo desconocido '{primary_asset}' → usando fallback '{fallback}' "
-                        f"(categoría: {category})"
+                        f"   Activo desconocido '{primary_asset}' → fallback '{fallback}'"
                     )
                     primary_asset = fallback
 
