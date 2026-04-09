@@ -23,10 +23,19 @@ def get_subscribed_assets() -> set:
     return {a.strip().upper() for a in raw.split(",") if a.strip()}
 
 
-def send_telegram(message: str) -> bool:
-    """Envía un mensaje a Telegram. Retorna True si tuvo éxito."""
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        logger.warning("Telegram no configurado (falta BOT_TOKEN o CHAT_ID)")
+def send_telegram(message: str, chat_id: str | None = None) -> bool:
+    """Envía un mensaje a Telegram. Retorna True si tuvo éxito.
+
+    Si se proporciona `chat_id`, se usa ese destinatario en lugar del
+    TELEGRAM_CHAT_ID global (útil para envíos per-usuario).
+    """
+    if not TELEGRAM_BOT_TOKEN:
+        logger.warning("Telegram no configurado (falta BOT_TOKEN)")
+        return False
+
+    target_chat = chat_id or TELEGRAM_CHAT_ID
+    if not target_chat:
+        logger.warning("Telegram no configurado (falta CHAT_ID)")
         return False
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -35,7 +44,7 @@ def send_telegram(message: str) -> bool:
         resp = requests.post(
             url,
             data={
-                "chat_id": TELEGRAM_CHAT_ID,
+                "chat_id": target_chat,
                 "text": message,
             },
             timeout=10,
