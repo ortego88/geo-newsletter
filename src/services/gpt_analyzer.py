@@ -351,12 +351,35 @@ def analyze_event(event: dict) -> dict:
     score = event.get("score", event.get("impact_score", 50))
     category = event.get("category", "")
 
+    # Enriquecer el prompt con contexto histórico de precio
+    market_context_section = ""
+    try:
+        from src.services.real_price_fetcher import RealPriceFetcher
+        asset = event.get("suggested_asset", "BTC")
+        ctx = RealPriceFetcher().get_price_context(asset)
+        if ctx and ctx.get("current", 0) > 0:
+            rsi = ctx["rsi_14"]
+            rsi_label = "sobrecomprado >70" if rsi > 70 else ("sobrevendido <30" if rsi < 30 else "neutral")
+            market_context_section = (
+                f"\n\nCONTEXTO DE MERCADO ACTUAL PARA {asset}:\n"
+                f"- Precio actual: {ctx['current']}\n"
+                f"- Media 7 días: {ctx['avg_7d']} (cambio: {ctx['change_7d_pct']:+.1f}%)\n"
+                f"- Media 30 días: {ctx['avg_30d']} (cambio: {ctx['change_30d_pct']:+.1f}%)\n"
+                f"- RSI(14): {rsi} ({rsi_label})\n"
+                f"- Tendencia técnica: {ctx['trend']}\n\n"
+                "Usa este contexto técnico para calibrar tu predicción direccional. "
+                "Si el activo ya está sobrecomprado (RSI > 70), sé más cauteloso con predicciones alcistas. "
+                "Si está sobrevendido (RSI < 30), sé más cauteloso con predicciones bajistas."
+            )
+    except Exception:
+        pass
+
     prompt = ANALYSIS_PROMPT_TEMPLATE.format(
         title=title,
         description=description[:300],
         score=score,
         category=category,
-    )
+    ) + market_context_section
 
     result = None
     if OPENAI_API_KEY:

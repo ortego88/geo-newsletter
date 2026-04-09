@@ -4,6 +4,7 @@ Guarda predicciones en PostgreSQL y las valida comparando precios.
 """
 
 import logging
+import math
 import os
 from datetime import datetime, timedelta
 
@@ -55,11 +56,14 @@ class PredictionTracker:
             Column("score", Float),
             Column("source", Text),
             Column("verify_at", Text),  # cuándo verificar esta predicción (Mejora 3)
+            Column("source_url", Text),  # URL de la noticia original
         )
         # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
         meta.create_all(engine, checkfirst=True)
         # Add verify_at column to existing tables (migration for existing DBs)
         self._migrate_add_verify_at(engine)
+        # Add source_url column to existing tables (migration for existing DBs)
+        self._migrate_add_source_url(engine)
 
     def _migrate_add_verify_at(self, engine):
         """Adds verify_at column to existing predictions tables (safe migration)."""
@@ -76,6 +80,21 @@ class PredictionTracker:
                     logger.info("Migración: columna verify_at añadida a predictions")
         except Exception as e:
             logger.debug(f"verify_at migration note: {e}")
+
+    def _migrate_add_source_url(self, engine):
+        """Adds source_url column to existing predictions tables (safe migration)."""
+        try:
+            with engine.connect() as conn:
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='source_url'"
+                )).fetchone()
+                if not exists:
+                    conn.execute(text("ALTER TABLE predictions ADD COLUMN source_url TEXT"))
+                    conn.commit()
+                    logger.info("Migración: columna source_url añadida a predictions")
+        except Exception as e:
+            logger.debug(f"source_url migration note: {e}")
 
     def _timeframe_to_minutes(self, timeframe: str) -> int:
         # Capped at 3 days max to prevent stale predictions that can't be
@@ -130,6 +149,7 @@ class PredictionTracker:
         sources = event.get("sources", [])
         source = ", ".join(sources[:2]) if isinstance(sources, list) else str(sources)
         score = float(event.get("score", event.get("impact_score", 0)))
+        source_url = event.get("url") or event.get("link") or ""
         predicted_at = datetime.utcnow()
 
         # Calcular verify_at según el tipo de activo y horario de mercado (Mejoras 3 & 4)
@@ -145,10 +165,10 @@ class PredictionTracker:
                     INSERT INTO predictions
                     (event_id, title, category, asset, direction, impact_percent,
                      timeframe, timeframe_minutes, confidence, reasoning,
-                     price_at_prediction, predicted_at, outcome, score, source, verify_at)
+                     price_at_prediction, predicted_at, outcome, score, source, verify_at, source_url)
                     VALUES (:event_id, :title, :category, :asset, :direction, :impact_percent,
                             :timeframe, :timeframe_minutes, :confidence, :reasoning,
-                            :price, :predicted_at, 'pending', :score, :source, :verify_at)
+                            :price, :predicted_at, 'pending', :score, :source, :verify_at, :source_url)
                 """), {
                     "event_id": event_id, "title": title, "category": category,
                     "asset": asset, "direction": direction, "impact_percent": impact_percent,
@@ -156,6 +176,7 @@ class PredictionTracker:
                     "confidence": confidence, "reasoning": reasoning,
                     "price": current_price, "predicted_at": predicted_at.isoformat(),
                     "score": score, "source": source, "verify_at": verify_at,
+                    "source_url": source_url,
                 })
                 conn.commit()
                 prediction_id = result.lastrowid
@@ -293,3 +314,51 @@ class PredictionTracker:
             ).mappings().fetchall()
 
         return [dict(r) for r in rows]
+
+    def get_predictions_paginated(self, period: str = "24h", page: int = 1, page_size: int = 20) -> dict:
+        """
+        Devuelve predicciones paginadas con filtro por período.
+        period: '24h' | '7d' | '30d' | 'all'
+        """
+        cutoff_map = {
+            "24h": timedelta(hours=24),
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+        }
+
+        page = max(1, page)
+        page_size = max(1, min(100, page_size))
+        offset = (page - 1) * page_size
+
+        if period in cutoff_map:
+            cutoff = (datetime.utcnow() - cutoff_map[period]).isoformat()
+            where_clause = "WHERE predicted_at >= :cutoff"
+            params_count = {"cutoff": cutoff}
+            params_rows = {"cutoff": cutoff, "page_size": page_size, "offset": offset}
+        else:
+            where_clause = ""
+            params_count = {}
+            params_rows = {"page_size": page_size, "offset": offset}
+
+        with self._get_conn() as conn:
+            total = conn.execute(
+                text(f"SELECT COUNT(*) FROM predictions {where_clause}"),
+                params_count,
+            ).fetchone()[0]
+
+            rows = conn.execute(
+                text(
+                    f"SELECT * FROM predictions {where_clause} "
+                    "ORDER BY id DESC LIMIT :page_size OFFSET :offset"
+                ),
+                params_rows,
+            ).mappings().fetchall()
+
+        total_pages = max(1, math.ceil(total / page_size))
+        return {
+            "predictions": [dict(r) for r in rows],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+        }
