@@ -228,33 +228,51 @@ class Deduplicator:
     ):
         self.seen_file = seen_file
         os.makedirs(os.path.dirname(seen_file), exist_ok=True)
-        self._seen: set[str] = self._load()
+        self._seen: dict[str, str] = self._load()  # hash → ISO timestamp
         self._recent_store = RecentArticleStore(db_path=recent_db)
 
     # ── Nivel 1: persistencia de hashes ─────────────────────────────────────
 
-    def _load(self) -> set[str]:
+    def _load(self) -> dict[str, str]:
+        """Carga hashes del fichero, descartando entradas más antiguas de MAX_AGE_DAYS."""
         if not os.path.exists(self.seen_file):
-            return set()
-        seen = set()
+            return {}
+        seen: dict[str, str] = {}
+        cutoff_dt = datetime.utcnow() - timedelta(days=MAX_AGE_DAYS)
         try:
             with open(self.seen_file, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
-                    if line:
-                        # Formato: hash|timestamp (timestamp opcional)
-                        parts = line.split("|")
-                        seen.add(parts[0])
+                    if not line:
+                        continue
+                    # Formato: hash|timestamp (timestamp opcional para compatibilidad)
+                    parts = line.split("|", 1)
+                    h = parts[0]
+                    ts = parts[1] if len(parts) > 1 else ""
+                    # Descartar entradas expiradas; entradas sin timestamp se conservan.
+                    # Se parsea el timestamp como datetime para evitar comparaciones
+                    # incorrectas entre cadenas con distinto formato (con/sin zona horaria).
+                    if ts:
+                        try:
+                            ts_dt = datetime.fromisoformat(ts)
+                            if ts_dt.tzinfo is not None:
+                                # Normalizar a naive UTC para comparación homogénea
+                                ts_dt = ts_dt.replace(tzinfo=None) - ts_dt.utcoffset()
+                            if ts_dt < cutoff_dt:
+                                continue
+                        except (ValueError, TypeError):
+                            pass  # timestamp ilegible → conservar por compatibilidad
+                    seen[h] = ts
         except Exception as e:
             logger.warning(f"Error cargando artículos vistos: {e}")
         return seen
 
     def _save(self):
+        """Persiste los hashes junto a su timestamp original (no sobreescribe con 'now')."""
         try:
             with open(self.seen_file, "w", encoding="utf-8") as f:
-                now_str = datetime.utcnow().isoformat()
-                for h in self._seen:
-                    f.write(f"{h}|{now_str}\n")
+                for h, ts in self._seen.items():
+                    f.write(f"{h}|{ts}\n")
         except Exception as e:
             logger.warning(f"Error guardando artículos vistos: {e}")
 
@@ -262,12 +280,13 @@ class Deduplicator:
         return _article_url_hash(article) in self._seen
 
     def mark_seen(self, article: dict):
+        now_str = datetime.utcnow().isoformat()
         h = _article_url_hash(article)
-        self._seen.add(h)
+        self._seen.setdefault(h, now_str)
         # También guardar hash de título normalizado
         title = article.get("title") or ""
         if title:
-            self._seen.add(_title_hash(title))
+            self._seen.setdefault(_title_hash(title), now_str)
 
     # ── API pública ──────────────────────────────────────────────────────────
 

@@ -276,7 +276,7 @@ EVENT_TAXONOMY = {
             "altcoin", "binance", "polkadot", "avalanche", "chainlink",
             "uniswap", "litecoin", "algorand", "filecoin", "arbitrum",
         ],
-        "base_severity": 50,
+        "base_severity": 55,
         "category": "CRYPTO",
     },
     "financial_market": {
