@@ -67,9 +67,11 @@ def api_stats():
 
 @app.route("/api/predictions")
 def api_predictions():
-    limit = int(request.args.get("limit", 50))
-    preds = tracker.get_recent_predictions(limit=limit)
-    return jsonify(preds)
+    period = request.args.get("period", "24h")
+    page = int(request.args.get("page", 1))
+    page_size = int(request.args.get("page_size", 20))
+    result = tracker.get_predictions_paginated(period=period, page=page, page_size=page_size)
+    return jsonify(result)
 
 
 @app.route("/api/logs")

@@ -202,3 +202,80 @@ class RealPriceFetcher:
 
     def get_price(self, asset: str):
         return get_price(asset)
+
+    def get_price_context(self, asset: str) -> dict:
+        """
+        Devuelve contexto histórico de precio para el activo dado.
+        Incluye precio actual, medias 7/30 días, cambio %, RSI(14) y tendencia.
+        Si falla, devuelve un dict con valores por defecto (sin lanzar excepción).
+        """
+        default = {
+            "current": 0.0,
+            "avg_7d": 0.0,
+            "avg_30d": 0.0,
+            "change_7d_pct": 0.0,
+            "change_30d_pct": 0.0,
+            "rsi_14": 50.0,
+            "trend": "neutral",
+        }
+        try:
+            import yfinance as yf
+
+            asset_upper = asset.upper()
+            ticker_symbol = YAHOO_TICKERS.get(asset_upper)
+            if not ticker_symbol and asset_upper in CRYPTO_IDS:
+                # Use yfinance for crypto with -USD suffix
+                ticker_symbol = f"{asset_upper}-USD"
+            if not ticker_symbol:
+                return default
+
+            hist = yf.Ticker(ticker_symbol).history(period="35d")
+            if hist.empty or len(hist) < 2:
+                return default
+
+            closes = hist["Close"].dropna().tolist()
+            if not closes:
+                return default
+
+            current = float(closes[-1])
+            avg_7d = float(sum(closes[-7:]) / min(7, len(closes)))
+            avg_30d = float(sum(closes[-30:]) / min(30, len(closes)))
+
+            change_7d_pct = round((current - avg_7d) / avg_7d * 100, 2) if avg_7d else 0.0
+            change_30d_pct = round((current - avg_30d) / avg_30d * 100, 2) if avg_30d else 0.0
+
+            rsi_14 = self._calc_rsi(closes, period=14)
+
+            if rsi_14 > 55 and change_7d_pct > 0:
+                trend = "bullish"
+            elif rsi_14 < 45 and change_7d_pct < 0:
+                trend = "bearish"
+            else:
+                trend = "neutral"
+
+            return {
+                "current": round(current, 4),
+                "avg_7d": round(avg_7d, 4),
+                "avg_30d": round(avg_30d, 4),
+                "change_7d_pct": change_7d_pct,
+                "change_30d_pct": change_30d_pct,
+                "rsi_14": rsi_14,
+                "trend": trend,
+            }
+        except Exception as e:
+            logger.warning(f"get_price_context error para {asset}: {e}")
+            return default
+
+    @staticmethod
+    def _calc_rsi(closes: list, period: int = 14) -> float:
+        if len(closes) < period + 1:
+            return 50.0
+        deltas = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
+        gains = [d for d in deltas[-period:] if d > 0]
+        losses = [-d for d in deltas[-period:] if d < 0]
+        avg_gain = sum(gains) / period if gains else 0.0
+        avg_loss = sum(losses) / period if losses else 0.0
+        if avg_loss == 0:
+            return 100.0
+        rs = avg_gain / avg_loss
+        return round(100 - (100 / (1 + rs)), 1)

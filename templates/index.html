@@ -132,11 +132,18 @@ tr:hover td { background: #1c2128; }
       <span class="section-title">📈 Predicciones Recientes</span>
       <span id="pred-count" class="badge badge-gray">0</span>
     </div>
+    <div style="display:flex;gap:8px;align-items:center;padding:12px 20px;border-bottom:1px solid #30363d;flex-wrap:wrap">
+      <span style="color:#8b949e;font-size:12px">Período:</span>
+      <button class="btn btn-gray period-btn active" data-period="24h" onclick="setPeriod('24h')" style="padding:4px 12px;font-size:12px">Últimas 24h</button>
+      <button class="btn btn-gray period-btn" data-period="7d" onclick="setPeriod('7d')" style="padding:4px 12px;font-size:12px">7 días</button>
+      <button class="btn btn-gray period-btn" data-period="30d" onclick="setPeriod('30d')" style="padding:4px 12px;font-size:12px">30 días</button>
+      <button class="btn btn-gray period-btn" data-period="all" onclick="setPeriod('all')" style="padding:4px 12px;font-size:12px">Todo</button>
+    </div>
     <div style="max-height:400px;overflow-y:auto">
       <table>
         <thead>
           <tr>
-            <th>ID</th><th>Activo</th><th>Dir</th><th class="text-right">Impacto</th>
+            <th>#</th><th>Activo</th><th>Dir</th><th class="text-right">Impacto</th>
             <th class="text-right">Confianza</th><th class="text-right">Precio entrada</th>
             <th class="text-right">Precio valid.</th><th class="text-right">Cambio real</th>
             <th class="text-center">Estado</th><th>Fecha</th><th>Evento</th>
@@ -146,6 +153,11 @@ tr:hover td { background: #1c2128; }
           <tr><td colspan="11" class="text-center text-muted" style="padding:30px">Cargando...</td></tr>
         </tbody>
       </table>
+    </div>
+    <div id="pagination-bar" style="display:flex;gap:8px;align-items:center;justify-content:center;padding:12px 20px;border-top:1px solid #30363d;flex-wrap:wrap">
+      <button class="btn btn-gray" id="btn-prev" onclick="changePage(-1)" style="padding:4px 12px;font-size:12px">← Anterior</button>
+      <span id="page-info" style="color:#8b949e;font-size:13px">Página 1 de 1</span>
+      <button class="btn btn-gray" id="btn-next" onclick="changePage(1)" style="padding:4px 12px;font-size:12px">Siguiente →</button>
     </div>
   </div>
   <div class="section">
@@ -161,6 +173,9 @@ tr:hover td { background: #1c2128; }
 </div>
 <script>
 let logsAutoScroll = true;
+let currentPeriod = '24h';
+let currentPage = 1;
+const PAGE_SIZE = 20;
 function notify(msg, type) {
   const el = document.getElementById('notification');
   el.className = 'notify-' + (type||'info');
@@ -191,7 +206,26 @@ function outcomeBadge(o) {
   return '<span class="badge badge-gray">⏳ Pendiente</span>';
 }
 function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-async function fetchStats() {
+function setPeriod(p) {
+  currentPeriod = p;
+  currentPage = 1;
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    if (btn.dataset.period === p) {
+      btn.style.background = '#1f6feb';
+      btn.style.borderColor = '#388bfd';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }
+  });
+  fetchPredictions();
+}
+function changePage(delta) {
+  currentPage = Math.max(1, currentPage + delta);
+  fetchPredictions();
+}async function fetchStats() {
   try {
     const r=await fetch('/api/stats'); const d=await r.json();
     document.getElementById('stat-total').textContent=d.total;
@@ -218,17 +252,32 @@ async function fetchStatus() {
 }
 async function fetchPredictions() {
   try {
-    const r=await fetch('/api/predictions?limit=50'); const preds=await r.json();
-    document.getElementById('pred-count').textContent=preds.length;
+    const r=await fetch('/api/predictions?period='+currentPeriod+'&page='+currentPage+'&page_size='+PAGE_SIZE);
+    const data=await r.json();
+    const preds=data.predictions||[];
+    const total=data.total||0;
+    const totalPages=data.total_pages||1;
+    document.getElementById('pred-count').textContent=total;
     const tbody=document.getElementById('pred-tbody');
-    if(!preds.length){tbody.innerHTML='<tr><td colspan="11" class="text-center text-muted" style="padding:30px">Sin predicciones aun. Ejecuta el pipeline.</td></tr>';return;}
-    tbody.innerHTML=preds.map(p=>{
-      const rc=p.price_at_validation&&p.price_at_prediction?((p.price_at_validation-p.price_at_prediction)/p.price_at_prediction*100):null;
-      const is=p.impact_percent>0?'+':'';
-      const dt=(p.predicted_at||'').replace('T',' ').slice(0,16);
-      const ttl=(p.title||'').slice(0,50)+((p.title||'').length>50?'...':'');
-      return '<tr><td class="text-mono text-muted">#'+p.id+'</td><td><strong>'+(p.asset||'—')+'</strong></td><td class="text-center">'+dirBadge(p.direction)+'</td><td class="text-right text-mono">'+is+(p.impact_percent||0).toFixed(1)+'%</td><td class="text-right text-mono">'+(p.confidence||0).toFixed(0)+'%</td><td class="text-right text-mono">'+formatPrice(p.price_at_prediction)+'</td><td class="text-right text-mono">'+formatPrice(p.price_at_validation)+'</td><td class="text-right text-mono">'+formatChange(rc)+'</td><td class="text-center">'+outcomeBadge(p.outcome)+'</td><td class="text-muted" style="white-space:nowrap">'+dt+'</td><td class="text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(p.title||'')+'">'+ttl+'</td></tr>';
-    }).join('');
+    if(!preds.length){tbody.innerHTML='<tr><td colspan="11" class="text-center text-muted" style="padding:30px">Sin predicciones para este período. Ejecuta el pipeline.</td></tr>';}
+    else {
+      tbody.innerHTML=preds.map((p,idx)=>{
+        const rowNum=(currentPage-1)*PAGE_SIZE+idx+1;
+        const rc=p.price_at_validation&&p.price_at_prediction?((p.price_at_validation-p.price_at_prediction)/p.price_at_prediction*100):null;
+        const is=p.impact_percent>0?'+':'';
+        const dt=(p.predicted_at||'').replace('T',' ').slice(0,16);
+        const ttl=escapeHtml((p.title||'').slice(0,50)+((p.title||'').length>50?'...':''));
+        const titleCell=p.source_url?'<a href="'+escapeHtml(p.source_url)+'" target="_blank" rel="noopener" style="color:#58a6ff;text-decoration:none">'+ttl+'</a>':ttl;
+        return '<tr><td class="text-mono text-muted">#'+rowNum+'</td><td><strong>'+(p.asset||'—')+'</strong></td><td class="text-center">'+dirBadge(p.direction)+'</td><td class="text-right text-mono">'+is+(p.impact_percent||0).toFixed(1)+'%</td><td class="text-right text-mono">'+(p.confidence||0).toFixed(0)+'%</td><td class="text-right text-mono">'+formatPrice(p.price_at_prediction)+'</td><td class="text-right text-mono">'+formatPrice(p.price_at_validation)+'</td><td class="text-right text-mono">'+formatChange(rc)+'</td><td class="text-center">'+outcomeBadge(p.outcome)+'</td><td class="text-muted" style="white-space:nowrap">'+dt+'</td><td class="text-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(p.title||'')+'">'+titleCell+'</td></tr>';
+      }).join('');
+    }
+    // Update pagination controls
+    const pageInfo=document.getElementById('page-info');
+    if(pageInfo) pageInfo.textContent='Página '+currentPage+' de '+totalPages;
+    const btnPrev=document.getElementById('btn-prev');
+    const btnNext=document.getElementById('btn-next');
+    if(btnPrev) btnPrev.disabled=currentPage<=1;
+    if(btnNext) btnNext.disabled=currentPage>=totalPages;
   } catch(e){}
 }
 async function fetchLogs() {
@@ -278,7 +327,9 @@ evtSource.onmessage=function(e){
 document.getElementById('log-panel').addEventListener('scroll',function(){
   logsAutoScroll=this.scrollHeight-this.scrollTop-this.clientHeight<50;
 });
-fetchAll();
+// Initialize period button highlight
+setPeriod(currentPeriod);
+fetchStats(); fetchStatus(); fetchLogs();
 setInterval(fetchStats,30000); setInterval(fetchStatus,30000);
 setInterval(fetchPredictions,30000); setInterval(fetchLogs,10000);
 </script>
