@@ -371,8 +371,8 @@ def analyze_event(event: dict) -> dict:
                 "Si el activo ya está sobrecomprado (RSI > 70), sé más cauteloso con predicciones alcistas. "
                 "Si está sobrevendido (RSI < 30), sé más cauteloso con predicciones bajistas."
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"get_price_context no disponible para el prompt: {e}")
 
     prompt = ANALYSIS_PROMPT_TEMPLATE.format(
         title=title,

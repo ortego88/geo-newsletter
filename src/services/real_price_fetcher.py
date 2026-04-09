@@ -238,8 +238,8 @@ class RealPriceFetcher:
                 return default
 
             current = float(closes[-1])
-            avg_7d = float(sum(closes[-7:]) / min(7, len(closes))) if len(closes) >= 1 else current
-            avg_30d = float(sum(closes[-30:]) / min(30, len(closes))) if len(closes) >= 1 else current
+            avg_7d = float(sum(closes[-7:]) / min(7, len(closes)))
+            avg_30d = float(sum(closes[-30:]) / min(30, len(closes)))
 
             change_7d_pct = round((current - avg_7d) / avg_7d * 100, 2) if avg_7d else 0.0
             change_30d_pct = round((current - avg_30d) / avg_30d * 100, 2) if avg_30d else 0.0

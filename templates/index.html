@@ -225,8 +225,7 @@ function setPeriod(p) {
 function changePage(delta) {
   currentPage = Math.max(1, currentPage + delta);
   fetchPredictions();
-}
-async function fetchStats() {
+}async function fetchStats() {
   try {
     const r=await fetch('/api/stats'); const d=await r.json();
     document.getElementById('stat-total').textContent=d.total;
@@ -278,7 +277,7 @@ async function fetchPredictions() {
     const btnPrev=document.getElementById('btn-prev');
     const btnNext=document.getElementById('btn-next');
     if(btnPrev) btnPrev.disabled=currentPage<=1;
-    if(btnNext) { btnNext.disabled=currentPage>=totalPages; if(currentPage>=totalPages) currentPage=totalPages; }
+    if(btnNext) btnNext.disabled=currentPage>=totalPages;
   } catch(e){}
 }
 async function fetchLogs() {
