@@ -4,7 +4,7 @@ Acceso protegido por ADMIN_PASSWORD (variable de entorno).
 Completamente independiente del sistema de usuarios de la app.
 """
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import pytz
@@ -101,13 +101,10 @@ def dashboard():
     stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0,
              "high_confidence_accuracy": 0.0, "pending": 0}
 
-    # Python-computed cutoff for cross-database compatibility
-    cutoff_24h = (datetime.utcnow() - timedelta(hours=24)).isoformat()
-
     try:
         with _pred_conn() as conn:
-            where_clause = "WHERE predicted_at >= :cutoff"
-            q_params: dict = {"cutoff": cutoff_24h}
+            where_clause = "WHERE 1=1"
+            q_params: dict = {}
             if asset_filter:
                 where_clause += " AND asset = :asset"
                 q_params["asset"] = asset_filter
