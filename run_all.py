@@ -60,9 +60,9 @@ validator = PredictionValidatorScheduler(tracker=tracker, interval_minutes=60)
 def _send_pipeline_alerts(events: list):
     """
     Envía alertas individuales de Telegram para cada evento relevante del ciclo.
-    - Resuelve conflictos de dirección antes de alertar.
     - Solo envía alertas para activos suscritos (TELEGRAM_ALERT_ASSETS).
     - Una alerta por evento (sin resumen/digest).
+    - Los conflictos de señal ya fueron resueltos por pipeline.run() (Paso 7).
     """
     token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     if not token:
@@ -72,26 +72,23 @@ def _send_pipeline_alerts(events: list):
     try:
         from src.services.telegram_sender import send_telegram, get_subscribed_assets
         from src.services.alert_formatter import format_telegram_alert
-        from src.services.signal_resolver import resolve_signals
     except Exception as e:
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
     # Step 1: filter alertable events (score >= 60 with analysis)
-    alertable = [
+    resolved = [
         e for e in events
         if e.get("score", 0) >= 60 and e.get("analysis")
     ]
 
-    if not alertable:
+    if not resolved:
         logger.info("Sin eventos con score >= 60 para alertar")
         return
 
-    # Step 2: resolve conflicting signals for same asset
-    resolved = resolve_signals(alertable)
-    logger.info(f"📊 Señales resueltas: {len(alertable)} → {len(resolved)} eventos")
+    logger.info(f"📊 {len(resolved)} eventos listos para alertar")
 
-    # Step 3: filter by subscribed assets
+    # Step 2: filter by subscribed assets
     subscribed = get_subscribed_assets()
     if subscribed:
         filtered = []
@@ -106,7 +103,7 @@ def _send_pipeline_alerts(events: list):
         resolved = filtered
         logger.info(f"📌 Filtrado por suscripción ({subscribed}): {len(resolved)} eventos")
 
-    # Step 4: send one alert per event (no summary)
+    # Step 3: send one alert per event (no summary)
     logger.info(f"📨 Enviando {len(resolved)} alertas individuales a Telegram...")
     sent = 0
     for event in resolved:
