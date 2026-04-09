@@ -57,6 +57,11 @@ tracker = PredictionTracker(db_path=DB_PATH)
 validator = PredictionValidatorScheduler(tracker=tracker, interval_minutes=60)
 
 
+def _get_event_assets(event: dict) -> set:
+    """Returns the set of uppercase asset symbols for a pipeline event."""
+    return {a.upper() for a in event.get("analysis", {}).get("most_affected_assets", [])}
+
+
 def _send_per_user_alerts(events: list, format_fn, send_fn) -> None:
     """
     Envía alertas de Telegram personalizadas a cada usuario activo que tenga
@@ -106,7 +111,7 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> None:
         # Check daily alert count for this user
         if max_daily != -1:
             try:
-                day_start = (datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)).isoformat()
+                day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
                 with _get_engine("app").connect() as conn:
                     daily_count = conn.execute(_text(
                         "SELECT COUNT(*) FROM alert_log WHERE user_id=:uid AND sent_at >= :day_start"
@@ -120,7 +125,7 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> None:
             if max_daily != -1 and daily_count >= max_daily:
                 break
 
-            event_assets = {a.upper() for a in event.get("analysis", {}).get("most_affected_assets", [])}
+            event_assets = _get_event_assets(event)
             if not (event_assets & selected):
                 continue
 
@@ -181,10 +186,7 @@ def _send_pipeline_alerts(events: list):
     subscribed = get_subscribed_assets()
     global_events = resolved
     if subscribed:
-        global_events = [
-            e for e in resolved
-            if {a.upper() for a in e.get("analysis", {}).get("most_affected_assets", [])} & subscribed
-        ]
+        global_events = [e for e in resolved if _get_event_assets(e) & subscribed]
 
     sent_global = 0
     for event in global_events:
