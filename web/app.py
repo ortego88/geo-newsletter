@@ -4,7 +4,7 @@ web/app.py — Aplicación Flask principal con todos los blueprints.
 import os
 from flask import Flask, render_template, redirect, url_for, jsonify
 from flask_login import LoginManager
-from web.models import init_db, User, PLANS
+from web.models import init_db, User, PLANS, get_conn
 
 
 def create_app():
@@ -59,6 +59,75 @@ def create_app():
     @main_bp.route("/health")
     def health():
         return jsonify({"status": "ok"})
+
+    @main_bp.route("/api/simulate", methods=["POST"])
+    def simulate():
+        from flask import request, jsonify
+        import json
+        from datetime import datetime, timedelta
+        from sqlalchemy import text
+
+        data = request.get_json()
+        asset = data.get('asset')
+        amount = float(data.get('amount', 0))
+        period_days = int(data.get('period', 30))
+
+        if not asset or amount <= 0:
+            return jsonify({"error": "Invalid input"}), 400
+
+        # Calculate date range
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=period_days)
+
+        # Get predictions from DB
+        with get_conn() as conn:
+            rows = conn.execute(text("""
+                SELECT direction, price_at_prediction, predicted_at
+                FROM predictions
+                WHERE asset = :asset
+                AND predicted_at >= :start
+                AND predicted_at <= :end
+                ORDER BY predicted_at ASC
+            """), {
+                "asset": asset,
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat()
+            }).fetchall()
+
+        # Simulate
+        cash = amount
+        position = 0  # shares/units held
+        last_price = None
+
+        for row in rows:
+            direction = row[0]
+            price = row[1]
+            if price and price > 0:
+                if direction == "up" and cash > 0:
+                    # Buy
+                    position = cash / price
+                    cash = 0
+                elif direction == "down" and position > 0:
+                    # Sell
+                    cash = position * price
+                    position = 0
+                last_price = price
+
+        # If still holding, sell at last known price
+        if position > 0 and last_price:
+            cash = position * last_price
+            position = 0
+
+        final_amount = cash
+        profit_loss = final_amount - amount
+        percentage = (profit_loss / amount) * 100 if amount > 0 else 0
+
+        return jsonify({
+            "initial_amount": f"{amount:.2f}",
+            "final_amount": f"{final_amount:.2f}",
+            "profit_loss": f"{profit_loss:+.2f}",
+            "percentage": f"{percentage:+.2f}"
+        })
 
     app.register_blueprint(main_bp)
 

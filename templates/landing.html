@@ -166,6 +166,101 @@
     </div>
   </section>
 
+  <!-- SIMULATOR -->
+  <section class="py-20 px-6">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/20 rounded-3xl p-10 md:p-14">
+        <div class="text-center mb-10">
+          <span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest">Simulador</span>
+          <h2 class="text-3xl font-bold text-white mb-4">¿Cuánto hubieras ganado siguiendo nuestras alertas?</h2>
+          <p class="text-slate-400 max-w-2xl mx-auto">Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+          <!-- Form -->
+          <div class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">Activo</label>
+              <select id="sim-asset" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none">
+                <option value="">Seleccionar activo...</option>
+                <!-- IBEX 35 -->
+                <optgroup label="IBEX 35">
+                  <option value="IBEX35">IBEX 35</option>
+                  <option value="ACS">ACS</option>
+                  <option value="BBVA">BBVA</option>
+                  <option value="SAN">Santander</option>
+                  <option value="TEF">Telefónica</option>
+                  <option value="IBE">Iberdrola</option>
+                  <option value="REP">Repsol</option>
+                  <option value="ITX">Inditex</option>
+                </optgroup>
+                <!-- Crypto -->
+                <optgroup label="Criptomonedas">
+                  <option value="BTC">Bitcoin</option>
+                  <option value="ETH">Ethereum</option>
+                  <option value="BNB">Binance Coin</option>
+                  <option value="ADA">Cardano</option>
+                  <option value="SOL">Solana</option>
+                  <option value="XRP">Ripple</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">Cantidad inicial (€)</label>
+              <input type="number" id="sim-amount" placeholder="1000" min="1" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">Período</label>
+              <select id="sim-period" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none">
+                <option value="7">Últimos 7 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="90">Últimos 3 meses</option>
+                <option value="180">Últimos 6 meses</option>
+                <option value="365">Último año</option>
+              </select>
+            </div>
+
+            <button id="sim-btn" onclick="runSimulation()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              Calcular simulación
+            </button>
+          </div>
+
+          <!-- Results -->
+          <div id="sim-results" class="hidden">
+            <div class="bg-slate-700/50 rounded-xl p-6">
+              <h3 class="text-xl font-bold text-white mb-4">Resultado de la simulación</h3>
+              <div class="space-y-4">
+                <div class="flex justify-between">
+                  <span class="text-slate-300">Inversión inicial:</span>
+                  <span id="initial-amount" class="text-white font-semibold"></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-300">Valor final:</span>
+                  <span id="final-amount" class="text-white font-semibold"></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-300">Ganancia/Pérdida:</span>
+                  <span id="profit-loss" class="font-semibold"></span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-300">Porcentaje:</span>
+                  <span id="percentage" class="font-semibold"></span>
+                </div>
+              </div>
+              <div class="mt-6 p-4 bg-slate-600/50 rounded-lg">
+                <p class="text-sm text-slate-300">
+                  <strong>Nota:</strong> Esta simulación es hipotética y se basa en las alertas generadas durante el período seleccionado. Los resultados pasados no garantizan rendimientos futuros.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- PRICING -->
   <section id="precios" class="py-20 px-6 bg-slate-800/30">
     <div class="max-w-5xl mx-auto">
@@ -747,6 +842,50 @@
       if (!TRANSLATIONS[lang]) lang = 'es';
       applyLang(lang);
     });
+
+    // ── Simulator ──────────────────────────────────────────────────────
+    async function runSimulation() {
+      const asset = document.getElementById('sim-asset').value;
+      const amount = parseFloat(document.getElementById('sim-amount').value);
+      const period = document.getElementById('sim-period').value;
+      const btn = document.getElementById('sim-btn');
+      const results = document.getElementById('sim-results');
+
+      if (!asset || !amount || amount <= 0) {
+        alert('Por favor, selecciona un activo y una cantidad válida.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Calculando...';
+
+      try {
+        const response = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ asset, amount, period })
+        });
+
+        if (!response.ok) throw new Error('Error en la simulación');
+
+        const data = await response.json();
+
+        document.getElementById('initial-amount').textContent = data.initial_amount + ' €';
+        document.getElementById('final-amount').textContent = data.final_amount + ' €';
+        document.getElementById('profit-loss').textContent = data.profit_loss + ' €';
+        document.getElementById('profit-loss').className = data.profit_loss >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+        document.getElementById('percentage').textContent = data.percentage + '%';
+        document.getElementById('percentage').className = data.percentage >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+
+        results.classList.remove('hidden');
+      } catch (error) {
+        alert('Error al calcular la simulación. Inténtalo de nuevo.');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Calcular simulación';
+      }
+    }
 
   </script>
 
