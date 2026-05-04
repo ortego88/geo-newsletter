@@ -67,6 +67,9 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> None:
     Envía alertas de Telegram personalizadas a cada usuario activo que tenga
     configurado su telegram_chat_id y cuyos activos suscritos coincidan con
     alguno de los eventos. Registra cada envío exitoso en alert_log.
+    
+    ✅ Las alertas se envían 24/7 sin restricción de horarios.
+    Los horarios de mercado solo afectan a la verificación posterior de predicciones.
     """
     try:
         from sqlalchemy import text as _text
@@ -157,6 +160,11 @@ def _send_pipeline_alerts(events: list):
     - Envía también a cada usuario con telegram_chat_id y activos suscritos coincidentes.
     - Registra cada envío en la tabla alert_log.
     - Los conflictos de señal ya fueron resueltos por pipeline.run() (Paso 7).
+    
+    ✅ IMPORTANTE: Las alertas se envían 24/7 sin restricción de horarios.
+    No se usa is_market_open() aquí. Solo se filtra por score >= 60.
+    Los horarios de mercado solo afectan a la verificación posterior de predicciones
+    en PredictionValidatorScheduler.
     """
     token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     if not token:
@@ -171,6 +179,7 @@ def _send_pipeline_alerts(events: list):
         return
 
     # Step 1: filter alertable events (score >= 60 with analysis)
+    # ✅ Sin filtrado por horario — las alertas van 24/7
     resolved = [
         e for e in events
         if e.get("score", 0) >= 60 and e.get("analysis")
@@ -257,6 +266,8 @@ def start_scheduler():
     )
     scheduler.start()
     logger.info("✅ Scheduler iniciado (pipeline cada 10 minutos, resumen semanal domingos 10:00 AM)")
+    logger.info("✅ Alertas: enviadas 24/7 sin restricción de horarios")
+    logger.info("✅ Verificación: respeta horarios de mercado (IBEX35 9-17:30 L-V, Crypto 24/7)")
     return scheduler
 
 
