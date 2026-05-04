@@ -37,7 +37,7 @@
 }
 
 .max-w-4xl {
-    max-width: 64rem;
+    max-width: 64rem !important;
 }
 
 /* Tablet: 768px - 1024px */

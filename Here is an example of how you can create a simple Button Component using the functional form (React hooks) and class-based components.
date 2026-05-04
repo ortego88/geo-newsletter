@@ -1,14 +1,0 @@
-Both examples are written in JavaScript, but they'll be quite similar for your needs as this will only provide functionality common to both forms used within React applications. The important part is defining what should happen when you click on that button:
-
-**Class Component (Button):**  
-```jsx
-import React from 'react';  // Import the necessary module    
-class Button extends React.Component {    // Define a class-based component     
- render() {                  // The method to return HTML markup         
-       return(                	// Returning JSX code          
-           <button onClick={this.props.onButtonClick}>             	  		 			    	 	     	       	   									   						       															      (or the event-handler you passed in)               click me                    			</button>  // End of button tag          );                                                                                                                    }                         
-export default Button;                               
-```                                       
-**Functional Component: **  
-You can also create a functional component for this. Here is an example how it could look like using Hooks approach (React hook): 
- ```jsx    // Import necessary module            import React, { useState } from 'react';         function Button({ onButtonClick })          const [count, setCount] = useState(0);           return <button onclick={() =>onButtonClick( count + 1)}>click me</buttom>  // End of button tag and end bracket;   ```
