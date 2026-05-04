@@ -6,6 +6,10 @@ Define:
   - Ventanas de verificación por tipo de activo
   - Funciones para horario de mercado (IBEX35 y ETFs NYSE)
   - Cálculo del momento exacto de verificación de una predicción
+
+✅ IMPORTANTE: 
+  - is_market_open() se usa SOLO en la verificación de predicciones (PredictionValidatorScheduler)
+  - NO se usa en el envío de alertas (que ocurren 24/7 desde run_all.py)
 """
 from datetime import datetime, timedelta
 
@@ -69,6 +73,9 @@ def get_verification_window(ticker: str) -> int:
 def is_market_open(ticker: str, check_time: datetime | None = None) -> bool:
     """
     Comprueba si el mercado está abierto para un ticker dado.
+    
+    ✅ SOLO se usa en PredictionValidatorScheduler para verificar predicciones.
+    NO se usa en _send_pipeline_alerts (alertas 24/7).
 
     Returns:
         True si el mercado está abierto, False si está cerrado.
@@ -78,7 +85,7 @@ def is_market_open(ticker: str, check_time: datetime | None = None) -> bool:
     elif check_time.tzinfo is None:
         check_time = check_time.replace(tzinfo=pytz.utc)
 
-    # Crypto: siempre abierto
+    # Crypto: siempre abierto (24/7)
     if ticker in CRYPTO_TICKERS:
         return True
 
