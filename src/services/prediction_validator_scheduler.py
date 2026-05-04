@@ -1,6 +1,15 @@
 """
 Validador de predicciones con APScheduler.
 Valida predicciones pendientes cada hora usando precios reales.
+
+✅ IMPORTANTE: 
+  - Este módulo es responsable de VERIFICAR si una predicción fue correcta.
+  - Respeta los horarios de mercado usando is_market_open():
+    * IBEX35: Solo verifica predicciones 9:00-17:30 (L-V)
+    * Crypto: Verifica 24/7 sin restricción
+    * ETFs: Solo verifica 9:30-16:00 NY (L-V)
+  
+  - El envío de ALERTAS es independiente y ocurre 24/7 sin restricción (ver run_all.py)
 """
 
 import logging
@@ -8,6 +17,7 @@ from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from src.services.market_config import is_market_open
 from src.services.prediction_tracker import PredictionTracker
 from src.services.real_price_fetcher import RealPriceFetcher
 
@@ -80,6 +90,9 @@ class PredictionValidatorScheduler:
         """
         Obtiene todas las predicciones pendientes y valida aquellas
         cuyo plazo (timeframe_minutes) ya ha transcurrido desde predicted_at.
+        
+        ✅ Respeta horarios de mercado: Solo verifica si el mercado está abierto
+           para el activo específico (is_market_open).
         """
         pending = self.tracker.get_pending_predictions()
         if not pending:
@@ -95,7 +108,7 @@ class PredictionValidatorScheduler:
             predicted_at_str = pred.get("predicted_at", "")
             timeframe_minutes = pred.get("timeframe_minutes", 480)
             asset = pred.get("asset", "UNKNOWN")
-            verify_at_str = pred.get("verify_at")  # Mejora 3: usar verify_at si disponible
+            verify_at_str = pred.get("verify_at")
 
             try:
                 predicted_at = datetime.fromisoformat(predicted_at_str)
@@ -103,7 +116,7 @@ class PredictionValidatorScheduler:
                 logger.warning(f"Fecha inválida en predicción #{prediction_id}: {predicted_at_str}")
                 continue
 
-            # Mejora 3: usar verify_at calculado cuando está disponible (respeta horario de mercado)
+            # Usar verify_at calculado cuando está disponible (respeta horario de mercado)
             if verify_at_str:
                 try:
                     verify_at = datetime.fromisoformat(verify_at_str.replace("Z", "+00:00"))
@@ -136,7 +149,16 @@ class PredictionValidatorScheduler:
                     )
                     continue
 
-            # Ya pasó el plazo → validar con precio actual
+            # ✅ VERIFICACIÓN RESPETANDO HORARIOS DE MERCADO
+            # Solo validar si el mercado está abierto para este activo (now)
+            if not is_market_open(asset, now):
+                logger.debug(
+                    f"Predicción #{prediction_id} ({asset}): "
+                    f"Mercado cerrado para este activo — esperando apertura"
+                )
+                continue
+
+            # Ya pasó el plazo y el mercado está abierto → validar con precio actual
             current_price = self.price_fetcher.get_price(asset)
             if current_price is None:
                 logger.warning(f"No se pudo obtener precio para {asset}, omitiendo validación")
@@ -175,6 +197,10 @@ class PredictionValidatorScheduler:
         self._scheduler.start()
         logger.info(
             f"Validador de predicciones iniciado (cada {self.interval_minutes} minutos)"
+        )
+        logger.info(
+            "✅ Verificación de predicciones respeta horarios: "
+            "IBEX35 (9-17:30 L-V), Crypto (24/7), ETFs (9:30-16:00 NY L-V)"
         )
 
     def stop(self):
