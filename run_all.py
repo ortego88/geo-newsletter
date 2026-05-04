@@ -62,7 +62,7 @@ def _get_event_assets(event: dict) -> set:
     return {a.upper() for a in event.get("analysis", {}).get("most_affected_assets", [])}
 
 
-def _send_per_user_alerts(events: list, format_fn, send_fn) -> None:
+def _send_per_user_alerts(events: list, format_fn, send_fn) -> int:
     """
     Envía alertas de Telegram personalizadas a cada usuario activo que tenga
     configurado su telegram_chat_id y cuyos activos suscritos coincidan con
@@ -151,6 +151,7 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> None:
                     logger.warning(f"No se pudo registrar en alert_log (user {user_id}): {log_err}")
 
     logger.info(f"📬 Alertas per-usuario enviadas: {user_sent} (a {len(rows)} usuarios con Telegram)")
+    return user_sent
 
 
 def _send_pipeline_alerts(events: list):
@@ -189,13 +190,19 @@ def _send_pipeline_alerts(events: list):
         logger.info("Sin eventos con score >= 60 para alertar")
         return
 
-    logger.info(f"📊 {len(resolved)} eventos listos para alertar")
+    # Only send alerts for events that were saved in the predictions DB.
+    saved_predictions = [e for e in resolved if e.get("prediction_id")]
+    if not saved_predictions:
+        logger.info("Ninguna predicción guardada en DB para alertar")
+        return
+
+    logger.info(f"📊 {len(saved_predictions)} eventos guardados listos para alertar")
 
     # Step 2: send to global channel (filtered by TELEGRAM_ALERT_ASSETS env var)
     subscribed = get_subscribed_assets()
-    global_events = resolved
+    global_events = saved_predictions
     if subscribed:
-        global_events = [e for e in resolved if _get_event_assets(e) & subscribed]
+        global_events = [e for e in saved_predictions if _get_event_assets(e) & subscribed]
 
     sent_global = 0
     for event in global_events:
@@ -208,7 +215,7 @@ def _send_pipeline_alerts(events: list):
     logger.info(f"📤 Canal global: {sent_global}/{len(global_events)} alertas enviadas")
 
     # Step 3: send per-user alerts based on telegram_chat_id + selected_assets
-    _send_per_user_alerts(resolved, format_telegram_alert, send_telegram)
+    user_sent = _send_per_user_alerts(saved_predictions, format_telegram_alert, send_telegram)
 
     # Enviar también por WhatsApp si está configurado
     try:
@@ -219,6 +226,8 @@ def _send_pipeline_alerts(events: list):
                 send_whatsapp(msg)
     except Exception as e:
         logger.warning(f"Error en envío WhatsApp: {e}")
+
+    logger.info(f"📤 Total alertas enviadas en este ciclo: {sent_global + user_sent}")
 
 
 def run_pipeline_cycle():

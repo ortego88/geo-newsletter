@@ -14,6 +14,15 @@ STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholde
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 
 
+def _get_user_payment_method(user_id: int):
+    with get_conn() as conn:
+        row = conn.execute(
+            text("SELECT id, card_last4, card_brand, created_at FROM payment_methods WHERE user_id=:uid ORDER BY id DESC LIMIT 1"),
+            {"uid": user_id}
+        ).fetchone()
+    return row
+
+
 @billing_bp.route("/pricing")
 def pricing():
     return render_template("billing/pricing.html", plans=PLANS)
@@ -44,6 +53,7 @@ def checkout_trial():
     if plan not in PLANS:
         plan = "basic"
     trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
+    has_payment_method = _get_user_payment_method(current_user.id) is not None
     return render_template(
         "billing/checkout.html",
         plan=plan,
@@ -52,6 +62,7 @@ def checkout_trial():
         is_trial=True,
         stripe_pk=STRIPE_PUBLISHABLE_KEY,
         trial_end_date=trial_end_date,
+        has_payment_method=has_payment_method,
     )
 
 
@@ -69,11 +80,17 @@ def process_subscription():
     card_cvc = request.form.get("card_cvc", "").strip()
     card_name = request.form.get("card_name", "").strip()
 
+    existing_payment = _get_user_payment_method(current_user.id)
+    using_saved_card = False
+
     if not card_number or not card_expiry or not card_cvc or not card_name:
-        flash("Por favor, introduce los datos de tu tarjeta para continuar.", "error")
-        if is_trial:
-            return redirect(url_for("billing.checkout_trial", plan=plan))
-        return redirect(url_for("billing.subscribe", plan=plan))
+        if existing_payment:
+            using_saved_card = True
+        else:
+            flash("Por favor, introduce los datos de tu tarjeta para continuar.", "error")
+            if is_trial:
+                return redirect(url_for("billing.checkout_trial", plan=plan))
+            return redirect(url_for("billing.subscribe", plan=plan))
 
     if request.form.get("accept_terms") != "1":
         flash("Debes aceptar los Términos y Condiciones para continuar.", "error")
@@ -137,14 +154,52 @@ def process_subscription():
                  "status": status, "trial": trial_end, "period": period_end, "now": now_iso},
             )
 
-        # Save simulated payment method
-        conn.execute(
-            text("INSERT INTO payment_methods (user_id, card_last4, card_brand, created_at) VALUES (:uid, :last4, :brand, :now)"),
-            {"uid": current_user.id, "last4": "4242", "brand": "Visa (test)", "now": now_iso},
-        )
+        # Save simulated payment method if a new card was provided
+        if not using_saved_card:
+            conn.execute(
+                text("INSERT INTO payment_methods (user_id, card_last4, card_brand, created_at) VALUES (:uid, :last4, :brand, :now)"),
+                {"uid": current_user.id, "last4": "4242", "brand": "Visa (test)", "now": now_iso},
+            )
         conn.commit()
 
     flash("✅ Suscripción activada correctamente", "success")
+    return redirect(url_for("billing.success"))
+
+
+@billing_bp.route("/subscribe/activate", methods=["POST"])
+@login_required
+def activate_subscription():
+    sub = current_user.get_subscription()
+    if not sub:
+        flash("No se encontró una subscripción para activar.", "error")
+        return redirect(url_for("billing.pricing"))
+
+    if sub["status"] == "active":
+        flash("Tu suscripción ya está activa.", "info")
+        return redirect(url_for("billing.success"))
+
+    payment_method = _get_user_payment_method(current_user.id)
+    if not payment_method:
+        flash("No hay un método de pago guardado. Por favor, añade tu tarjeta primero.", "error")
+        return redirect(url_for("billing.subscribe", plan=sub["plan"]))
+
+    billing_cycle = sub.get("billing_cycle") or "monthly"
+    period_end = (
+        datetime.now(timezone.utc) + (
+            timedelta(days=365) if billing_cycle == "yearly" else timedelta(days=30)
+        )
+    ).isoformat()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    with get_conn() as conn:
+        conn.execute(
+            text("""UPDATE subscriptions SET status='active', billing_cycle=:cycle,
+                   trial_ends_at=NULL, current_period_end=:period, updated_at=:now
+                   WHERE user_id=:uid"""),
+            {"cycle": billing_cycle, "period": period_end, "now": now_iso, "uid": current_user.id},
+        )
+        conn.commit()
+
+    flash("✅ Suscripción activada correctamente usando tu método de pago guardado.", "success")
     return redirect(url_for("billing.success"))
 
 

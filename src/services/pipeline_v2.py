@@ -508,7 +508,11 @@ class AnalysisPipeline:
             if prediction_id:
                 event["prediction_id"] = prediction_id
                 logger.info(
-                    f"   Predicción #{prediction_id}: {primary_asset} @ {current_price:.2f}"
+                    f"   ✅ Predicción #{prediction_id} guardada: {primary_asset} @ {current_price:.2f} ({analysis.get('direction', 'unknown')})"
+                )
+            else:
+                logger.warning(
+                    f"   ❌ Predicción NO guardada para {primary_asset}: precio {current_price}, direction {analysis.get('direction', 'unknown')}"
                 )
 
         # Paso 6: Ordenar por criticidad

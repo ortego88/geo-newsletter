@@ -39,6 +39,15 @@ def _to_madrid_time(dt_str: str) -> str:
         return dt_str[:16]
 
 
+def _user_has_payment_method(user_id: int) -> bool:
+    with get_conn() as conn:
+        row = conn.execute(
+            text("SELECT 1 FROM payment_methods WHERE user_id = :uid LIMIT 1"),
+            {"uid": user_id},
+        ).fetchone()
+    return bool(row)
+
+
 def _require_active_subscription():
     sub = current_user.get_subscription()
     if not sub or sub["status"] not in ("active", "trial"):
@@ -237,11 +246,13 @@ def subscription():
         return redirect_resp
     sub = current_user.get_subscription()
     plan_config = PLANS.get(sub["plan"], PLANS["basic"]) if sub else None
+    has_payment_method = _user_has_payment_method(current_user.id)
     return render_template(
         "dashboard/subscription.html",
         sub=sub,
         plan_config=plan_config,
         plans=PLANS,
+        has_payment_method=has_payment_method,
     )
 
 

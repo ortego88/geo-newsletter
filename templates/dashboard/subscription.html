@@ -110,9 +110,17 @@
             </div>
             <div class="flex flex-col gap-2">
               {% if sub.status == 'trial' %}
-                <a href="/checkout/trial?plan={{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                  💳 Activar suscripción
-                </a>
+                {% if has_payment_method %}
+                  <form method="POST" action="/subscribe/activate">
+                    <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                      💳 Activar suscripción con tarjeta guardada
+                    </button>
+                  </form>
+                {% else %}
+                  <a href="/checkout/trial?plan={{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                    💳 Activar suscripción
+                  </a>
+                {% endif %}
               {% elif sub.status == 'active' %}
                 <a href="/pricing" class="inline-flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
                   🔄 Ver todos los planes

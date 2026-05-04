@@ -103,6 +103,13 @@
           </div>
         {% endif %}
 
+        {% if has_payment_method %}
+          <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-5 text-slate-300 text-sm">
+            <p class="font-semibold text-emerald-400">✅ Ya tienes un método de pago guardado.</p>
+            <p class="mt-1">Puedes dejar los datos en blanco y se usará la tarjeta guardada para activar o renovar tu suscripción.</p>
+          </div>
+        {% endif %}
+
         <form method="POST" action="/subscribe/process" id="payment-form" class="space-y-4">
           <input type="hidden" name="plan" value="{{ plan }}">
           <input type="hidden" name="billing_cycle" value="{{ billing_cycle }}">

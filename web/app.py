@@ -79,8 +79,9 @@ def create_app():
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=period_days)
 
-        # Get predictions from DB
-        with get_conn() as conn:
+        # Get predictions from the predictions database
+        from web.db_engine import get_engine
+        with get_engine("predictions").connect() as conn:
             rows = conn.execute(text("""
                 SELECT direction, price_at_prediction, predicted_at
                 FROM predictions
