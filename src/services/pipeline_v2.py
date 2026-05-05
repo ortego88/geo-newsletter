@@ -51,11 +51,19 @@ RSS_SOURCES = [
     {"name": "Bolsamanía", "url": "https://www.bolsamania.com/rss/todas-las-noticias.xml"},
     {"name": "El Confidencial Mercados", "url": "https://rss.elconfidencial.com/mercados/"},
     {"name": "Investing.com España", "url": "https://es.investing.com/rss/news.rss"},
+    
+    # --- Mercados globales / ETFs ---
+    {"name": "Financial Times Markets", "url": "https://feeds.ft.com/markets"},
+    {"name": "Reuters Markets", "url": "https://feeds.reuters.com/finance/markets"},
+    {"name": "Bloomberg Markets", "url": "https://www.bloomberg.com/feed/podcast/etf-report.xml"},
+    {"name": "Seeking Alpha ETFs", "url": "https://seekingalpha.com/feed.xml?topic=etfs"},
+    
     # --- Crypto (inglés) ---
     {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
     {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss"},
     {"name": "Decrypt", "url": "https://decrypt.co/feed"},
     {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/.rss/full/"},
+    
     # --- Crypto (español) ---
     {"name": "Cointelegraph ES", "url": "https://es.cointelegraph.com/rss"},
     {"name": "CriptoNoticias", "url": "https://www.criptonoticias.com/feed/"},
@@ -111,18 +119,19 @@ ASSET_KEYWORDS: dict[str, list[str]] = {
     "SGRE": ["siemens gamesa", "gamesa", "siemens gamesa renewable", "sgre"],
     "TEF": ["telefónica", "telefonica", "movistar", "o2 telefonica", "telefónica españa"],
     # ── ETFs ────────────────────────────────────────────────────────────────
-    "SPY": ["spy etf", "spdr s&p 500", "s&p 500 etf"],
-    "QQQ": ["qqq etf", "invesco qqq", "nasdaq etf", "invesco nasdaq"],
-    "GLD": ["gld etf", "spdr gold", "gold etf", "etf oro"],
-    "SLV": ["slv etf", "ishares silver", "silver etf", "etf plata"],
-    "IWM": ["iwm etf", "russell 2000 etf", "ishares russell 2000"],
-    "EWZ": ["ewz etf", "brazil etf", "ishares msci brazil"],
-    "EEM": ["eem etf", "emerging markets etf", "ishares msci emerging", "mercados emergentes etf"],
-    "VIX": ["vix index", "cboe vix", "fear index", "volatility index", "índice de volatilidad"],
-    "ARKK": ["arkk etf", "ark innovation", "cathie wood"],
-    "TLT": ["tlt etf", "ishares 20+ year treasury", "treasury bond etf"],
-    "XLF": ["xlf etf", "financial select sector", "financial sector etf"],
-    "XLE": ["xle etf", "energy select sector etf"],
+    "SPY": ["spy etf", "spdr s&p 500", "s&p 500 etf", "spy", "^spx"],
+    "QQQ": ["qqq etf", "invesco qqq", "nasdaq etf", "invesco nasdaq", "qqq", "nasdaq 100"],
+    "GLD": ["gld etf", "spdr gold", "gold etf", "etf oro", "gld", "precious metals"],
+    "SLV": ["slv etf", "ishares silver", "silver etf", "etf plata", "slv"],
+    "IWM": ["iwm etf", "russell 2000 etf", "ishares russell 2000", "iwm", "small cap"],
+    "EWZ": ["ewz etf", "brazil etf", "ishares msci brazil", "ewz", "emergentes brasil"],
+    "EEM": ["eem etf", "emerging markets etf", "ishares msci emerging", "mercados emergentes etf", "eem"],
+    "VIX": ["vix index", "cboe vix", "fear index", "volatility index", "índice de volatilidad", "vix"],
+    "ARKK": ["arkk etf", "ark innovation", "cathie wood", "arkk", "innovation etf"],
+    "TLT": ["tlt etf", "ishares 20+ year treasury", "treasury bond etf", "tlt", "bonos largo plazo"],
+    "XLF": ["xlf etf", "financial select sector", "financial sector etf", "xlf", "sector financiero"],
+    "XLE": ["xle etf", "energy select sector etf", "xle", "sector energía"],
+    "DIA": ["dia etf", "spdr dow jones", "dow etf", "dia", "dow jones"],
     # ── Criptodivisas ───────────────────────────────────────────────────────
     "BTC": [
         "bitcoin", "btc", "criptomoneda", "criptomonedas", "crypto",

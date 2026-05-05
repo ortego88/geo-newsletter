@@ -70,6 +70,29 @@ def get_verification_window(ticker: str) -> int:
     return VERIFICATION_WINDOWS["default"]
 
 
+def get_asset_type(ticker: str) -> str:
+    """Retorna el tipo de activo: 'crypto', 'ibex35', 'etf' o 'unknown'."""
+    ticker_upper = ticker.upper()
+    if ticker_upper in CRYPTO_TICKERS:
+        return "crypto"
+    if ticker_upper in IBEX35_TICKERS:
+        return "ibex35"
+    if ticker_upper in ETF_TICKERS:
+        return "etf"
+    return "unknown"
+
+
+def get_assets_by_type(asset_type: str) -> set:
+    """Retorna el conjunto de tickers según el tipo de activo."""
+    if asset_type == "crypto":
+        return CRYPTO_TICKERS
+    elif asset_type == "ibex35":
+        return IBEX35_TICKERS
+    elif asset_type == "etf":
+        return ETF_TICKERS
+    return set()
+
+
 def is_market_open(ticker: str, check_time: datetime | None = None) -> bool:
     """
     Comprueba si el mercado está abierto para un ticker dado.

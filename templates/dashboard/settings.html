@@ -79,6 +79,15 @@
         {% endfor %}
       {% endwith %}
 
+      {% if is_new_user %}
+      <div class="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+        <p class="text-emerald-400 font-semibold mb-1">¡Bienvenido! 🎉</p>
+        <p class="text-slate-300 text-sm">
+          Selecciona los activos que deseas monitorear para empezar a recibir alertas. Después podrás completar tu suscripción.
+        </p>
+      </div>
+      {% endif %}
+
       <form method="POST" action="/dashboard/settings" class="space-y-8">
 
         <!-- Asset selector -->

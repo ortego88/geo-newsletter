@@ -64,16 +64,17 @@ def register():
         user = User.create(email, password, name, language=preferred_lang, plan=plan)
         login_user(user, remember=True)
         flash(
-            "Cuenta creada. Tienes 7 días de prueba gratuita. "
-            "¡Añade tu método de pago para continuar!",
-            "success",
+            "Cuenta creada. Por favor, selecciona los activos que quieres monitorear.",
+            "info",
         )
-        return redirect(url_for("billing.checkout_trial", plan=plan))
+        # Redirect to settings to force asset configuration
+        return redirect(url_for("dashboard_web.settings", next_step="select_assets"))
     plan = request.args.get("plan", "basic")
     if plan not in PLANS:
         plan = "basic"
     trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
     return render_template("auth/register.html", plan=plan, trial_end_date=trial_end_date)
+
 
 
 @auth_bp.route("/logout")

@@ -66,11 +66,16 @@ def index():
     sub = current_user.get_subscription()
     plan_config = PLANS.get(sub["plan"], PLANS["basic"])
 
+    # Get user's selected assets from subscription
+    user_selected_assets = set(a for a in (sub.get("selected_assets") or []) if a)
+
     # Pagination & filters
     page = max(1, int(request.args.get("page", 1)))
     per_page = 20
     offset = (page - 1) * per_page
     asset_filter = request.args.get("asset", "")
+    outcome_filter = request.args.get("outcome", "")  # "correct", "incorrect", "pending", or ""
+    asset_type_filter = request.args.get("asset_type", "")  # "crypto", "ibex35", "etf", or ""
     sort_by = request.args.get("sort", "predicted_at")
     sort_dir = request.args.get("dir", "desc")
 
@@ -85,15 +90,33 @@ def index():
     total_alerts = 0
     total_pages = 1
     try:
-        # Use Python-computed cutoff for cross-database compatibility (works for both SQLite and PostgreSQL
-        # since predicted_at is stored as ISO text and ISO strings sort lexicographically)
         cutoff = (datetime.utcnow() - timedelta(days=history_days)).isoformat()
         with _get_predictions_conn() as conn2:
             where = "WHERE predicted_at >= :cutoff"
             extra_params: dict = {"cutoff": cutoff}
+            
+            # Filter by user's selected assets only
+            if user_selected_assets:
+                asset_list = ",".join([f"'{a}'" for a in user_selected_assets])
+                where += f" AND asset IN ({asset_list})"
+
+            # Additional asset filter (specific asset)
             if asset_filter:
                 where += " AND asset = :asset"
                 extra_params["asset"] = asset_filter
+            
+            # Filter by asset type if no specific asset selected
+            if asset_type_filter and not asset_filter:
+                from src.services.market_config import get_assets_by_type
+                type_assets = get_assets_by_type(asset_type_filter)
+                if type_assets:
+                    asset_list = ",".join([f"'{a}'" for a in type_assets])
+                    where += f" AND asset IN ({asset_list})"
+            
+            # Filter by outcome
+            if outcome_filter in ("correct", "incorrect", "pending"):
+                where += " AND outcome = :outcome"
+                extra_params["outcome"] = outcome_filter
 
             total_alerts = conn2.execute(
                 text(f"SELECT COUNT(*) FROM predictions {where}"), extra_params
@@ -128,12 +151,18 @@ def index():
         processed_alerts.append(d)
     alerts = processed_alerts
 
-    # Get accuracy stats (scoped to plan history window and optional asset filter)
+    # Get accuracy stats (scoped to plan history window, user selected assets, and optional filters)
     accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0, "pending": 0}
     try:
         with _get_predictions_conn() as conn2:
             stats_where = "WHERE predicted_at >= :cutoff"
             stats_params: dict = {"cutoff": cutoff}
+            
+            # Filter by user's selected assets only
+            if user_selected_assets:
+                asset_list = ",".join([f"'{a}'" for a in user_selected_assets])
+                stats_where += f" AND asset IN ({asset_list})"
+            
             if asset_filter:
                 stats_where += " AND asset = :asset"
                 stats_params["asset"] = asset_filter
@@ -169,6 +198,14 @@ def index():
     except Exception:
         _logger.warning("Could not load accuracy stats", exc_info=True)
 
+    # Group available assets by type
+    from src.services.market_config import get_asset_type
+    assets_by_type = {"crypto": [], "ibex35": [], "etf": []}
+    for asset in AVAILABLE_ASSETS:
+        asset_type = get_asset_type(asset["symbol"])
+        if asset_type in assets_by_type:
+            assets_by_type[asset_type].append(asset)
+
     return render_template(
         "dashboard/index.html",
         sub=sub,
@@ -177,11 +214,14 @@ def index():
         alerts=alerts,
         accuracy_stats=accuracy_stats,
         available_assets=AVAILABLE_ASSETS,
+        assets_by_type=assets_by_type,
         asset_names=ASSET_NAMES,
         page=page,
         total_pages=total_pages,
         total_alerts=total_alerts,
         asset_filter=asset_filter,
+        asset_type_filter=asset_type_filter,
+        outcome_filter=outcome_filter,
         sort_by=sort_by,
         sort_dir=sort_dir,
         per_page=per_page,
@@ -202,6 +242,12 @@ def settings():
     if request.method == "POST":
         selected_assets = request.form.getlist("assets")
         max_assets = plan_config["max_assets"]
+        
+        # Validation: require at least 1 asset
+        if not selected_assets:
+            flash("Debes seleccionar al menos un activo", "error")
+            return redirect(url_for("dashboard_web.settings"))
+        
         if max_assets != -1 and len(selected_assets) > max_assets:
             flash(f"Tu plan solo permite seleccionar {max_assets} activo(s)", "error")
         else:
@@ -218,6 +264,12 @@ def settings():
                 )
                 conn.commit()
             flash("Configuración guardada", "success")
+            
+            # If user came from registration, redirect to checkout next
+            next_step = request.args.get("next_step", "")
+            if next_step == "select_assets":
+                return redirect(url_for("billing.checkout_trial", plan=sub["plan"]))
+            
             return redirect(url_for("dashboard_web.settings"))
 
     selected = [a for a in (sub.get("selected_assets") or []) if a]
@@ -228,6 +280,9 @@ def settings():
     else:
         locked_symbols = set()
 
+    next_step = request.args.get("next_step", "")
+    is_new_user = next_step == "select_assets"
+
     return render_template(
         "dashboard/settings.html",
         sub=sub,
@@ -235,6 +290,8 @@ def settings():
         plans=PLANS,
         available_assets=AVAILABLE_ASSETS,
         locked_symbols=locked_symbols,
+        is_new_user=is_new_user,
+        next_step=next_step,
     )
 
 

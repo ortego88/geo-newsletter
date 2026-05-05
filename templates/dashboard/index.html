@@ -126,7 +126,7 @@
       <!-- Stats row -->
       <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
-          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.alerts_today">Alertas (24h)</p>
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.alerts_today">Alertas</p>
           <p class="text-white font-bold text-xl">{{ total_alerts }}</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -138,9 +138,9 @@
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.correct_incorrect">Correctas / Incorrectas</p>
           <p class="font-bold text-lg">
-            <span class="text-emerald-400 cursor-pointer hover:opacity-80 transition" data-filter="correct" title="Ver solo correctas">{{ accuracy_stats.correct }}</span>
+            <span class="text-emerald-400 cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas correctas" onclick="filterByOutcome('correct')">{{ accuracy_stats.correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-red-400 cursor-pointer hover:opacity-80 transition" data-filter="incorrect" title="Ver solo incorrectas">{{ accuracy_stats.incorrect }}</span>
+            <span class="text-red-400 cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas incorrectas" onclick="filterByOutcome('incorrect')">{{ accuracy_stats.incorrect }}</span>
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -151,21 +151,28 @@
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
-          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-filter="pending" title="Ver solo pendientes">{{ accuracy_stats.pending }}</p>
+          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas pendientes" onclick="filterByOutcome('pending')">{{ accuracy_stats.pending }}</p>
         </div>
       </div>
 
       <!-- Filters -->
       <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 md:px-5 py-4 mb-4">
         <form method="GET" action="/dashboard" class="filters-form flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-          <select name="asset" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+          <input type="hidden" name="outcome" id="outcome-filter" value="{{ outcome_filter }}">
+          <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+            <option value="">Todos los tipos</option>
+            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>🪙 Criptomonedas</option>
+            <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>📈 Acciones</option>
+            <option value="etf" {% if asset_type_filter == 'etf' %}selected{% endif %}>📊 ETFs</option>
+          </select>
+          <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
-              <option value="{{ a.symbol }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
+              <option value="{{ a.symbol }}" data-type="{% if asset_type_filter %}{{ asset_type_filter }}{% else %}*{% endif %}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
           <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
-            Limpiar
+            Limpiar filtros
           </a>
         </form>
       </div>
@@ -491,36 +498,78 @@
     updateCookieBannerLang();
   }
 
-  // ── Filtros clickables (Mejora 2) ─────────────────────────────────────────
+  // ── Outcome filtering (click stats to filter) ─────────────────────────────
+  function filterByOutcome(outcome) {
+    var url = new URL(window.location);
+    var currentOutcome = url.searchParams.get('outcome');
+    
+    // Toggle: si ya está filtrado por este outcome, desactivar
+    if (currentOutcome === outcome) {
+      url.searchParams.delete('outcome');
+    } else {
+      url.searchParams.set('outcome', outcome);
+      url.searchParams.set('page', '1'); // Reset to page 1
+    }
+    
+    window.location.href = url.toString();
+  }
+
+  // ── Asset type filtering (cascading dropdowns) ─────────────────────────────
+  function updateAssetDropdown() {
+    var typeSelect = document.getElementById('asset-type-select');
+    var assetSelect = document.getElementById('asset-select');
+    var selectedType = typeSelect.value;
+    var currentAsset = assetSelect.value;
+    var options = assetSelect.querySelectorAll('option.asset-option');
+    
+    // Show/hide options based on selected type
+    var hasVisibleOption = false;
+    var firstVisibleValue = '';
+    
+    options.forEach(function(opt) {
+      var optType = opt.getAttribute('data-type');
+      var isVisible = (selectedType === '' || optType === '*' || optType === selectedType);
+      opt.style.display = isVisible ? '' : 'none';
+      if (isVisible) {
+        hasVisibleOption = true;
+        if (!firstVisibleValue) firstVisibleValue = opt.value;
+      }
+    });
+    
+    // If current selection is not visible, select first visible
+    if (selectedType && !assetSelect.querySelector('option:checked').style.display !== 'none') {
+      assetSelect.value = firstVisibleValue || '';
+    }
+    
+    // Auto-submit form
+    document.querySelector('.filters-form').submit();
+  }
+  
+  // Init asset type dropdown on page load
   document.addEventListener('DOMContentLoaded', function() {
-    var filterBtns = document.querySelectorAll('[data-filter]');
-    var tableRows = document.querySelectorAll('tbody tr[data-status]');
-    var activeFilter = null;
-
-    filterBtns.forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var filter = this.dataset.filter;
-
-        if (activeFilter === filter) {
-          // Desactivar filtro — mostrar todos
-          activeFilter = null;
-          tableRows.forEach(function(row) { row.style.display = ''; });
-          filterBtns.forEach(function(b) { b.style.opacity = '1'; });
-          return;
+    var assetTypeSelect = document.getElementById('asset-type-select');
+    var assets_by_type = {
+      {% for type, assets in assets_by_type.items() %}
+        "{{ type }}": [{% for a in assets %}"{{ a.symbol }}"{{ "," if not loop.last }}{% endfor %}]{{ "," if not loop.last }}
+      {% endfor %}
+    };
+    
+    // Update data-type attribute on asset options
+    var assetSelect = document.getElementById('asset-select');
+    var options = assetSelect.querySelectorAll('option.asset-option');
+    
+    options.forEach(function(opt) {
+      var symbol = opt.value;
+      var foundType = '*';
+      
+      for (var type in assets_by_type) {
+        if (assets_by_type[type].includes(symbol)) {
+          foundType = type;
+          break;
         }
-
-        activeFilter = filter;
-
-        // Filtrar filas por data-status
-        tableRows.forEach(function(row) {
-          row.style.display = row.dataset.status === filter ? '' : 'none';
-        });
-
-        // Destacar botón activo
-        filterBtns.forEach(function(b) {
-          b.style.opacity = b.dataset.filter === filter ? '1' : '0.35';
-        });
-      });
+      }
+      
+      opt.setAttribute('data-type', foundType);
     });
   });
 

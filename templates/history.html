@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial — Geo Newsletter</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,line-clamp,aspect-ratio"></script>
+</head>
+<body class="bg-slate-950 text-white font-sans">
+  
+  <div class="min-h-screen flex flex-col">
+    <!-- Navigation -->
+    <nav class="bg-slate-900 border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="flex items-center justify-between">
+          <a href="/" class="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
+            📍 Geo
+          </a>
+          <div class="flex items-center gap-4">
+            <a href="/" class="text-slate-400 hover:text-white transition">Inicio</a>
+            <a href="/auth/login" class="text-slate-400 hover:text-white transition">Acceder</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header -->
+        <div class="mb-8">
+          <h1 class="text-4xl font-bold mb-2">Historial de Alertas</h1>
+          <p class="text-slate-400">Todas las predicciones generadas por nuestro sistema de análisis</p>
+        </div>
+
+        <!-- Time Range Toggle -->
+        <div class="mb-6 flex gap-2 flex-wrap">
+          <a href="?days=7" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 7 else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+            Últimos 7 días
+          </a>
+          <a href="?days=30" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 30 else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+            Últimos 30 días
+          </a>
+          <a href="?days=all" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 'all' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+            Todo el historial
+          </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <p class="text-slate-400 text-sm mb-1">Total de alertas</p>
+            <p class="text-2xl font-bold">{{ total_alerts }}</p>
+          </div>
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <p class="text-slate-400 text-sm mb-1">Aciertos</p>
+            <p class="text-2xl font-bold text-emerald-400">{{ accuracy_stats.correct }}</p>
+          </div>
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <p class="text-slate-400 text-sm mb-1">Fallos</p>
+            <p class="text-2xl font-bold text-red-400">{{ accuracy_stats.incorrect }}</p>
+          </div>
+          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <p class="text-slate-400 text-sm mb-1">% Acierto</p>
+            <p class="text-2xl font-bold {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-red-400{% endif %}">
+              {% if accuracy_stats.total > 0 %}{{ accuracy_stats.accuracy_pct }}%{% else %}—{% endif %}
+            </p>
+          </div>
+        </div>
+
+        <!-- Alerts Table -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-900 border-b border-slate-700">
+                <tr>
+                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Activo</th>
+                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Dirección</th>
+                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Impacto</th>
+                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Confianza</th>
+                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Resultado</th>
+                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Fecha</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700">
+                {% if alerts %}
+                  {% for alert in alerts %}
+                  <tr class="hover:bg-slate-700/50 transition">
+                    <td class="px-4 py-3 font-semibold">{{ alert.asset }}</td>
+                    <td class="px-4 py-3">
+                      {% if alert.direction == 'up' %}
+                        <span class="text-emerald-400">📈 Alza</span>
+                      {% elif alert.direction == 'down' %}
+                        <span class="text-red-400">📉 Baja</span>
+                      {% else %}
+                        <span class="text-slate-400">↔️ Lateral</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                      {% if alert.impact_percent %}
+                        <span class="{% if alert.impact_percent > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                          {{ "%+.1f" | format(alert.impact_percent) }}%
+                        </span>
+                      {% else %}
+                        <span class="text-slate-500">—</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                      {% if alert.confidence %}
+                        <div class="flex items-center gap-2">
+                          <div class="w-12 bg-slate-700 rounded h-1.5">
+                            <div class="bg-emerald-500 h-1.5 rounded" style="width: {{ alert.confidence }}%"></div>
+                          </div>
+                          <span class="text-xs text-slate-400">{{ alert.confidence }}%</span>
+                        </div>
+                      {% else %}
+                        <span class="text-slate-500">—</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                      {% if alert.outcome == 'correct' %}
+                        <span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">✓ Correcta</span>
+                      {% elif alert.outcome == 'incorrect' %}
+                        <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-semibold">✗ Incorrecta</span>
+                      {% elif alert.outcome == 'pending' %}
+                        <span class="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-xs font-semibold">⏳ Pendiente</span>
+                      {% else %}
+                        <span class="text-slate-500">—</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-slate-400">
+                      {{ alert.predicted_at_madrid[:10] }} {{ alert.predicted_at_madrid[11:16] }}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-slate-400">
+                      No hay alertas en este período
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Footer CTA -->
+        <div class="mt-12 bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
+          <h2 class="text-2xl font-bold mb-2">¿Quieres recibir estas alertas?</h2>
+          <p class="text-slate-400 mb-6">Suscríbete y configura tus activos favoritos para recibir predicciones personalizadas</p>
+          <a href="/auth/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl transition inline-block">
+            Registrarse gratis
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 mt-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div>
+            <h3 class="text-white font-semibold mb-4">Producto</h3>
+            <ul class="space-y-2 text-slate-400 text-sm">
+              <li><a href="/" class="hover:text-white transition">Inicio</a></li>
+              <li><a href="/historial" class="hover:text-white transition">Historial</a></li>
+              <li><a href="/#pricing" class="hover:text-white transition">Precios</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold mb-4">Legal</h3>
+            <ul class="space-y-2 text-slate-400 text-sm">
+              <li><a href="/privacy" class="hover:text-white transition">Privacidad</a></li>
+              <li><a href="/terms" class="hover:text-white transition">Términos</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold mb-4">Contacto</h3>
+            <p class="text-slate-400 text-sm">
+              Email: <a href="mailto:info@geonewsletter.com" class="text-emerald-400 hover:text-emerald-300">info@geonewsletter.com</a>
+            </p>
+          </div>
+        </div>
+        <div class="border-t border-slate-700 pt-8 text-center text-slate-400 text-sm">
+          <p>&copy; 2024 Geo Newsletter. Todos los derechos reservados.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Convert UTC times to Madrid time
+    function toMadridTime(isoStr) {
+      if (!isoStr) return '';
+      const dt = new Date(isoStr + 'Z');
+      const opts = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Madrid' };
+      return dt.toLocaleString('es-ES', opts);
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('td:nth-child(6)').forEach(function(cell, idx) {
+        if (idx > 0) { // Skip header
+          const parts = cell.textContent.split(' ');
+          if (parts[0] && parts[1]) {
+            // Already formatted by backend, just ensure it shows correctly
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
