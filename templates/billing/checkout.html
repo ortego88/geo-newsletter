@@ -103,6 +103,12 @@
           </div>
         {% endif %}
 
+        {% if next_step == 'select_assets' %}
+          <div class="bg-slate-800 border border-emerald-500/20 rounded-xl p-4 mb-5 text-slate-200 text-sm">
+            <p class="font-semibold text-emerald-400">¡Casi listo, {{ current_user.name }}!</p>
+            <p class="mt-1">Añade tu método de pago y te llevaremos a la configuración para seleccionar tus activos favoritos.</p>
+          </div>
+        {% endif %}
         {% if has_payment_method %}
           <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-5 text-slate-300 text-sm">
             <p class="font-semibold text-emerald-400">✅ Ya tienes un método de pago guardado.</p>
@@ -114,6 +120,7 @@
           <input type="hidden" name="plan" value="{{ plan }}">
           <input type="hidden" name="billing_cycle" value="{{ billing_cycle }}">
           <input type="hidden" name="is_trial" value="{% if is_trial %}1{% else %}0{% endif %}">
+          <input type="hidden" name="next_step" value="{{ next_step or '' }}">
           <input type="hidden" name="stripe_token" id="stripe-token" value="">
 
           <div>

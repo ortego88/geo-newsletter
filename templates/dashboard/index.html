@@ -168,7 +168,8 @@
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
-              <option value="{{ a.symbol }}" data-type="{% if asset_type_filter %}{{ asset_type_filter }}{% else %}*{% endif %}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
+              {% set asset_type = 'crypto' if a.symbol in assets_by_type['crypto'] else 'ibex35' if a.symbol in assets_by_type['ibex35'] else 'etf' if a.symbol in assets_by_type['etf'] else '' %}
+              <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
           <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
@@ -189,29 +190,29 @@
                   <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_confidence">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_confidence">
                       Conf.{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_score">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_score">
                       Score{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_price_entry">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_price_entry">
                       Precio entrada{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&sort=price_at_validation&dir={% if sort_by == 'price_at_validation' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=price_at_validation&dir={% if sort_by == 'price_at_validation' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
                       Precio valid.{% if sort_by == 'price_at_validation' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Cambio real</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Resultado</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
                       Fecha{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
@@ -221,10 +222,10 @@
                 {% for pred in alerts %}
                   {% set outcome = pred.outcome or 'pending' %}
                   <tr class="hover:bg-slate-700/30 transition" data-status="{{ outcome }}" title="{{ (pred.reasoning or '')[:150] }}">
-                    <td class="px-3 py-3 text-slate-500">{{ pred.id }}</td>
+                    <td class="px-3 py-3 text-slate-500">{{ (page - 1) * per_page + loop.index }}</td>
                     <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
                     <td class="px-3 py-3 font-semibold text-white">
-                      <span data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
+                      <span title="{{ asset_names.get(pred.asset, pred.asset or '—') }}" data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
                     </td>
                     <td class="px-3 py-3 text-center">
                       {% set dir = pred.direction or 'neutral' %}
@@ -293,15 +294,15 @@
           {% if total_pages > 1 %}
           <div class="flex flex-wrap items-center justify-center gap-2 px-4 md:px-6 py-4 border-t border-slate-700">
             {% if page > 1 %}
-              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
             {% endif %}
             {% for p in range(1, total_pages + 1) %}
-              <a href="?page={{ p }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+              <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
             {% endfor %}
             {% if page < total_pages %}
-              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
             {% endif %}
           </div>
@@ -519,59 +520,27 @@
     var typeSelect = document.getElementById('asset-type-select');
     var assetSelect = document.getElementById('asset-select');
     var selectedType = typeSelect.value;
-    var currentAsset = assetSelect.value;
     var options = assetSelect.querySelectorAll('option.asset-option');
-    
-    // Show/hide options based on selected type
-    var hasVisibleOption = false;
+    var currentAsset = assetSelect.value;
+
     var firstVisibleValue = '';
-    
     options.forEach(function(opt) {
-      var optType = opt.getAttribute('data-type');
-      var isVisible = (selectedType === '' || optType === '*' || optType === selectedType);
+      var optType = opt.getAttribute('data-type') || '';
+      var isVisible = (selectedType === '' || optType === selectedType);
       opt.style.display = isVisible ? '' : 'none';
-      if (isVisible) {
-        hasVisibleOption = true;
-        if (!firstVisibleValue) firstVisibleValue = opt.value;
+      if (isVisible && !firstVisibleValue) {
+        firstVisibleValue = opt.value;
       }
     });
-    
-    // If current selection is not visible, select first visible
-    if (selectedType && !assetSelect.querySelector('option:checked').style.display !== 'none') {
-      assetSelect.value = firstVisibleValue || '';
+
+    var selectedOption = assetSelect.querySelector('option:checked');
+    if (selectedType && selectedOption && selectedOption.style.display === 'none') {
+      assetSelect.value = '';
     }
-    
-    // Auto-submit form
+
+    // Submit only when the user explicitly changes type, preserving the current asset filter if still valid
     document.querySelector('.filters-form').submit();
   }
-  
-  // Init asset type dropdown on page load
-  document.addEventListener('DOMContentLoaded', function() {
-    var assetTypeSelect = document.getElementById('asset-type-select');
-    var assets_by_type = {
-      {% for type, assets in assets_by_type.items() %}
-        "{{ type }}": [{% for a in assets %}"{{ a.symbol }}"{{ "," if not loop.last }}{% endfor %}]{{ "," if not loop.last }}
-      {% endfor %}
-    };
-    
-    // Update data-type attribute on asset options
-    var assetSelect = document.getElementById('asset-select');
-    var options = assetSelect.querySelectorAll('option.asset-option');
-    
-    options.forEach(function(opt) {
-      var symbol = opt.value;
-      var foundType = '*';
-      
-      for (var type in assets_by_type) {
-        if (assets_by_type[type].includes(symbol)) {
-          foundType = type;
-          break;
-        }
-      }
-      
-      opt.setAttribute('data-type', foundType);
-    });
-  });
 
 </script>
 

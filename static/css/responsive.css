@@ -24,6 +24,13 @@
         max-width: 100%;
     }
 
+    /* Give select arrows more breathing room */
+    select {
+        padding-right: 1rem;
+        background-position: right 0.85rem center;
+        background-repeat: no-repeat;
+    }
+
     /* Padding reducido en contenedores */
     .container-fluid {
         padding-left: 0.75rem;

@@ -52,6 +52,7 @@ def checkout_trial():
     plan = request.args.get("plan", "basic")
     if plan not in PLANS:
         plan = "basic"
+    next_step = request.args.get("next_step", "")
     trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
     has_payment_method = _get_user_payment_method(current_user.id) is not None
     return render_template(
@@ -63,6 +64,7 @@ def checkout_trial():
         stripe_pk=STRIPE_PUBLISHABLE_KEY,
         trial_end_date=trial_end_date,
         has_payment_method=has_payment_method,
+        next_step=next_step,
     )
 
 
@@ -83,19 +85,20 @@ def process_subscription():
     existing_payment = _get_user_payment_method(current_user.id)
     using_saved_card = False
 
+    next_step = request.form.get("next_step", "")
     if not card_number or not card_expiry or not card_cvc or not card_name:
         if existing_payment:
             using_saved_card = True
         else:
             flash("Por favor, introduce los datos de tu tarjeta para continuar.", "error")
             if is_trial:
-                return redirect(url_for("billing.checkout_trial", plan=plan))
+                return redirect(url_for("billing.checkout_trial", plan=plan, next_step=next_step))
             return redirect(url_for("billing.subscribe", plan=plan))
 
     if request.form.get("accept_terms") != "1":
         flash("Debes aceptar los Términos y Condiciones para continuar.", "error")
         if is_trial:
-            return redirect(url_for("billing.checkout_trial", plan=plan))
+            return redirect(url_for("billing.checkout_trial", plan=plan, next_step=next_step))
         return redirect(url_for("billing.subscribe", plan=plan))
 
     if plan not in PLANS:
@@ -163,6 +166,8 @@ def process_subscription():
         conn.commit()
 
     flash("✅ Suscripción activada correctamente", "success")
+    if next_step == "select_assets":
+        return redirect(url_for("dashboard_web.settings", next_step="select_assets"))
     return redirect(url_for("billing.success"))
 
 

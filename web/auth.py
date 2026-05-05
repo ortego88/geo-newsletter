@@ -64,11 +64,10 @@ def register():
         user = User.create(email, password, name, language=preferred_lang, plan=plan)
         login_user(user, remember=True)
         flash(
-            "Cuenta creada. Por favor, selecciona los activos que quieres monitorear.",
+            "Cuenta creada. Añade tus datos de pago y después selecciona los activos que quieres monitorear.",
             "info",
         )
-        # Redirect to settings to force asset configuration
-        return redirect(url_for("dashboard_web.settings", next_step="select_assets"))
+        return redirect(url_for("billing.checkout_trial", plan=plan, next_step="select_assets"))
     plan = request.args.get("plan", "basic")
     if plan not in PLANS:
         plan = "basic"
