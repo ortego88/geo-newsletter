@@ -9,23 +9,68 @@
 <body class="bg-slate-950 text-white font-sans">
   
   <div class="min-h-screen flex flex-col">
-    <!-- Navigation -->
-    <nav class="bg-slate-900 border-b border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex items-center justify-between">
-          <a href="/" class="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
-            📍 Geo
-          </a>
-          <div class="flex items-center gap-4">
-            <a href="/" class="text-slate-400 hover:text-white transition">Inicio</a>
-            <a href="/auth/login" class="text-slate-400 hover:text-white transition">Acceder</a>
+    <!-- NAV -->
+  <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+      <span class="text-emerald-400 font-bold text-lg md:text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
+      <!-- Desktop nav links -->
+      <div class="hidden md:flex items-center gap-4">
+        <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
+        <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
+        {% if current_user.is_authenticated %}
+          <a href="/historial" class="text-sm text-slate-300 hover:text-white transition">Historial</a>
+          <a href="/dashboard" class="text-sm text-slate-300 hover:text-white transition">👤 Área personal</a>
+          <button onclick="document.getElementById('logout-modal').classList.remove('hidden')"
+            class="text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
+        {% else %}
+          <a href="/login" class="text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+        {% endif %}
+        <!-- Language selector in nav -->
+        <div class="relative" id="lang-menu-wrapper">
+          <button onclick="toggleLangMenu()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="lang-btn">
+            <span id="lang-flag">🇪🇸</span>
+            <span id="lang-code" class="font-semibold uppercase">ES</span>
+            <span class="text-xs text-slate-600">▾</span>
+          </button>
+          <div id="lang-dropdown" class="hidden absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
+            <!-- items injected by JS -->
           </div>
         </div>
+        {% if not current_user.is_authenticated %}
+        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
+          Empezar gratis
+        </a>
+        {% endif %}
       </div>
-    </nav>
+      <!-- Mobile: CTA + hamburger -->
+      <div class="flex md:hidden items-center gap-3">
+        {% if not current_user.is_authenticated %}
+        <a href="#precios" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+          Empezar gratis
+        </a>
+        {% endif %}
+        <button id="mobile-nav-btn" onclick="toggleMobileNav()" class="p-1 text-slate-400 hover:text-white transition" aria-label="Abrir menú">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile dropdown menu -->
+    <div id="mobile-nav-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 py-3 space-y-1">
+      <a href="#precios" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.pricing">Precios</a>
+      <a href="#faq" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.faq">FAQ</a>
+      {% if current_user.is_authenticated %}
+        <a href="/historial" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" onclick="closeMobileNav()">Historial</a>
+        <a href="/dashboard" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" onclick="closeMobileNav()">👤 Área personal</a>
+        <button onclick="document.getElementById('logout-modal').classList.remove('hidden'); closeMobileNav()"
+          class="block w-full text-left py-2.5 text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
+      {% else %}
+        <a href="/login" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+      {% endif %}
+    </div>
+  </nav>
 
     <!-- Main Content -->
-    <div class="flex-1">
+    <div class="flex-1 pt-32">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <!-- Header -->
         <div class="mb-8">
@@ -33,12 +78,38 @@
           <p class="text-slate-400">Todas las predicciones generadas por nuestro sistema de análisis</p>
         </div>
 
+        <!-- Filters -->
+        <div class="mb-6 flex flex-wrap gap-4">
+          <form method="GET" class="flex flex-wrap gap-4" id="filters-form">
+            <div>
+              <label class="block text-sm text-slate-400 mb-1">Tipo de activo</label>
+              <select name="asset_type" class="bg-slate-800 border border-slate-600 rounded-lg pl-4 pr-8 py-2 text-white focus:outline-none focus:border-emerald-500" onchange="updateAssetOptions(); submitFilters();">
+                <option value="">Todos</option>
+                <option value="crypto" {{ 'selected' if asset_type_filter == 'crypto' else '' }}>Criptomonedas</option>
+                <option value="ibex35" {{ 'selected' if asset_type_filter == 'ibex35' else '' }}>IBEX 35</option>
+                <option value="etf" {{ 'selected' if asset_type_filter == 'etf' else '' }}>ETFs</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-slate-400 mb-1">Activo</label>
+              <select name="asset" class="bg-slate-800 border border-slate-600 rounded-lg pl-4 pr-8 py-2 text-white focus:outline-none focus:border-emerald-500" onchange="submitFilters();">
+                <option value="">Todos</option>
+                {% for symbol in asset_types.get(asset_type_filter, asset_types['crypto'] + asset_types['ibex35'] + asset_types['etf']) %}
+                  <option value="{{ symbol }}" {{ 'selected' if asset_filter == symbol else '' }}>{{ symbol }} - {{ asset_names.get(symbol, symbol) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <input type="hidden" name="days" value="{{ 'all' if time_range == 'all' else time_range }}">
+            <input type="hidden" name="page" value="1">
+          </form>
+        </div>
+
         <!-- Time Range Toggle -->
         <div class="mb-6 flex gap-2 flex-wrap">
-          <a href="?days=7" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 7 else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+          <a href="?days=7" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '7' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
             Últimos 7 días
           </a>
-          <a href="?days=30" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 30 else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+          <a href="?days=30" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '30' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
             Últimos 30 días
           </a>
           <a href="?days=all" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 'all' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
@@ -86,7 +157,7 @@
                 {% if alerts %}
                   {% for alert in alerts %}
                   <tr class="hover:bg-slate-700/50 transition">
-                    <td class="px-4 py-3 font-semibold">{{ alert.asset }}</td>
+                    <td class="px-4 py-3 font-semibold" title="{{ asset_names.get(alert.asset, alert.asset) }}">{{ alert.asset }}</td>
                     <td class="px-4 py-3">
                       {% if alert.direction == 'up' %}
                         <span class="text-emerald-400">📈 Alza</span>
@@ -145,12 +216,49 @@
           </div>
         </div>
 
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="mt-8 flex justify-center">
+          <div class="flex items-center gap-2">
+            {% if page > 1 %}
+              <a href="?days={{ 'all' if time_range == 'all' else time_range }}&page={{ page - 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">« Anterior</a>
+            {% endif %}
+            {% for p in range(max(1, page - 2), min(total_pages + 1, page + 3)) %}
+              <a href="?days={{ 'all' if time_range == 'all' else time_range }}&page={{ p }}" class="px-3 py-2 rounded-lg transition {{ 'bg-emerald-500 text-white' if p == page else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">{{ p }}</a>
+            {% endfor %}
+            {% if page < total_pages %}
+              <a href="?days={{ 'all' if time_range == 'all' else time_range }}&page={{ page + 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">Siguiente »</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
         <!-- Footer CTA -->
         <div class="mt-12 bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
           <h2 class="text-2xl font-bold mb-2">¿Quieres recibir estas alertas?</h2>
           <p class="text-slate-400 mb-6">Suscríbete y configura tus activos favoritos para recibir predicciones personalizadas</p>
           <a href="/auth/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl transition inline-block">
             Registrarse gratis
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-8">
+        <div class="text-center mb-6">
+          <div class="text-4xl mb-3">🚪</div>
+          <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
+          <p class="text-slate-400 text-sm">Se cerrará tu sesión actual y volverás a la página principal.</p>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
+            class="flex-1 border border-slate-600 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl transition">
+            Cancelar
+          </button>
+          <a href="/logout" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-4 py-3 rounded-xl transition text-center">
+            Cerrar sesión
           </a>
         </div>
       </div>
@@ -190,6 +298,60 @@
   </div>
 
   <script>
+    // Language menu
+    function toggleLangMenu() {
+      const menu = document.getElementById('lang-dropdown');
+      menu.classList.toggle('hidden');
+    }
+
+    // Mobile nav
+    function toggleMobileNav() {
+      const menu = document.getElementById('mobile-nav-menu');
+      menu.classList.toggle('hidden');
+    }
+
+    function closeMobileNav() {
+      document.getElementById('mobile-nav-menu').classList.add('hidden');
+    }
+
+    // Close menus on click outside
+    document.addEventListener('click', function(e) {
+      const langWrapper = document.getElementById('lang-menu-wrapper');
+      const langMenu = document.getElementById('lang-dropdown');
+      if (!langWrapper.contains(e.target)) {
+        langMenu.classList.add('hidden');
+      }
+    });
+
+    // Filters
+    function updateAssetOptions() {
+      const assetType = document.querySelector('select[name="asset_type"]').value;
+      const assetSelect = document.querySelector('select[name="asset"]');
+      const assetTypes = {{ asset_types | tojson }};
+      const assetNames = {{ asset_names | tojson }};
+      
+      // Clear options except "Todos"
+      assetSelect.innerHTML = '<option value="">Todos</option>';
+      
+      let options = [];
+      if (assetType && assetTypes[assetType]) {
+        options = assetTypes[assetType];
+      } else {
+        options = assetTypes['crypto'].concat(assetTypes['ibex35'], assetTypes['etf']);
+      }
+      
+      options.forEach(symbol => {
+        const option = document.createElement('option');
+        option.value = symbol;
+        option.textContent = `${symbol} - ${assetNames[symbol] || symbol}`;
+        assetSelect.appendChild(option);
+      });
+    }
+
+    function submitFilters() {
+      document.getElementById('filters-form').submit();
+    }
+
     // Convert UTC times to Madrid time
     function toMadridTime(isoStr) {
       if (!isoStr) return '';

@@ -1,11 +1,8 @@
 """
 web/app.py — Aplicación Flask principal con todos los blueprints.
 """
-import os
-import logging
-from flask import Flask, render_template, redirect, url_for, jsonify
-from flask_login import LoginManager
-from web.models import init_db, User, PLANS, get_conn
+from src.services.alert_formatter import ASSET_NAMES
+from web.models import init_db, User, PLANS, get_conn, AVAILABLE_ASSETS
 
 _logger = logging.getLogger(__name__)
 
@@ -71,7 +68,37 @@ def create_app():
         from web.db_engine import get_engine
 
         # Get time range from query param (7, 30, or all)
-        time_range = request.args.get('days', '7')
+        time_range_param = request.args.get('days', '7')
+        if time_range_param == 'all':
+            time_range = 'all'
+        else:
+            time_range = int(time_range_param)
+        
+        # Pagination
+        page = max(1, int(request.args.get('page', 1)))
+        per_page = 20
+        offset = (page - 1) * per_page
+        
+        # Filters
+        asset_type_filter = request.args.get('asset_type', '')
+        asset_filter = request.args.get('asset', '')
+        
+        # Define asset types
+        crypto_symbols = {a['symbol'] for a in AVAILABLE_ASSETS if a['symbol'] in ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'ADA', 'DOGE', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC', 'ATOM', 'XLM', 'ALGO', 'FIL', 'NEAR', 'ARB', 'OP']}
+        ibex35_symbols = {a['symbol'] for a in AVAILABLE_ASSETS if a['symbol'] in ['IBEX35', 'ACS', 'ACX', 'AENA', 'ALM', 'AMS', 'ANA', 'BBVA', 'BKT', 'CABK', 'CLNX', 'COL', 'ELE', 'ENG', 'FDR', 'FER', 'GRF', 'IAG', 'IBE', 'IDR', 'ITX', 'LOG', 'MAP', 'MEL', 'MRL', 'MTS', 'NTGY', 'PHM', 'RED', 'REP', 'ROVI', 'SAB', 'SAN', 'SGRE', 'TEF']}
+        etf_symbols = {a['symbol'] for a in AVAILABLE_ASSETS if a['symbol'] in ['SPY', 'QQQ', 'GLD', 'SLV', 'IWM', 'EEM', 'EWZ', 'VIX', 'ARKK', 'TLT', 'XLF', 'XLE']}
+        
+        asset_types = {
+            'crypto': list(crypto_symbols),
+            'ibex35': list(ibex35_symbols),
+            'etf': list(etf_symbols)
+        }
+        
+        # Filter assets based on type
+        if asset_type_filter and asset_type_filter in asset_types:
+            allowed_assets = asset_types[asset_type_filter]
+        else:
+            allowed_assets = crypto_symbols | ibex35_symbols | etf_symbols
         
         # Calculate cutoff date (exclude today)
         today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -106,16 +133,39 @@ def create_app():
         
         try:
             with get_engine("predictions").connect() as conn:
-                # Get all predictions in date range
+                # Build WHERE clause
+                where_parts = ["predicted_at >= :cutoff AND predicted_at < :end_date"]
+                params = {"cutoff": cutoff, "end_date": end_date}
+                
+                if asset_filter:
+                    where_parts.append("asset = :asset")
+                    params["asset"] = asset_filter
+                elif asset_type_filter and asset_type_filter in asset_types:
+                    allowed = asset_types[asset_type_filter]
+                    if allowed:
+                        placeholders = ",".join([f"'{a}'" for a in allowed])
+                        where_parts.append(f"asset IN ({placeholders})")
+                
+                where_clause = " AND ".join(where_parts)
+                
+                # Get total count
+                total_result = conn.execute(text(f"""
+                    SELECT COUNT(*) FROM predictions
+                    WHERE {where_clause}
+                """), params).fetchone()
+                total_alerts = total_result[0] if total_result else 0
+                total_pages = (total_alerts + per_page - 1) // per_page
+                
+                # Get paginated alerts
                 alerts_raw = conn.execute(text(f"""
                     SELECT id, asset, direction, impact_percent, confidence, 
                            price_at_prediction, price_at_validation, predicted_at,
                            validated_at, outcome, score, title
                     FROM predictions
-                    WHERE predicted_at >= :cutoff AND predicted_at < :end_date
+                    WHERE {where_clause}
                     ORDER BY predicted_at DESC
-                    LIMIT 1000
-                """), {"cutoff": cutoff, "end_date": end_date}).mappings().fetchall()
+                    LIMIT :limit OFFSET :offset
+                """), {**params, "limit": per_page, "offset": offset}).mappings().fetchall()
                 
                 # Process alerts with Madrid time
                 for row in alerts_raw:
@@ -123,8 +173,6 @@ def create_app():
                     d["predicted_at_madrid"] = to_madrid_time(d.get("predicted_at", ""))
                     d["validated_at_madrid"] = to_madrid_time(d.get("validated_at", ""))
                     alerts.append(d)
-                
-                total_alerts = len(alerts)
                 
                 # Calculate accuracy stats for displayed alerts
                 outcomes = conn.execute(text(f"""
@@ -156,7 +204,13 @@ def create_app():
             total_alerts=total_alerts,
             accuracy_stats=accuracy_stats,
             time_range=time_range,
-            plans=PLANS
+            plans=PLANS,
+            asset_names=ASSET_NAMES,
+            page=page,
+            total_pages=total_pages,
+            asset_type_filter=asset_type_filter,
+            asset_filter=asset_filter,
+            asset_types=asset_types
         )
 
     @main_bp.route("/api/simulate", methods=["POST"])

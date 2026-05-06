@@ -265,10 +265,10 @@ def settings():
                 conn.commit()
             flash("Configuración guardada", "success")
             
-            # If user came from registration, redirect to checkout next
+            # If user came from registration, redirect to dashboard
             next_step = request.args.get("next_step", "")
             if next_step == "select_assets":
-                return redirect(url_for("billing.checkout_trial", plan=sub["plan"]))
+                return redirect(url_for("dashboard_web.index"))
             
             return redirect(url_for("dashboard_web.settings"))
 
