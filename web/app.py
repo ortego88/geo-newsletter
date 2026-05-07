@@ -1,6 +1,7 @@
 """
 web/app.py — Aplicación Flask principal con todos los blueprints.
 """
+import logging
 from src.services.alert_formatter import ASSET_NAMES
 from web.models import init_db, User, PLANS, get_conn, AVAILABLE_ASSETS
 
