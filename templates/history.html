@@ -3,20 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Historial — Geo Newsletter</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,line-clamp,aspect-ratio"></script>
+  <title>Historial — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-white font-sans">
-  
-  <div class="min-h-screen flex flex-col">
-    <!-- NAV -->
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  <!-- NAV — same as landing.html -->
   <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
     <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
       <span class="text-emerald-400 font-bold text-lg md:text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
       <!-- Desktop nav links -->
       <div class="hidden md:flex items-center gap-4">
-        <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
-        <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
+        <a href="/#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
+        <a href="/#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
         {% if current_user.is_authenticated %}
           <a href="/historial" class="text-sm text-slate-300 hover:text-white transition">Historial</a>
           <a href="/dashboard" class="text-sm text-slate-300 hover:text-white transition">👤 Área personal</a>
@@ -37,7 +36,7 @@
           </div>
         </div>
         {% if not current_user.is_authenticated %}
-        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
           Empezar gratis
         </a>
         {% endif %}
@@ -45,7 +44,7 @@
       <!-- Mobile: CTA + hamburger -->
       <div class="flex md:hidden items-center gap-3">
         {% if not current_user.is_authenticated %}
-        <a href="#precios" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+        <a href="/register" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
           Empezar gratis
         </a>
         {% endif %}
@@ -56,8 +55,8 @@
     </div>
     <!-- Mobile dropdown menu -->
     <div id="mobile-nav-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 py-3 space-y-1">
-      <a href="#precios" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.pricing">Precios</a>
-      <a href="#faq" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.faq">FAQ</a>
+      <a href="/#precios" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.pricing">Precios</a>
+      <a href="/#faq" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.faq">FAQ</a>
       {% if current_user.is_authenticated %}
         <a href="/historial" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" onclick="closeMobileNav()">Historial</a>
         <a href="/dashboard" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" onclick="closeMobileNav()">👤 Área personal</a>
@@ -69,232 +68,210 @@
     </div>
   </nav>
 
-    <!-- Main Content -->
-    <div class="flex-1 pt-32">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Header -->
-        <div class="mb-8">
-          <h1 class="text-4xl font-bold mb-2">Historial de Alertas</h1>
-          <p class="text-slate-400">Todas las predicciones generadas por nuestro sistema de análisis</p>
-        </div>
+  <main class="pt-32 py-16 px-6">
+    <div class="max-w-6xl mx-auto">
 
-        <!-- Filters -->
-        <div class="mb-6 flex flex-wrap gap-4">
-          <form method="GET" class="flex flex-wrap gap-4" id="filters-form">
-            <div>
-              <label class="block text-sm text-slate-400 mb-1">Tipo de activo</label>
-              <select name="asset_type" class="bg-slate-800 border border-slate-600 rounded-lg pl-4 pr-8 py-2 text-white focus:outline-none focus:border-emerald-500" onchange="updateAssetOptions(); submitFilters();">
-                <option value="">Todos</option>
-                <option value="crypto" {{ 'selected' if asset_type_filter == 'crypto' else '' }}>Criptomonedas</option>
-                <option value="ibex35" {{ 'selected' if asset_type_filter == 'ibex35' else '' }}>IBEX 35</option>
-                <option value="etf" {{ 'selected' if asset_type_filter == 'etf' else '' }}>ETFs</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm text-slate-400 mb-1">Activo</label>
-              <select name="asset" class="bg-slate-800 border border-slate-600 rounded-lg pl-4 pr-8 py-2 text-white focus:outline-none focus:border-emerald-500" onchange="submitFilters();">
-                <option value="">Todos</option>
-                {% for symbol in asset_types.get(asset_type_filter, asset_types['crypto'] + asset_types['ibex35'] + asset_types['etf']) %}
-                  <option value="{{ symbol }}" {{ 'selected' if asset_filter == symbol else '' }}>{{ symbol }} - {{ asset_names.get(symbol, symbol) }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <input type="hidden" name="days" value="{{ 'all' if time_range == 'all' else time_range }}">
-            <input type="hidden" name="page" value="1">
-          </form>
-        </div>
+      <div class="mb-8">
+        <h1 class="text-4xl font-extrabold text-white mb-2">Historial de Alertas</h1>
+        <p class="text-slate-400">Todas las predicciones generadas por nuestro sistema de análisis</p>
+      </div>
 
-        <!-- Time Range Toggle -->
-        <div class="mb-6 flex gap-2 flex-wrap">
-          <a href="?days=7" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '7' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
-            Últimos 7 días
-          </a>
-          <a href="?days=30" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '30' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
-            Últimos 30 días
-          </a>
-          <a href="?days=all" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 'all' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
-            Todo el historial
-          </a>
-        </div>
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="mb-6 p-4 rounded-xl text-sm
+            {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+            {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+            {% else %}bg-blue-500/10 border border-blue-500/30 text-blue-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
 
-        <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p class="text-slate-400 text-sm mb-1">Total de alertas</p>
-            <p class="text-2xl font-bold">{{ total_alerts }}</p>
-          </div>
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p class="text-slate-400 text-sm mb-1">Aciertos</p>
-            <p class="text-2xl font-bold text-emerald-400">{{ accuracy_stats.correct }}</p>
-          </div>
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p class="text-slate-400 text-sm mb-1">Fallos</p>
-            <p class="text-2xl font-bold text-red-400">{{ accuracy_stats.incorrect }}</p>
-          </div>
-          <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p class="text-slate-400 text-sm mb-1">% Acierto</p>
-            <p class="text-2xl font-bold {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-red-400{% endif %}">
-              {% if accuracy_stats.total > 0 %}{{ accuracy_stats.accuracy_pct }}%{% else %}—{% endif %}
-            </p>
-          </div>
-        </div>
+      <!-- Time Range Toggle -->
+      <div class="mb-6 flex gap-2 flex-wrap">
+        <a href="?days=7" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '7' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+          Últimos 7 días
+        </a>
+        <a href="?days=30" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '30' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+          Últimos 30 días
+        </a>
+        <a href="?days=all" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 'all' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
+          Todo el historial
+        </a>
+      </div>
 
-        <!-- Alerts Table -->
-        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="bg-slate-900 border-b border-slate-700">
-                <tr>
-                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Activo</th>
-                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Dirección</th>
-                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Impacto</th>
-                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Confianza</th>
-                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Resultado</th>
-                  <th class="px-4 py-3 text-left font-semibold text-slate-300">Fecha</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-700">
-                {% if alerts %}
-                  {% for alert in alerts %}
-                  <tr class="hover:bg-slate-700/50 transition">
-                    <td class="px-4 py-3 font-semibold" title="{{ asset_names.get(alert.asset, alert.asset) }}">{{ alert.asset }}</td>
-                    <td class="px-4 py-3">
-                      {% if alert.direction == 'up' %}
-                        <span class="text-emerald-400">📈 Alza</span>
-                      {% elif alert.direction == 'down' %}
-                        <span class="text-red-400">📉 Baja</span>
-                      {% else %}
-                        <span class="text-slate-400">↔️ Lateral</span>
-                      {% endif %}
-                    </td>
-                    <td class="px-4 py-3">
-                      {% if alert.impact_percent %}
-                        <span class="{% if alert.impact_percent > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
-                          {{ "%+.1f" | format(alert.impact_percent) }}%
-                        </span>
-                      {% else %}
-                        <span class="text-slate-500">—</span>
-                      {% endif %}
-                    </td>
-                    <td class="px-4 py-3">
-                      {% if alert.confidence %}
-                        <div class="flex items-center gap-2">
-                          <div class="w-12 bg-slate-700 rounded h-1.5">
-                            <div class="bg-emerald-500 h-1.5 rounded" style="width: {{ alert.confidence }}%"></div>
-                          </div>
-                          <span class="text-xs text-slate-400">{{ alert.confidence }}%</span>
+      <!-- Filters -->
+      <div class="mb-6 flex flex-wrap gap-4 bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <form method="GET" class="flex flex-wrap gap-4 w-full" id="filters-form">
+          <div class="flex-1 min-w-48">
+            <label class="block text-xs text-slate-400 mb-2 uppercase font-semibold">Tipo de activo</label>
+            <select name="asset_type" class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-4 pr-10 py-2 text-white focus:outline-none focus:border-emerald-500 appearance-none" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2712%27 height=%2712%27 viewBox=%220 0 12 12%22><path fill=%22%2394a3b8%22 d=%22M6 9L1 4h10z%22/></svg>'); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem;" onchange="updateAssetOptions(); submitFilters();">
+              <option value="">Todos</option>
+              <option value="crypto" {{ 'selected' if asset_type_filter == 'crypto' else '' }}>Criptomonedas</option>
+              <option value="ibex35" {{ 'selected' if asset_type_filter == 'ibex35' else '' }}>IBEX 35</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-48">
+            <label class="block text-xs text-slate-400 mb-2 uppercase font-semibold">Activo</label>
+            <select name="asset" class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-4 pr-10 py-2 text-white focus:outline-none focus:border-emerald-500 appearance-none" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2712%27 height=%2712%27 viewBox=%220 0 12 12%22><path fill=%22%2394a3b8%22 d=%22M6 9L1 4h10z%22/></svg>'); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem;" onchange="submitFilters();">
+              <option value="">Todos</option>
+              {% for symbol in asset_types.get(asset_type_filter, asset_types['crypto'] + asset_types['ibex35']) %}
+                <option value="{{ symbol }}" {{ 'selected' if asset_filter == symbol else '' }}>{{ symbol }} - {{ asset_names.get(symbol, symbol) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <input type="hidden" name="days" value="{{ 'all' if time_range == 'all' else time_range }}">
+          <input type="hidden" name="page" value="1">
+        </form>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <p class="text-slate-400 text-sm mb-1">Total de alertas</p>
+          <p class="text-2xl font-bold">{{ total_alerts }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <p class="text-slate-400 text-sm mb-1">Aciertos</p>
+          <p class="text-2xl font-bold text-emerald-400">{{ accuracy_stats.correct }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <p class="text-slate-400 text-sm mb-1">Fallos</p>
+          <p class="text-2xl font-bold text-red-400">{{ accuracy_stats.incorrect }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
+          <p class="text-slate-400 text-sm mb-1">% Acierto</p>
+          <p class="text-2xl font-bold {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-red-400{% endif %}">
+            {% if accuracy_stats.total > 0 %}{{ accuracy_stats.accuracy_pct }}%{% else %}—{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Alerts Table -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-900 border-b border-slate-700">
+              <tr>
+                <th class="px-4 py-3 text-left font-semibold text-slate-300">Activo</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-300">Dirección</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-300">Impacto</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-300">Confianza</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-300">Resultado</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-300">Fecha</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700">
+              {% if alerts %}
+                {% for alert in alerts %}
+                <tr class="hover:bg-slate-700/50 transition">
+                  <td class="px-4 py-3 font-semibold" title="{{ asset_names.get(alert.asset, alert.asset) }}">{{ alert.asset }}</td>
+                  <td class="px-4 py-3">
+                    {% if alert.direction == 'up' %}
+                      <span class="text-emerald-400">📈 Alza</span>
+                    {% elif alert.direction == 'down' %}
+                      <span class="text-red-400">📉 Baja</span>
+                    {% else %}
+                      <span class="text-slate-400">↔️ Lateral</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3">
+                    {% if alert.impact_percent %}
+                      <span class="{% if alert.impact_percent > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
+                        {{ "%+.1f" | format(alert.impact_percent) }}%
+                      </span>
+                    {% else %}
+                      <span class="text-slate-500">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3">
+                    {% if alert.confidence %}
+                      <div class="flex items-center gap-2">
+                        <div class="w-12 bg-slate-700 rounded h-1.5">
+                          <div class="bg-emerald-500 h-1.5 rounded" style="width: {{ alert.confidence }}%"></div>
                         </div>
-                      {% else %}
-                        <span class="text-slate-500">—</span>
-                      {% endif %}
-                    </td>
-                    <td class="px-4 py-3">
-                      {% if alert.outcome == 'correct' %}
-                        <span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">✓ Correcta</span>
-                      {% elif alert.outcome == 'incorrect' %}
-                        <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-semibold">✗ Incorrecta</span>
-                      {% elif alert.outcome == 'pending' %}
-                        <span class="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-xs font-semibold">⏳ Pendiente</span>
-                      {% else %}
-                        <span class="text-slate-500">—</span>
-                      {% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-slate-400">
-                      {{ alert.predicted_at_madrid[:10] }} {{ alert.predicted_at_madrid[11:16] }}
-                    </td>
-                  </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-slate-400">
-                      No hay alertas en este período
-                    </td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
+                        <span class="text-xs text-slate-400">{{ alert.confidence }}%</span>
+                      </div>
+                    {% else %}
+                      <span class="text-slate-500">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3">
+                    {% if alert.outcome == 'correct' %}
+                      <span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">✓ Correcta</span>
+                    {% elif alert.outcome == 'incorrect' %}
+                      <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-semibold">✗ Incorrecta</span>
+                    {% elif alert.outcome == 'pending' %}
+                      <span class="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-xs font-semibold">⏳ Pendiente</span>
+                    {% else %}
+                      <span class="text-slate-500">—</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3 text-slate-400">
+                    {{ alert.predicted_at_madrid[:10] }} {{ alert.predicted_at_madrid[11:16] }}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" class="px-4 py-8 text-center text-slate-400">
+                    No hay alertas en este período
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        <!-- Pagination -->
-        {% if total_pages > 1 %}
-        <div class="mt-8 flex justify-center">
-          <div class="flex items-center gap-2">
-            {% if page > 1 %}
-              <a href="?days={{ 'all' if time_range == 'all' else time_range }}&page={{ page - 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">« Anterior</a>
-            {% endif %}
-            {% for p in range(max(1, page - 2), min(total_pages + 1, page + 3)) %}
-              <a href="?days={{ 'all' if time_range == 'all' else time_range }}&page={{ p }}" class="px-3 py-2 rounded-lg transition {{ 'bg-emerald-500 text-white' if p == page else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">{{ p }}</a>
-            {% endfor %}
-            {% if page < total_pages %}
-              <a href="?days={{ 'all' if time_range == 'all' else time_range }}&page={{ page + 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">Siguiente »</a>
-            {% endif %}
-          </div>
+      <!-- Pagination -->
+      {% if total_pages > 1 %}
+      <div class="mt-8 flex justify-center">
+        <div class="flex items-center gap-2">
+          {% if page > 1 %}
+            <a href="?days={{ 'all' if time_range == 'all' else time_range }}&asset_type={{ asset_type_filter }}&asset={{ asset_filter }}&page={{ page - 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">« Anterior</a>
+          {% endif %}
+          {% for p in range(max(1, page - 2), min(total_pages + 1, page + 3)) %}
+            <a href="?days={{ 'all' if time_range == 'all' else time_range }}&asset_type={{ asset_type_filter }}&asset={{ asset_filter }}&page={{ p }}" class="px-3 py-2 rounded-lg transition {{ 'bg-emerald-500 text-white' if p == page else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">{{ p }}</a>
+          {% endfor %}
+          {% if page < total_pages %}
+            <a href="?days={{ 'all' if time_range == 'all' else time_range }}&asset_type={{ asset_type_filter }}&asset={{ asset_filter }}&page={{ page + 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">Siguiente »</a>
+          {% endif %}
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
 
-        <!-- Footer CTA -->
-        <div class="mt-12 bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
-          <h2 class="text-2xl font-bold mb-2">¿Quieres recibir estas alertas?</h2>
-          <p class="text-slate-400 mb-6">Suscríbete y configura tus activos favoritos para recibir predicciones personalizadas</p>
-          <a href="/auth/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl transition inline-block">
-            Registrarse gratis
-          </a>
-        </div>
+      <!-- Footer CTA -->
+      <div class="mt-12 bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
+        <h2 class="text-2xl font-bold mb-2">¿Quieres recibir estas alertas?</h2>
+        <p class="text-slate-400 mb-6">Suscríbete y configura tus activos favoritos para recibir predicciones personalizadas</p>
+        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl transition inline-block">
+          Registrarse gratis
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Logout Modal -->
+  <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-8">
+      <div class="text-center mb-6">
+        <div class="text-4xl mb-3">🚪</div>
+        <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
+        <p class="text-slate-400 text-sm">Se cerrará tu sesión actual y volverás a la página principal.</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
+          class="flex-1 border border-slate-600 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl transition">
+          Cancelar
+        </button>
+        <a href="/logout" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-4 py-3 rounded-xl transition text-center">
+          Cerrar sesión
+        </a>
       </div>
     </div>
-
-    <!-- Logout Modal -->
-    <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-8">
-        <div class="text-center mb-6">
-          <div class="text-4xl mb-3">🚪</div>
-          <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
-          <p class="text-slate-400 text-sm">Se cerrará tu sesión actual y volverás a la página principal.</p>
-        </div>
-        <div class="flex gap-3">
-          <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
-            class="flex-1 border border-slate-600 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl transition">
-            Cancelar
-          </button>
-          <a href="/logout" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-4 py-3 rounded-xl transition text-center">
-            Cerrar sesión
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-slate-800 mt-12">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <div>
-            <h3 class="text-white font-semibold mb-4">Producto</h3>
-            <ul class="space-y-2 text-slate-400 text-sm">
-              <li><a href="/" class="hover:text-white transition">Inicio</a></li>
-              <li><a href="/historial" class="hover:text-white transition">Historial</a></li>
-              <li><a href="/#pricing" class="hover:text-white transition">Precios</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="text-white font-semibold mb-4">Legal</h3>
-            <ul class="space-y-2 text-slate-400 text-sm">
-              <li><a href="/privacy" class="hover:text-white transition">Privacidad</a></li>
-              <li><a href="/terms" class="hover:text-white transition">Términos</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3 class="text-white font-semibold mb-4">Contacto</h3>
-            <p class="text-slate-400 text-sm">
-              Email: <a href="mailto:info@geonewsletter.com" class="text-emerald-400 hover:text-emerald-300">info@geonewsletter.com</a>
-            </p>
-          </div>
-        </div>
-        <div class="border-t border-slate-700 pt-8 text-center text-slate-400 text-sm">
-          <p>&copy; 2024 Geo Newsletter. Todos los derechos reservados.</p>
-        </div>
-      </div>
-    </footer>
   </div>
 
   <script>
@@ -337,7 +314,7 @@
       if (assetType && assetTypes[assetType]) {
         options = assetTypes[assetType];
       } else {
-        options = assetTypes['crypto'].concat(assetTypes['ibex35'], assetTypes['etf']);
+        options = assetTypes['crypto'].concat(assetTypes['ibex35']);
       }
       
       options.forEach(symbol => {
@@ -351,25 +328,6 @@
     function submitFilters() {
       document.getElementById('filters-form').submit();
     }
-
-    // Convert UTC times to Madrid time
-    function toMadridTime(isoStr) {
-      if (!isoStr) return '';
-      const dt = new Date(isoStr + 'Z');
-      const opts = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Madrid' };
-      return dt.toLocaleString('es-ES', opts);
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('td:nth-child(6)').forEach(function(cell, idx) {
-        if (idx > 0) { // Skip header
-          const parts = cell.textContent.split(' ');
-          if (parts[0] && parts[1]) {
-            // Already formatted by backend, just ensure it shows correctly
-          }
-        }
-      });
-    });
   </script>
 </body>
 </html>

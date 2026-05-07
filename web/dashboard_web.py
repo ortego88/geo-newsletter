@@ -325,3 +325,119 @@ def set_language():
         conn.execute(text("UPDATE users SET language=:lang WHERE id=:uid"), {"lang": lang, "uid": current_user.id})
         conn.commit()
     return jsonify({"ok": True, "language": lang})
+
+
+@dashboard_bp.route("/historial")
+def history():
+    """Public history page showing all predictions."""
+    # Pagination & filters
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 20
+    offset = (page - 1) * per_page
+    asset_filter = request.args.get("asset", "")
+    asset_type_filter = request.args.get("asset_type", "")
+    days_param = request.args.get("days", "all")
+    time_range = days_param if days_param in ("7", "30", "all") else "all"
+    
+    # Get alerts from predictions DB (all predictions, no user filter)
+    alerts = []
+    total_alerts = 0
+    total_pages = 1
+    accuracy_stats = {"correct": 0, "incorrect": 0, "pending": 0, "total": 0, "accuracy_pct": 0}
+    
+    try:
+        cutoff_days = {"7": 7, "30": 30, "all": 9999}.get(time_range, 9999)
+        cutoff = (datetime.utcnow() - timedelta(days=cutoff_days)).isoformat()
+        
+        with _get_predictions_conn() as conn2:
+            where = "WHERE predicted_at >= :cutoff"
+            extra_params: dict = {"cutoff": cutoff}
+            
+            # Filter by asset type if no specific asset selected
+            if asset_type_filter and not asset_filter:
+                from src.services.market_config import get_assets_by_type
+                type_assets = get_assets_by_type(asset_type_filter)
+                if type_assets:
+                    asset_list = ",".join([f"'{a}'" for a in type_assets])
+                    where += f" AND asset IN ({asset_list})"
+            
+            # Additional asset filter (specific asset)
+            if asset_filter:
+                where += " AND asset = :asset"
+                extra_params["asset"] = asset_filter
+
+            # Count total
+            total_alerts = conn2.execute(
+                text(f"SELECT COUNT(*) FROM predictions {where}"), extra_params
+            ).fetchone()[0]
+            total_pages = max(1, (total_alerts + per_page - 1) // per_page)
+
+            # Get accuracy stats
+            outcome_counts = conn2.execute(
+                text(f"SELECT outcome, COUNT(*) as cnt FROM predictions {where} GROUP BY outcome"),
+                extra_params
+            ).mappings().fetchall()
+            for row in outcome_counts:
+                if row["outcome"] == "correct":
+                    accuracy_stats["correct"] = row["cnt"]
+                elif row["outcome"] == "incorrect":
+                    accuracy_stats["incorrect"] = row["cnt"]
+                elif row["outcome"] == "pending":
+                    accuracy_stats["pending"] = row["cnt"]
+            
+            accuracy_stats["total"] = accuracy_stats["correct"] + accuracy_stats["incorrect"]
+            if accuracy_stats["total"] > 0:
+                accuracy_stats["accuracy_pct"] = round(100 * accuracy_stats["correct"] / accuracy_stats["total"])
+
+            # Fetch paginated results
+            alerts_raw = conn2.execute(
+                text(f"""SELECT id, asset, direction, impact_percent, confidence, outcome, predicted_at
+                    FROM predictions {where}
+                    ORDER BY predicted_at DESC
+                    LIMIT :limit OFFSET :offset"""),
+                {**extra_params, "limit": per_page, "offset": offset},
+            ).mappings().fetchall()
+    except Exception:
+        _logger.warning("Could not load history predictions", exc_info=True)
+        alerts_raw = []
+
+    # Convert to dicts with Madrid time
+    for row in alerts_raw:
+        try:
+            dt = datetime.fromisoformat(row["predicted_at"].replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=pytz.utc)
+            madrid_time = dt.astimezone(_MADRID_TZ).isoformat()
+        except:
+            madrid_time = row["predicted_at"]
+        
+        alerts.append({
+            "asset": row["asset"],
+            "direction": row["direction"],
+            "impact_percent": row["impact_percent"],
+            "confidence": row["confidence"],
+            "outcome": row["outcome"],
+            "predicted_at_madrid": madrid_time,
+        })
+
+    # Build asset type mapping
+    from src.services.market_config import get_asset_type, get_assets_by_type
+    asset_types = {
+        "crypto": get_assets_by_type("crypto"),
+        "ibex35": get_assets_by_type("ibex35"),
+    }
+    
+    return render_template(
+        "history.html",
+        alerts=alerts,
+        accuracy_stats=accuracy_stats,
+        page=page,
+        total_pages=total_pages,
+        total_alerts=total_alerts,
+        asset_filter=asset_filter,
+        asset_type_filter=asset_type_filter,
+        time_range=time_range,
+        asset_types=asset_types,
+        asset_names=ASSET_NAMES,
+    )
+

@@ -83,15 +83,13 @@ def create_app():
         asset_type_filter = request.args.get('asset_type', '')
         asset_filter = request.args.get('asset', '')
         
-        # Define asset types
+        # Define asset types - only crypto and ibex35 (ETFs removed)
         crypto_symbols = {a['symbol'] for a in AVAILABLE_ASSETS if a['symbol'] in ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'ADA', 'DOGE', 'DOT', 'AVAX', 'MATIC', 'LINK', 'UNI', 'LTC', 'ATOM', 'XLM', 'ALGO', 'FIL', 'NEAR', 'ARB', 'OP']}
         ibex35_symbols = {a['symbol'] for a in AVAILABLE_ASSETS if a['symbol'] in ['IBEX35', 'ACS', 'ACX', 'AENA', 'ALM', 'AMS', 'ANA', 'BBVA', 'BKT', 'CABK', 'CLNX', 'COL', 'ELE', 'ENG', 'FDR', 'FER', 'GRF', 'IAG', 'IBE', 'IDR', 'ITX', 'LOG', 'MAP', 'MEL', 'MRL', 'MTS', 'NTGY', 'PHM', 'RED', 'REP', 'ROVI', 'SAB', 'SAN', 'SGRE', 'TEF']}
-        etf_symbols = {a['symbol'] for a in AVAILABLE_ASSETS if a['symbol'] in ['SPY', 'QQQ', 'GLD', 'SLV', 'IWM', 'EEM', 'EWZ', 'VIX', 'ARKK', 'TLT', 'XLF', 'XLE']}
         
         asset_types = {
             'crypto': list(crypto_symbols),
-            'ibex35': list(ibex35_symbols),
-            'etf': list(etf_symbols)
+            'ibex35': list(ibex35_symbols)
         }
         
         # Filter assets based on type
