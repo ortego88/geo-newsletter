@@ -306,6 +306,7 @@
       const assetSelect = document.querySelector('select[name="asset"]');
       const assetTypes = {{ asset_types | tojson }};
       const assetNames = {{ asset_names | tojson }};
+      const currentAsset = assetSelect.value;
       
       // Clear options except "Todos"
       assetSelect.innerHTML = '<option value="">Todos</option>';
@@ -321,6 +322,9 @@
         const option = document.createElement('option');
         option.value = symbol;
         option.textContent = `${symbol} - ${assetNames[symbol] || symbol}`;
+        if (symbol === currentAsset) {
+          option.selected = true;
+        }
         assetSelect.appendChild(option);
       });
     }
@@ -328,6 +332,10 @@
     function submitFilters() {
       document.getElementById('filters-form').submit();
     }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      updateAssetOptions();
+    });
   </script>
 </body>
 </html>

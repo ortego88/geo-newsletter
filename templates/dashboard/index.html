@@ -33,7 +33,7 @@
     </div>
 
     <nav class="flex-1 px-4 py-6 space-y-1">
-      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-white font-medium text-sm">
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-slate-300 font-medium text-sm">
         <span>📊</span> <span data-i18n="dash.dashboard">Dashboard</span>
       </a>
       <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
@@ -516,31 +516,52 @@
   }
 
   // ── Asset type filtering (cascading dropdowns) ─────────────────────────────
-  function updateAssetDropdown() {
+  function initializeAssetOptions() {
+    var assetSelect = document.getElementById('asset-select');
+    var assetOptions = Array.from(assetSelect.querySelectorAll('option.asset-option')).map(function(opt) {
+      return {
+        value: opt.value,
+        text: opt.textContent,
+        type: opt.getAttribute('data-type') || '',
+        selected: opt.selected
+      };
+    });
+    assetSelect._allOptions = assetOptions;
+    updateAssetDropdown(false);
+  }
+
+  function updateAssetDropdown(shouldSubmit = true) {
     var typeSelect = document.getElementById('asset-type-select');
     var assetSelect = document.getElementById('asset-select');
     var selectedType = typeSelect.value;
-    var options = assetSelect.querySelectorAll('option.asset-option');
     var currentAsset = assetSelect.value;
 
-    var firstVisibleValue = '';
-    options.forEach(function(opt) {
-      var optType = opt.getAttribute('data-type') || '';
-      var isVisible = (selectedType === '' || optType === selectedType);
-      opt.style.display = isVisible ? '' : 'none';
-      if (isVisible && !firstVisibleValue) {
-        firstVisibleValue = opt.value;
+    assetSelect.innerHTML = '<option value="">Todos los activos</option>';
+    assetSelect._allOptions.forEach(function(optData) {
+      if (!selectedType || optData.type === selectedType) {
+        var option = document.createElement('option');
+        option.value = optData.value;
+        option.textContent = optData.text;
+        option.setAttribute('data-type', optData.type);
+        if (optData.value === currentAsset) {
+          option.selected = true;
+        }
+        assetSelect.appendChild(option);
       }
     });
 
-    var selectedOption = assetSelect.querySelector('option:checked');
-    if (selectedType && selectedOption && selectedOption.style.display === 'none') {
+    if (selectedType && assetSelect.value === currentAsset && !assetSelect.querySelector('option[value="' + currentAsset + '"]')) {
       assetSelect.value = '';
     }
 
-    // Submit only when the user explicitly changes type, preserving the current asset filter if still valid
-    document.querySelector('.filters-form').submit();
+    if (shouldSubmit) {
+      document.querySelector('.filters-form').submit();
+    }
   }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    initializeAssetOptions();
+  });
 
 </script>
 
