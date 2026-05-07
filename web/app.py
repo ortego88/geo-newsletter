@@ -2,6 +2,9 @@
 web/app.py — Aplicación Flask principal con todos los blueprints.
 """
 import logging
+import os
+from flask import Flask, render_template, jsonify
+from flask_login import LoginManager
 from src.services.alert_formatter import ASSET_NAMES
 from web.models import init_db, User, PLANS, get_conn, AVAILABLE_ASSETS
 
@@ -70,10 +73,7 @@ def create_app():
 
         # Get time range from query param (7, 30, or all)
         time_range_param = request.args.get('days', '7')
-        if time_range_param == 'all':
-            time_range = 'all'
-        else:
-            time_range = int(time_range_param)
+        time_range = time_range_param if time_range_param in ('7', '30', 'all') else '7'
         
         # Pagination
         page = max(1, int(request.args.get('page', 1)))
@@ -97,7 +97,7 @@ def create_app():
         if asset_type_filter and asset_type_filter in asset_types:
             allowed_assets = asset_types[asset_type_filter]
         else:
-            allowed_assets = crypto_symbols | ibex35_symbols | etf_symbols
+            allowed_assets = crypto_symbols | ibex35_symbols
         
         # Calculate cutoff date (exclude today)
         today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
