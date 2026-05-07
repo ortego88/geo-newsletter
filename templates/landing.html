@@ -31,12 +31,12 @@
         <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
         <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
         {% if current_user.is_authenticated %}
-          <a href="/historial" class="text-sm text-slate-300 hover:text-white transition">Historial</a>
-          <a href="/dashboard" class="text-sm text-slate-300 hover:text-white transition">👤 Área personal</a>
+          <a href="/historial" class="text-sm text-slate-400 hover:text-white transition">Historial</a>
+          <a href="/dashboard" class="text-sm text-slate-400 hover:text-white transition">👤 Área personal</a>
           <button onclick="document.getElementById('logout-modal').classList.remove('hidden')"
             class="text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
         {% else %}
-          <a href="/login" class="text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
+          <a href="/login" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
         {% endif %}
         <!-- Language selector in nav -->
         <div class="relative" id="lang-menu-wrapper">
