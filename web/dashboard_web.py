@@ -108,7 +108,6 @@ def index():
             
             # Filter by asset type if no specific asset selected
             if asset_type_filter and not asset_filter:
-                from src.services.market_config import get_assets_by_type
                 type_assets = get_assets_by_type(asset_type_filter)
                 if type_assets:
                     asset_list = ",".join([f"'{a}'" for a in type_assets])
@@ -201,7 +200,7 @@ def index():
 
     # Group available assets by type
     from src.services.market_config import get_asset_type
-    assets_by_type = {"crypto": [], "ibex35": [], "etf": []}
+    assets_by_type = {"crypto": [], "ibex35": []}
     for asset in AVAILABLE_ASSETS:
         asset_type = get_asset_type(asset["symbol"])
         if asset_type in assets_by_type:
@@ -356,10 +355,9 @@ def history():
             
             # Filter by asset type if no specific asset selected
             if asset_type_filter and not asset_filter:
-                from src.services.market_config import get_assets_by_type
                 type_assets = get_assets_by_type(asset_type_filter)
                 if type_assets:
-                    asset_list = ",".join([f"'{a}'" for a in type_assets])
+                    asset_list = ",".join([f"'{a}'" for a in list(type_assets)])
                     where += f" AND asset IN ({asset_list})"
             
             # Additional asset filter (specific asset)
@@ -368,9 +366,10 @@ def history():
                 extra_params["asset"] = asset_filter
 
             # Count total
-            total_alerts = conn2.execute(
+            result = conn2.execute(
                 text(f"SELECT COUNT(*) FROM predictions {where}"), extra_params
-            ).fetchone()[0]
+            ).fetchone()
+            total_alerts = result[0] if result else 0
             total_pages = max(1, (total_alerts + per_page - 1) // per_page)
 
             # Get accuracy stats
@@ -426,6 +425,10 @@ def history():
         "crypto": list(get_assets_by_type("crypto")),
         "ibex35": list(get_assets_by_type("ibex35")),
     }
+    
+    except Exception:
+        _logger.warning("Could not load history predictions", exc_info=True)
+        asset_types = {"crypto": [], "ibex35": []}
     
     return render_template(
         "history.html",

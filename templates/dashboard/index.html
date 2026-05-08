@@ -165,13 +165,12 @@
           <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los tipos</option>
             <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>🪙 Criptomonedas</option>
-            <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>📈 Acciones</option>
-            <option value="etf" {% if asset_type_filter == 'etf' %}selected{% endif %}>📊 ETFs</option>
+            <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>📈 IBEX 35</option>
           </select>
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
-              {% set asset_type = 'crypto' if a.symbol in assets_by_type['crypto'] else 'ibex35' if a.symbol in assets_by_type['ibex35'] else 'etf' if a.symbol in assets_by_type['etf'] else '' %}
+              {% set asset_type = 'crypto' if a.symbol in assets_by_type['crypto'] else 'ibex35' if a.symbol in assets_by_type['ibex35'] else '' %}
               <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
