@@ -68,7 +68,7 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.dashboard">Dashboard</h1>
-        <span class="hidden sm:inline text-slate-500 text-xs">Últimos {{ history_days }} día{{ 's' if history_days > 1 else '' }} · {{ total_alerts }} predicciones</span>
+        <span class="hidden sm:inline text-slate-500 text-xs">{{ history_label }} · {{ total_alerts }} predicciones</span>
       </div>
       <div class="flex items-center gap-3">
         {% if sub %}
@@ -170,9 +170,7 @@
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
-              {% set crypto_symbols = [x.symbol for x in assets_by_type.get('crypto', [])] %}
-              {% set ibex_symbols = [x.symbol for x in assets_by_type.get('ibex35', [])] %}
-              {% set asset_type = 'crypto' if a.symbol in crypto_symbols else 'ibex35' if a.symbol in ibex_symbols else '' %}
+              {% set asset_type = asset_type_map.get(a.symbol, '') %}
               <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
@@ -315,7 +313,7 @@
         {% else %}
           <div class="px-6 py-12 text-center">
             <div class="text-4xl mb-3">📡</div>
-            <p class="text-slate-400">No hay predicciones en los últimos {{ history_days }} día{{ 's' if history_days > 1 else '' }}.</p>
+            <p class="text-slate-400">No hay predicciones en el histórico.</p>
           </div>
         {% endif %}
       </div>

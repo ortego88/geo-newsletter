@@ -85,16 +85,14 @@ def index():
     sort_col = _SORT_FIELD_MAP[sort_by]
     sort_order = "DESC" if sort_dir == "desc" else "ASC"
 
-    # Get recent alerts from predictions DB (window based on plan history_days)
-    history_days = plan_config.get("history_days", 1)
+    # Get all historical alerts from predictions DB.
     alerts = []
     total_alerts = 0
     total_pages = 1
     try:
-        cutoff = (datetime.utcnow() - timedelta(days=history_days)).isoformat()
         with _get_predictions_conn() as conn2:
-            where = "WHERE predicted_at >= :cutoff"
-            extra_params: dict = {"cutoff": cutoff}
+            where = "WHERE 1=1"
+            extra_params: dict = {}
             
             # Filter by user's selected assets only
             if user_selected_assets:
@@ -155,8 +153,8 @@ def index():
     accuracy_stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0, "pending": 0}
     try:
         with _get_predictions_conn() as conn2:
-            stats_where = "WHERE predicted_at >= :cutoff"
-            stats_params: dict = {"cutoff": cutoff}
+            stats_where = "WHERE 1=1"
+            stats_params: dict = {}
 
             # Filter by user's selected assets only
             if user_selected_assets:
@@ -202,13 +200,11 @@ def index():
     except Exception:
         _logger.warning("Could not load accuracy stats", exc_info=True)
 
-    # Group available assets by type
+    # Group available assets by type for the dashboard filter dropdown
     from src.services.market_config import get_asset_type
-    assets_by_type = {"crypto": [], "ibex35": []}
+    asset_type_map = {}
     for asset in AVAILABLE_ASSETS:
-        asset_type = get_asset_type(asset["symbol"])
-        if asset_type in assets_by_type:
-            assets_by_type[asset_type].append(asset)
+        asset_type_map[asset["symbol"]] = get_asset_type(asset["symbol"])
 
     return render_template(
         "dashboard/index.html",
@@ -218,7 +214,7 @@ def index():
         alerts=alerts,
         accuracy_stats=accuracy_stats,
         available_assets=AVAILABLE_ASSETS,
-        assets_by_type=assets_by_type,
+        asset_type_map=asset_type_map,
         asset_names=ASSET_NAMES,
         page=page,
         total_pages=total_pages,
@@ -229,7 +225,7 @@ def index():
         sort_by=sort_by,
         sort_dir=sort_dir,
         per_page=per_page,
-        history_days=history_days,
+        history_label="Histórico completo",
     )
 
 
