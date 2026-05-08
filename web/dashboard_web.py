@@ -4,6 +4,7 @@ from sqlalchemy import text
 from web.models import PLANS, AVAILABLE_ASSETS, get_conn
 from web.db_engine import get_engine
 from src.services.alert_formatter import ASSET_NAMES
+from src.services.market_config import get_assets_by_type
 import logging
 import os
 from datetime import datetime, timedelta
@@ -421,10 +422,9 @@ def history():
         })
 
     # Build asset type mapping
-    from src.services.market_config import get_asset_type, get_assets_by_type
     asset_types = {
-        "crypto": get_assets_by_type("crypto"),
-        "ibex35": get_assets_by_type("ibex35"),
+        "crypto": list(get_assets_by_type("crypto")),
+        "ibex35": list(get_assets_by_type("ibex35")),
     }
     
     return render_template(

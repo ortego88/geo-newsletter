@@ -23,64 +23,7 @@
 <body class="bg-slate-900 text-slate-200 antialiased">
 
   <!-- NAV -->
-  <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
-    <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-      <span class="text-emerald-400 font-bold text-lg md:text-xl tracking-tight">🌍 GEO-NEWSLETTER</span>
-      <!-- Desktop nav links -->
-      <div class="hidden md:flex items-center gap-4">
-        <a href="#precios" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.pricing">Precios</a>
-        <a href="#faq" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.faq">FAQ</a>
-        {% if current_user.is_authenticated %}
-          <a href="/historial" class="text-sm text-slate-400 hover:text-white transition">Historial</a>
-          <a href="/dashboard" class="text-sm text-slate-400 hover:text-white transition">👤 Área personal</a>
-          <button onclick="document.getElementById('logout-modal').classList.remove('hidden')"
-            class="text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
-        {% else %}
-          <a href="/login" class="text-sm text-slate-400 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
-        {% endif %}
-        <!-- Language selector in nav -->
-        <div class="relative" id="lang-menu-wrapper">
-          <button onclick="toggleLangMenu()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="lang-btn">
-            <span id="lang-flag">🇪🇸</span>
-            <span id="lang-code" class="font-semibold uppercase">ES</span>
-            <span class="text-xs text-slate-600">▾</span>
-          </button>
-          <div id="lang-dropdown" class="hidden absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
-            <!-- items injected by JS -->
-          </div>
-        </div>
-        {% if not current_user.is_authenticated %}
-        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
-          Empezar gratis
-        </a>
-        {% endif %}
-      </div>
-      <!-- Mobile: CTA + hamburger -->
-      <div class="flex md:hidden items-center gap-3">
-        {% if not current_user.is_authenticated %}
-        <a href="#precios" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
-          Empezar gratis
-        </a>
-        {% endif %}
-        <button id="mobile-nav-btn" onclick="toggleMobileNav()" class="p-1 text-slate-400 hover:text-white transition" aria-label="Abrir menú">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-      </div>
-    </div>
-    <!-- Mobile dropdown menu -->
-    <div id="mobile-nav-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900/95 px-4 py-3 space-y-1">
-      <a href="#precios" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.pricing">Precios</a>
-      <a href="#faq" class="block py-2.5 text-sm text-slate-400 hover:text-white transition" onclick="closeMobileNav()" data-i18n="nav.faq">FAQ</a>
-      {% if current_user.is_authenticated %}
-        <a href="/historial" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" onclick="closeMobileNav()">Historial</a>
-        <a href="/dashboard" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" onclick="closeMobileNav()">👤 Área personal</a>
-        <button onclick="document.getElementById('logout-modal').classList.remove('hidden'); closeMobileNav()"
-          class="block w-full text-left py-2.5 text-sm text-slate-400 hover:text-red-400 transition">Cerrar sesión</button>
-      {% else %}
-        <a href="/login" class="block py-2.5 text-sm text-slate-300 hover:text-white transition" data-i18n="nav.login">Iniciar sesión</a>
-      {% endif %}
-    </div>
-  </nav>
+  {% include 'partials/nav.html' %}
 
   <!-- HERO -->
   <section class="pt-32 pb-24 px-6">
