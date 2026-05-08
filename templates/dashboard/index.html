@@ -170,7 +170,9 @@
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
-              {% set asset_type = 'crypto' if a.symbol in assets_by_type['crypto'] else 'ibex35' if a.symbol in assets_by_type['ibex35'] else '' %}
+              {% set crypto_symbols = [x.symbol for x in assets_by_type.get('crypto', [])] %}
+              {% set ibex_symbols = [x.symbol for x in assets_by_type.get('ibex35', [])] %}
+              {% set asset_type = 'crypto' if a.symbol in crypto_symbols else 'ibex35' if a.symbol in ibex_symbols else '' %}
               <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
