@@ -421,13 +421,13 @@ def history():
         })
 
     # Build asset type mapping
-    asset_types = {
-        "crypto": list(get_assets_by_type("crypto")),
-        "ibex35": list(get_assets_by_type("ibex35")),
-    }
-    
+    try:
+        asset_types = {
+            "crypto": list(get_assets_by_type("crypto")),
+            "ibex35": list(get_assets_by_type("ibex35")),
+        }
     except Exception:
-        _logger.warning("Could not load history predictions", exc_info=True)
+        _logger.warning("Could not load asset types", exc_info=True)
         asset_types = {"crypto": [], "ibex35": []}
     
     return render_template(
