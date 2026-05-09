@@ -1,7 +1,11 @@
 """
 web/admin.py — Dashboard interno de administración.
 Acceso protegido por ADMIN_PASSWORD (variable de entorno).
-Completamente independiente del sistema de usuarios de la app.
+
+CAMBIOS v2:
+- Las estadísticas de accuracy excluyen outcome='neutral' del cómputo,
+  consistente con prediction_tracker.get_accuracy_stats().
+- Se añade 'neutral' al contexto del template para mostrarlo en la UI.
 """
 import os
 from datetime import datetime
@@ -28,7 +32,7 @@ SEEN_ARTICLES_FILE = os.getenv("SEEN_ARTICLES_FILE_PATH", "data/seen_articles.tx
 
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
-# Allowlist mapping of sort parameter values to SQL column names (prevents SQL injection)
+# Allowlist de columnas para ORDER BY (previene SQL injection)
 _SORT_FIELD_MAP = {
     "predicted_at": "predicted_at",
     "score": "score",
@@ -53,19 +57,18 @@ def _to_madrid(dt_str: str) -> str:
     if not dt_str:
         return ""
     try:
-        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(str(dt_str).replace("Z", "+00:00"))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=pytz.utc)
         return dt.astimezone(_MADRID_TZ).strftime("%d/%m/%Y %H:%M")
     except Exception:
-        return dt_str
+        return str(dt_str)[:16]
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         password = request.form.get("password", "")
-        # Login only succeeds when ADMIN_PASSWORD is set and matches
         if ADMIN_PASSWORD and password == ADMIN_PASSWORD:
             session["admin_logged_in"] = True
             return redirect(url_for("admin.dashboard"))
@@ -84,7 +87,6 @@ def dashboard():
     if not _admin_required():
         return redirect(url_for("admin.login"))
 
-    # Pagination & filters
     page = max(1, int(request.args.get("page", 1)))
     per_page = 20
     offset = (page - 1) * per_page
@@ -98,8 +100,11 @@ def dashboard():
     sort_col = _SORT_FIELD_MAP[sort_by]
     sort_order = "DESC" if sort_dir == "desc" else "ASC"
 
-    stats = {"total": 0, "correct": 0, "incorrect": 0, "accuracy_pct": 0.0,
-             "high_confidence_accuracy": 0.0, "pending": 0}
+    stats = {
+        "total": 0, "correct": 0, "incorrect": 0,
+        "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0,
+        "pending": 0, "neutral": 0,
+    }
 
     try:
         with _pred_conn() as conn:
@@ -113,13 +118,23 @@ def dashboard():
                 text(f"SELECT COUNT(*) FROM predictions {where_clause}"), q_params
             ).fetchone()[0]
 
-            # Accuracy stats scoped to the same 24h window + asset filter
+            # Stats: excluir 'neutral' y 'pending' del cómputo de accuracy
             outcome_rows = conn.execute(
-                text(f"SELECT outcome, confidence FROM predictions {where_clause} AND outcome != 'pending'"),
+                text(f"""
+                    SELECT outcome, confidence
+                    FROM predictions {where_clause}
+                    AND outcome NOT IN ('pending', 'neutral')
+                """),
                 q_params,
             ).fetchall()
+
             pending_count = conn.execute(
                 text(f"SELECT COUNT(*) FROM predictions {where_clause} AND outcome = 'pending'"),
+                q_params,
+            ).fetchone()[0]
+
+            neutral_count = conn.execute(
+                text(f"SELECT COUNT(*) FROM predictions {where_clause} AND outcome = 'neutral'"),
                 q_params,
             ).fetchone()[0]
 
@@ -135,17 +150,21 @@ def dashboard():
                     "accuracy_pct": round(_correct / _total * 100, 1) if _total else 0.0,
                     "high_confidence_accuracy": round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0,
                     "pending": pending_count,
+                    "neutral": neutral_count,
                 }
             else:
                 stats["pending"] = pending_count
+                stats["neutral"] = neutral_count
 
             rows = conn.execute(
-                text(f"""SELECT id, title, category, asset, direction, impact_percent, timeframe,
+                text(f"""
+                    SELECT id, title, category, asset, direction, impact_percent, timeframe,
                            confidence, price_at_prediction, price_at_validation, predicted_at,
                            validated_at, outcome, score, source, reasoning
                     FROM predictions {where_clause}
                     ORDER BY {sort_col} {sort_order}
-                    LIMIT :limit OFFSET :offset"""),
+                    LIMIT :limit OFFSET :offset
+                """),
                 {**q_params, "limit": per_page, "offset": offset},
             ).mappings().fetchall()
 
@@ -165,13 +184,12 @@ def dashboard():
     predictions = []
     for row in rows:
         d = dict(row)
-        if d.get("price_at_prediction") and d.get("price_at_validation"):
+        price_initial = d.get("price_at_prediction") or 0
+        price_validated = d.get("price_at_validation")
+        if price_initial and price_initial > 0 and price_validated:
             try:
                 d["price_change_pct"] = round(
-                    (d["price_at_validation"] - d["price_at_prediction"])
-                    / d["price_at_prediction"]
-                    * 100,
-                    2,
+                    (price_validated - price_initial) / price_initial * 100, 2
                 )
             except ZeroDivisionError:
                 d["price_change_pct"] = None
@@ -205,19 +223,16 @@ def reset_predictions():
 
     if request.method == "POST":
         try:
-            # Borrar predicciones
             with _pred_conn() as conn:
                 conn.execute(text("DELETE FROM predictions"))
                 conn.commit()
 
-            # Borrar caché de deduplicación (artículos recientes) — solo SQLite local
             import sqlite3 as _sq3
             if Path(RECENT_ARTICLES_DB).exists():
                 with _sq3.connect(RECENT_ARTICLES_DB) as conn:
                     conn.execute("DELETE FROM recent_articles")
                     conn.commit()
 
-            # Borrar hashes de deduplicación de nivel 1 (seen_articles.txt)
             seen_file = Path(SEEN_ARTICLES_FILE)
             if seen_file.exists():
                 seen_file.write_text("")
@@ -231,7 +246,6 @@ def reset_predictions():
             flash(f"❌ Error al resetear la base de datos: {str(e)}", "danger")
         return redirect(url_for("admin.dashboard"))
 
-    # GET: mostrar página de confirmación con recuento de registros
     num_predictions = 0
     num_recent_articles = 0
     try:

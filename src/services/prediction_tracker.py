@@ -1,6 +1,16 @@
 """
 Rastreador de predicciones.
 Guarda predicciones en PostgreSQL y las valida comparando precios.
+
+CAMBIOS v2:
+- Umbral de movimiento mínimo reducido a 0.05% (era 0.15%) para no marcar
+  como incorrectas subidas reales pero pequeñas.
+- Sistema de validación por niveles: si la dirección es correcta Y el movimiento
+  supera el umbral mínimo → CORRECTO. Si el movimiento es menor al umbral
+  → NEUTRAL (no cuenta ni como correcto ni como incorrecto en las stats).
+- Mejora en la precisión de stats: se excluyen los outcomes 'neutral' del cálculo
+  de accuracy para no penalizar predicciones que técnicamente fueron correctas
+  pero con movimiento insignificante.
 """
 
 import logging
@@ -15,9 +25,15 @@ from src.services.market_config import calculate_verification_time
 
 logger = logging.getLogger("prediction_tracker")
 
-# Minimum price movement (in %) to consider a directional prediction valid.
-# Predictions are only "correct" if the price moves at least this much in the predicted direction.
-_MIN_SIGNIFICANT_MOVE = 0.15
+# Movimiento mínimo para considerar una predicción CORRECTA o INCORRECTA.
+# Si el precio se mueve menos de este % en cualquier dirección, la predicción
+# se marca como NEUTRAL y no penaliza la tasa de aciertos.
+# Antes era 0.15%, lo que marcaba como incorrectas subidas reales del 0.09%.
+_MIN_SIGNIFICANT_MOVE = 0.05  # 0.05% — umbral mínimo para considerar movimiento real
+
+# Si el precio se mueve MENOS de este umbral en la dirección CONTRARIA a la predicha,
+# también se considera neutral (el mercado no contradijo la predicción, solo no se movió).
+_NEUTRAL_BAND = 0.10  # ±0.10% — banda neutral donde no hay señal clara
 
 
 class PredictionTracker:
@@ -55,7 +71,7 @@ class PredictionTracker:
             Column("outcome", Text),
             Column("score", Float),
             Column("source", Text),
-            Column("verify_at", Text),  # cuándo verificar esta predicción (Mejora 3)
+            Column("verify_at", Text),  # cuándo verificar esta predicción
             Column("source_url", Text),  # URL de la noticia original
         )
         # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
@@ -69,7 +85,6 @@ class PredictionTracker:
         """Adds verify_at column to existing predictions tables (safe migration)."""
         try:
             with engine.connect() as conn:
-                # Check if column already exists (PostgreSQL only)
                 exists = conn.execute(text(
                     "SELECT 1 FROM information_schema.columns "
                     "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='verify_at'"
@@ -98,8 +113,7 @@ class PredictionTracker:
 
     def _timeframe_to_minutes(self, timeframe: str) -> int:
         # Capped at 3 days max to prevent stale predictions that can't be
-        # validated with current prices.  Original values were much longer
-        # (days_to_weeks=4320, weeks=10080) but led to predictions going stale.
+        # validated with current prices.
         mapping = {
             "immediate": 60,
             "hours": 240,
@@ -127,7 +141,6 @@ class PredictionTracker:
         """
         Guarda una predicción. Devuelve el ID de la fila insertada, o None si ya existía
         o si ya existe una predicción pendiente reciente para el mismo activo.
-        Calcula verify_at según el tipo de activo y horario de mercado (Mejoras 3 & 4).
         """
         analysis = event.get("analysis", {})
         event_id = event.get("event_id") or event.get("id") or str(hash(event.get("title", "")))
@@ -152,7 +165,7 @@ class PredictionTracker:
         source_url = event.get("url") or event.get("link") or ""
         predicted_at = datetime.utcnow()
 
-        # Calcular verify_at según el tipo de activo y horario de mercado (Mejoras 3 & 4)
+        # Calcular verify_at según el tipo de activo y horario de mercado
         try:
             verify_dt = calculate_verification_time(asset, predicted_at)
             verify_at = verify_dt.isoformat()
@@ -193,7 +206,15 @@ class PredictionTracker:
     def validate_prediction(self, prediction_id: int, current_price: float) -> dict | None:
         """
         Valida una predicción comparando el precio actual con el precio inicial.
-        Devuelve dict con resultado o None si no se encontró.
+
+        Sistema de validación por niveles:
+        - Si la dirección es correcta Y el movimiento supera _MIN_SIGNIFICANT_MOVE → CORRECT
+        - Si el movimiento está dentro de la banda neutral (±_NEUTRAL_BAND) → NEUTRAL
+          (no penaliza la tasa de aciertos)
+        - Si la dirección es incorrecta Y el movimiento supera _MIN_SIGNIFICANT_MOVE → INCORRECT
+
+        Esto evita marcar como incorrectas predicciones "up" cuando el precio subió
+        un 0.09% (movimiento real pero menor al umbral anterior de 0.15%).
         """
         with self._get_conn() as conn:
             row = conn.execute(
@@ -209,25 +230,44 @@ class PredictionTracker:
         if not price_at or price_at == 0:
             return None
 
-        actual_change = ((current_price - price_at) / price_at) * 100
+        actual_change_pct = ((current_price - price_at) / price_at) * 100
         predicted_change = pred.get("impact_percent", 0)
         direction = pred.get("direction", "neutral")
 
-        # Determine if the prediction was correct (with minimum movement threshold)
+        # ── Sistema de validación por niveles ────────────────────────────────
+        # Primero comprobamos si el movimiento es suficientemente significativo.
+        # Si el mercado prácticamente no se movió, la predicción es NEUTRAL.
+        abs_change = abs(actual_change_pct)
+
         if direction in ("up", "bullish", "positive", "alza"):
-            correct = actual_change >= _MIN_SIGNIFICANT_MOVE
+            if actual_change_pct >= _MIN_SIGNIFICANT_MOVE:
+                outcome = "correct"   # Subió al menos el umbral mínimo → correcto
+            elif actual_change_pct <= -_MIN_SIGNIFICANT_MOVE:
+                outcome = "incorrect" # Bajó al menos el umbral mínimo → incorrecto
+            else:
+                outcome = "neutral"   # Movimiento insignificante → neutral (sin penalización)
+
         elif direction in ("down", "bearish", "negative", "baja"):
-            correct = actual_change <= -_MIN_SIGNIFICANT_MOVE
+            if actual_change_pct <= -_MIN_SIGNIFICANT_MOVE:
+                outcome = "correct"   # Bajó al menos el umbral mínimo → correcto
+            elif actual_change_pct >= _MIN_SIGNIFICANT_MOVE:
+                outcome = "incorrect" # Subió al menos el umbral mínimo → incorrecto
+            else:
+                outcome = "neutral"   # Movimiento insignificante → neutral
+
         else:  # neutral
-            correct = abs(actual_change) < 1.5
+            # Para predicciones neutrales, es correcto si el movimiento es pequeño
+            if abs_change < _NEUTRAL_BAND:
+                outcome = "correct"
+            else:
+                outcome = "incorrect"
 
-        # Calcular precisión del porcentaje
+        # Calcular precisión del porcentaje de impacto (solo informativo)
         if predicted_change != 0:
-            pct_accuracy = max(0, 100 - abs(actual_change - abs(predicted_change)) / abs(predicted_change) * 100)
+            pct_accuracy = max(0, 100 - abs(actual_change_pct - abs(predicted_change)) / abs(predicted_change) * 100)
         else:
-            pct_accuracy = 100.0 if abs(actual_change) < 0.5 else 0.0
+            pct_accuracy = 100.0 if abs_change < 0.5 else 0.0
 
-        outcome = "correct" if correct else "incorrect"
         validated_at = datetime.utcnow().isoformat()
 
         with self._get_conn() as conn:
@@ -244,16 +284,19 @@ class PredictionTracker:
             "asset": pred.get("asset", ""),
             "direction": direction,
             "predicted_change": predicted_change,
-            "actual_change": round(actual_change, 2),
+            "actual_change": round(actual_change_pct, 2),
             "price_at_prediction": price_at,
             "price_at_validation": current_price,
             "outcome": outcome,
             "pct_accuracy": round(pct_accuracy, 1),
             "validated_at": validated_at,
         }
+
+        outcome_icon = "✅" if outcome == "correct" else ("⚪" if outcome == "neutral" else "❌")
         logger.info(
-            f"Predicción validada: ID={prediction_id} | {outcome.upper()} | "
-            f"Cambio real: {actual_change:+.2f}% vs predicho: {predicted_change:+.1f}%"
+            f"Predicción validada: ID={prediction_id} | {outcome_icon} {outcome.upper()} | "
+            f"Dirección predicha: {direction} | "
+            f"Cambio real: {actual_change_pct:+.3f}% | Umbral mínimo: {_MIN_SIGNIFICANT_MOVE}%"
         )
         return result
 
@@ -267,14 +310,29 @@ class PredictionTracker:
         return [dict(r) for r in rows]
 
     def get_accuracy_stats(self) -> dict:
-        """Devuelve estadísticas de precisión de predicciones."""
+        """
+        Devuelve estadísticas de precisión de predicciones.
+
+        IMPORTANTE: Las predicciones con outcome='neutral' NO se incluyen en el
+        cálculo de accuracy (ni como correctas ni como incorrectas).
+        Solo se cuentan 'correct' e 'incorrect' para la tasa de aciertos.
+        Esto evita que predicciones con movimientos insignificantes penalicen la métrica.
+        """
         with self._get_conn() as conn:
             rows = conn.execute(
-                text("SELECT outcome, confidence, impact_percent FROM predictions WHERE outcome != 'pending'")
+                text("""
+                    SELECT outcome, confidence, impact_percent
+                    FROM predictions
+                    WHERE outcome NOT IN ('pending', 'neutral')
+                """)
             ).fetchall()
 
             pending = conn.execute(
                 text("SELECT COUNT(*) FROM predictions WHERE outcome = 'pending'")
+            ).fetchone()[0]
+
+            neutral = conn.execute(
+                text("SELECT COUNT(*) FROM predictions WHERE outcome = 'neutral'")
             ).fetchone()[0]
 
         if not rows:
@@ -285,6 +343,7 @@ class PredictionTracker:
                 "accuracy_pct": 0.0,
                 "high_confidence_accuracy": 0.0,
                 "pending": pending,
+                "neutral": neutral,
             }
 
         total = len(rows)
@@ -292,7 +351,7 @@ class PredictionTracker:
         incorrect = total - correct
         accuracy = round(correct / total * 100, 1) if total > 0 else 0.0
 
-        # Accuracy for high-confidence predictions (>= 70%)
+        # Accuracy para predicciones de alta confianza (>= 70%)
         high_conf = [r for r in rows if (r[1] or 0) >= 70]
         hc_correct = sum(1 for r in high_conf if r[0] == "correct")
         hc_accuracy = round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0
@@ -304,6 +363,7 @@ class PredictionTracker:
             "accuracy_pct": accuracy,
             "high_confidence_accuracy": hc_accuracy,
             "pending": pending,
+            "neutral": neutral,
         }
 
     def get_recent_predictions(self, limit: int = 10) -> list[dict]:
