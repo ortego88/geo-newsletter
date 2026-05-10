@@ -148,8 +148,9 @@ class PredictionTracker:
         category = event.get("category", "")
         asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
 
-        # Comprobar si ya existe predicción reciente para este activo (ventana 2h)
-        if self._has_recent_prediction(asset, hours=2):
+        # Comprobar si ya existe predicción reciente para este activo (ventana 30 min)
+        # Reducido de 2h a 30min para permitir más alertas con eventos rápidos
+        if self._has_recent_prediction(asset, hours=0.5):
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
             return None
 
