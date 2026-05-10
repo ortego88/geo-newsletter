@@ -26,7 +26,10 @@ USE_BEDROCK = os.getenv("USE_BEDROCK", "false").lower() in ("true", "1", "yes")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+# Modelos disponibles en Bedrock (mayo 2026)
+# Claude 3.5 Haiku - modelo compatible con on-demand throughput
+# Para Claude 4.X necesitas configurar inference profiles en AWS
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-haiku-20241022-v1:0")
 
 # ── System prompt mejorado para Claude ────────────────────────────────────────
 SYSTEM_PROMPT = """Eres un analista cuantitativo experto en mercados financieros españoles (IBEX 35), ETFs y criptomonedas.
