@@ -240,7 +240,7 @@ class User(UserMixin):
 
     def get_plan_config(self):
         sub = self.get_subscription()
-        if not sub or sub["status"] not in ("active", "trial"):
+        if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
             return None
         return PLANS.get(sub["plan"], PLANS["basic"])
 

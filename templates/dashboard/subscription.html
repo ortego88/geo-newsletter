@@ -85,17 +85,29 @@
       <!-- Current subscription card -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
         <h2 class="font-bold text-white text-lg mb-4">Plan actual</h2>
-        {% if sub and sub.status in ('active', 'trial') %}
+        {% if sub and sub.status in ('active', 'trial', 'cancelled_pending') %}
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex items-center gap-3 mb-2">
                 <p class="text-white font-bold text-2xl">{{ plans[sub.plan].name }}</p>
-                {% if sub.status == 'active' %}
+                {% if sub.status == 'trial' %}
+                  <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">⏳ Prueba gratuita</span>
+                {% elif sub.status == 'active' %}
                   <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full">✅ Activo</span>
+                {% elif sub.status == 'cancelled_pending' %}
+                  <span class="bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">⚠️ Cancelación pendiente</span>
                 {% endif %}
               </div>
-              {% if sub.status == 'active' and sub.current_period_end %}
+              {% if sub.status == 'trial' and sub.trial_ends_at %}
+                <p class="text-slate-400 text-sm">Prueba gratuita hasta el <span class="text-amber-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
+              {% elif sub.status == 'active' and sub.current_period_end %}
                 <p class="text-slate-400 text-sm">Próximo cobro el <span class="text-white font-semibold">{{ sub.current_period_end[:10] }}</span></p>
+              {% elif sub.status == 'cancelled_pending' %}
+                {% if sub.trial_ends_at %}
+                  <p class="text-slate-400 text-sm">Tu acceso finalizará el <span class="text-orange-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
+                {% elif sub.current_period_end %}
+                  <p class="text-slate-400 text-sm">Tu acceso finalizará el <span class="text-orange-400 font-semibold">{{ sub.current_period_end[:10] }}</span></p>
+                {% endif %}
               {% endif %}
               {% if plan_config %}
                 <div class="mt-3 space-y-1 text-sm text-slate-400">
@@ -106,7 +118,35 @@
               {% endif %}
             </div>
             <div class="flex flex-col gap-2">
-              {% if sub.status == 'active' %}
+              {% if sub.status == 'cancelled_pending' %}
+                {% if has_payment_method %}
+                  <form method="POST" action="/subscribe/reactivate">
+                    <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                      Activar suscripción con tarjeta guardada
+                    </button>
+                  </form>
+                {% else %}
+                  <a href="/subscribe/{{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                    Activar suscripción
+                  </a>
+                {% endif %}
+              {% elif sub.status == 'trial' %}
+                {% if has_payment_method %}
+                  <form method="POST" action="/subscribe/activate">
+                    <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                      Activar suscripción con tarjeta guardada
+                    </button>
+                  </form>
+                {% else %}
+                  <a href="/checkout/trial?plan={{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                    Activar suscripción
+                  </a>
+                {% endif %}
+                <button type="button" onclick="openCancelModal()"
+                  class="inline-flex items-center justify-center border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition">
+                  Cancelar suscripción
+                </button>
+              {% elif sub.status == 'active' %}
                 <a href="/pricing" class="inline-flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
                   🔄 Ver todos los planes
                 </a>
@@ -170,11 +210,11 @@
                 <li>🔔 {% if p.max_daily_alerts == -1 %}Alertas ilimitadas{% else %}Hasta {{ p.max_daily_alerts }} alertas/día{% endif %}</li>
                 <li>📅 Historial {{ p.history_days }} día{% if p.history_days != 1 %}s{% endif %}</li>
               </ul>
-              {% if sub and sub.status in ('active', 'trial') and sub.plan == plan_key %}
+              {% if sub and sub.status in ('active', 'trial', 'cancelled_pending') and sub.plan == plan_key %}
                 <div class="inline-flex items-center justify-center bg-slate-700 text-slate-400 text-xs font-semibold px-4 py-2 rounded-lg mt-1 cursor-default">
                   Plan actual
                 </div>
-              {% elif sub and sub.status in ('active', 'trial') and sub.plan != plan_key %}
+              {% elif sub and sub.status in ('active', 'trial', 'cancelled_pending') and sub.plan != plan_key %}
                 <a href="/subscribe/{{ plan_key }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition mt-1">
                   Cambiar a {{ p.name }}
                 </a>

@@ -43,9 +43,9 @@ def _redirect_based_on_completion_status():
 
     sub = current_user.get_subscription()
 
-    # Si no tiene suscripción O está cancelada, a pricing o subscription page
-    if not sub or sub["status"] not in ("active", "trial"):
-        # Si tiene suscripción cancelada, llevarlo a la página de suscripción
+    # Si no tiene suscripción O está cancelada completamente, a pricing o subscription page
+    if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
+        # Si tiene suscripción cancelada (no pending), llevarlo a la página de suscripción
         if sub and sub["status"] == "cancelled":
             return redirect(url_for("dashboard_web.subscription"))
         return redirect(url_for("billing.pricing"))

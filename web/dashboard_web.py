@@ -62,14 +62,14 @@ def _user_has_payment_method(user_id: int) -> bool:
 def _require_active_subscription():
     """
     Valida que el usuario tenga suscripción activa Y que haya completado el flujo completo:
-    1. Suscripción activa o trial
+    1. Suscripción activa, trial, o cancelled_pending (mantiene acceso hasta el final)
     2. Método de pago guardado
     3. Activos seleccionados
     """
     sub = current_user.get_subscription()
 
-    # Paso 1: Verificar suscripción activa
-    if not sub or sub["status"] not in ("active", "trial"):
+    # Paso 1: Verificar suscripción activa (incluye cancelled_pending)
+    if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
 
@@ -300,7 +300,7 @@ def settings():
     # Para settings, solo validamos suscripción y método de pago, no activos
     # (porque es aquí donde los seleccionan por primera vez)
     sub = current_user.get_subscription()
-    if not sub or sub["status"] not in ("active", "trial"):
+    if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
 
@@ -433,7 +433,7 @@ def settings():
 def subscription():
     # Para subscription, solo validamos suscripción activa (pueden no tener pago aún)
     sub = current_user.get_subscription()
-    if not sub or sub["status"] not in ("active", "trial"):
+    if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
 

@@ -71,10 +71,16 @@
         <span class="hidden sm:inline text-slate-500 text-xs">{{ history_label }} · {{ total_alerts }} predicciones</span>
       </div>
       <div class="flex items-center gap-3">
-        {% if sub and sub.status == 'active' %}
-          <span class="hidden sm:inline bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
-            ✅ Plan {{ plans[sub.plan].name }}
-          </span>
+        {% if sub %}
+          {% if sub.status == 'trial' %}
+            <span class="hidden sm:inline bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+              🔔 <span data-i18n="dash.trial_active">Período de prueba activo</span>
+            </span>
+          {% elif sub.status == 'active' %}
+            <span class="hidden sm:inline bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
+              ✅ Plan {{ plans[sub.plan].name }}
+            </span>
+          {% endif %}
         {% endif %}
         <!-- Compact lang switcher -->
         <div class="relative" id="dash-lang-wrapper">
@@ -102,7 +108,23 @@
         {% endfor %}
       {% endwith %}
 
-      <!-- No trial banner - removed as requested -->
+      <!-- Trial banner - solo durante el período de prueba -->
+      {% if sub and sub.status == 'trial' %}
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 md:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p class="text-amber-400 font-semibold">⏳ Período de prueba activo</p>
+            <p class="text-slate-400 text-sm mt-1">
+              {% if sub.trial_ends_at %}
+                Tu prueba gratuita finaliza el {{ sub.trial_ends_at[:10] }}.
+              {% endif %}
+              Añade tu método de pago para no perder el acceso.
+            </p>
+          </div>
+          <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0 w-full sm:w-auto text-center">
+            Activar plan
+          </a>
+        </div>
+      {% endif %}
 
       <!-- Stats row -->
       <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">

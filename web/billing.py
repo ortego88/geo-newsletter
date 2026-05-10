@@ -208,6 +208,40 @@ def activate_subscription():
     return redirect(url_for("billing.success"))
 
 
+@billing_bp.route("/subscribe/reactivate", methods=["POST"])
+@login_required
+def reactivate_subscription():
+    """
+    Reactiva una suscripción que estaba en cancelled_pending.
+    La reactivación tomará efecto al final del período actual.
+    """
+    sub = current_user.get_subscription()
+    if not sub:
+        flash("No se encontró una subscripción para reactivar.", "error")
+        return redirect(url_for("billing.pricing"))
+
+    if sub["status"] != "cancelled_pending":
+        flash("Tu suscripción no está cancelada.", "info")
+        return redirect(url_for("dashboard_web.subscription"))
+
+    payment_method = _get_user_payment_method(current_user.id)
+    if not payment_method:
+        flash("No hay un método de pago guardado. Por favor, añade tu tarjeta primero.", "error")
+        return redirect(url_for("billing.subscribe", plan=sub["plan"]))
+
+    # Cambiar estado de cancelled_pending a active
+    # La renovación automática continuará al final del período
+    with get_conn() as conn:
+        conn.execute(
+            text("UPDATE subscriptions SET status='active', updated_at=:now WHERE user_id=:uid"),
+            {"now": datetime.now(timezone.utc).isoformat(), "uid": current_user.id},
+        )
+        conn.commit()
+
+    flash("✅ Suscripción reactivada. La renovación continuará automáticamente.", "success")
+    return redirect(url_for("dashboard_web.subscription"))
+
+
 @billing_bp.route("/subscribe/success")
 @login_required
 def success():
@@ -218,14 +252,41 @@ def success():
 @billing_bp.route("/cancel")
 @login_required
 def cancel():
+    """
+    Marca la suscripción como 'cancelled_pending' para cancelación al final del período.
+    El usuario mantiene acceso hasta que expire trial_ends_at o current_period_end.
+    """
     with get_conn() as conn:
+        # Obtener la suscripción actual
+        sub_row = conn.execute(
+            text("SELECT status, trial_ends_at, current_period_end FROM subscriptions WHERE user_id=:uid"),
+            {"uid": current_user.id}
+        ).fetchone()
+
+        if not sub_row:
+            flash("No tienes una suscripción activa para cancelar.", "error")
+            return redirect(url_for("dashboard_web.subscription"))
+
+        status, trial_ends, period_end = sub_row
+
+        # Determinar fecha de cancelación efectiva
+        end_date = trial_ends if status == 'trial' else period_end
+
+        # Marcar como cancelada pero mantener activa hasta el final
         conn.execute(
-            text("UPDATE subscriptions SET status='cancelled' WHERE user_id=:uid"),
+            text("UPDATE subscriptions SET status='cancelled_pending' WHERE user_id=:uid"),
             {"uid": current_user.id},
         )
         conn.commit()
-    flash(
-        "Suscripción cancelada. Seguirás teniendo acceso hasta el final del período.",
-        "info",
-    )
-    return redirect(url_for("dashboard_web.settings"))
+
+    if end_date:
+        flash(
+            f"Suscripción cancelada. Mantendrás el acceso hasta el {end_date[:10]}.",
+            "info",
+        )
+    else:
+        flash(
+            "Suscripción cancelada. Mantendrás el acceso hasta el final del período actual.",
+            "info",
+        )
+    return redirect(url_for("dashboard_web.subscription"))
