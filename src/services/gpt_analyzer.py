@@ -337,9 +337,32 @@ def _fallback_analysis(event: dict) -> dict:
 def analyze_event(event: dict) -> dict:
     """
     Analiza un evento y devuelve el análisis estructurado.
-    Usa OpenAI si OPENAI_API_KEY está configurado; si no, Ollama como fallback.
-    Si ambos fallan, usa análisis por palabras clave (fallback mejorado).
+
+    ORDEN DE PRIORIDAD (v3 - migrado a Claude):
+    1. Claude (Anthropic) - si ANTHROPIC_API_KEY está configurado [MEJOR ACCURACY]
+    2. OpenAI - si OPENAI_API_KEY está configurado [FALLBACK]
+    3. Ollama - si está disponible [FALLBACK LOCAL]
+    4. Análisis por keywords [ÚLTIMO RECURSO]
+
+    Claude es ahora la opción prioritaria por su mejor razonamiento causal
+    y capacidad de aprender de eventos históricos similares.
     """
+    # 1. INTENTAR CON CLAUDE PRIMERO (mejor accuracy)
+    try:
+        from src.services.claude_analyzer import analyze_event_with_claude
+        ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
+        if ANTHROPIC_API_KEY:
+            logger.info("🚀 Analizando evento con Claude (Anthropic) + RAG...")
+            result = analyze_event_with_claude(event)
+            if result:
+                logger.info("✅ Análisis completado con Claude")
+                return result
+            logger.warning("Claude no pudo analizar el evento, intentando fallback...")
+    except Exception as e:
+        logger.warning(f"Error con Claude: {e}, intentando fallback...")
+
+    # 2. FALLBACK A OPENAI
     title = event.get("title", "")
     description = event.get("description") or event.get("summary") or ""
     score = event.get("score", event.get("impact_score", 50))
@@ -374,17 +397,17 @@ def analyze_event(event: dict) -> dict:
 
     prompt = ANALYSIS_PROMPT_TEMPLATE.format(
         title=title,
-        description=description[:400],  # Ligeramente más contexto que antes (300→400)
+        description=description[:400],
         score=score,
         category=category,
     ) + market_context_section
 
     result = None
     if OPENAI_API_KEY:
-        logger.info("Analizando evento con OpenAI...")
+        logger.info("Analizando evento con OpenAI (fallback)...")
         result = _call_openai(prompt)
     else:
-        logger.info("Analizando evento con Ollama...")
+        logger.info("Analizando evento con Ollama (fallback)...")
         result = _call_ollama(prompt)
 
     if result:
