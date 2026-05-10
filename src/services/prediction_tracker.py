@@ -183,6 +183,7 @@ class PredictionTracker:
                     VALUES (:event_id, :title, :category, :asset, :direction, :impact_percent,
                             :timeframe, :timeframe_minutes, :confidence, :reasoning,
                             :price, :predicted_at, 'pending', :score, :source, :verify_at, :source_url)
+                    RETURNING id
                 """), {
                     "event_id": event_id, "title": title, "category": category,
                     "asset": asset, "direction": direction, "impact_percent": impact_percent,
@@ -193,7 +194,7 @@ class PredictionTracker:
                     "source_url": source_url,
                 })
                 conn.commit()
-                prediction_id = result.lastrowid
+                prediction_id = result.fetchone()[0]
                 logger.info(f"Predicción guardada: ID={prediction_id} | {title[:60]}")
                 return prediction_id
         except Exception as e:
