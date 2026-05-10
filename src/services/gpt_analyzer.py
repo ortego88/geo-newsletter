@@ -349,18 +349,23 @@ def analyze_event(event: dict) -> dict:
     """
     # 1. INTENTAR CON CLAUDE PRIMERO (mejor accuracy)
     try:
-        from src.services.claude_analyzer import analyze_event_with_claude
-        ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+        from src.services.claude_analyzer import analyze_event_with_claude, ClaudeAnalyzer
 
-        if ANTHROPIC_API_KEY:
+        # Verificar si Claude está disponible (via Bedrock O API directa)
+        analyzer = ClaudeAnalyzer()
+        if analyzer.is_available():
             logger.info("🚀 Analizando evento con Claude (Anthropic) + RAG...")
             result = analyze_event_with_claude(event)
             if result:
                 logger.info("✅ Análisis completado con Claude")
                 return result
             logger.warning("Claude no pudo analizar el evento, intentando fallback...")
+        else:
+            logger.debug("Claude no está configurado (ni Bedrock ni API directa), usando fallback")
     except Exception as e:
         logger.warning(f"Error con Claude: {e}, intentando fallback...")
+        import traceback
+        logger.debug(traceback.format_exc())
 
     # 2. FALLBACK A OPENAI
     title = event.get("title", "")
