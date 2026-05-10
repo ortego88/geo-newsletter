@@ -218,13 +218,27 @@ def _resolve_group(asset: str, group: list[dict]) -> dict | None:
 
     # Solo hay una dirección → devolver el mejor de esa dirección
     if not up_events:
-        best = max(down_events, key=lambda t: t[0])[1]
-        logger.info(f"✅ Señal unánime DOWN para {asset} ({len(down_events)} fuentes)")
+        # Priorizar eventos con prediction_id (fueron guardados en BD)
+        with_pred = [e for e in down_events if e[1].get("prediction_id")]
+        if with_pred:
+            best = max(with_pred, key=lambda t: t[0])[1]
+            logger.info(f"✅ Señal unánime DOWN para {asset} ({len(down_events)} fuentes, usando evento con prediction_id={best.get('prediction_id')})")
+        else:
+            best = max(down_events, key=lambda t: t[0])[1]
+            logger.info(f"✅ Señal unánime DOWN para {asset} ({len(down_events)} fuentes)")
+            logger.warning(f"   ⚠️ Ningún evento de {asset} tiene prediction_id (todos omitidos en guardado)")
         return best
 
     if not down_events:
-        best = max(up_events, key=lambda t: t[0])[1]
-        logger.info(f"✅ Señal unánime UP para {asset} ({len(up_events)} fuentes)")
+        # Priorizar eventos con prediction_id (fueron guardados en BD)
+        with_pred = [e for e in up_events if e[1].get("prediction_id")]
+        if with_pred:
+            best = max(with_pred, key=lambda t: t[0])[1]
+            logger.info(f"✅ Señal unánime UP para {asset} ({len(up_events)} fuentes, usando evento con prediction_id={best.get('prediction_id')})")
+        else:
+            best = max(up_events, key=lambda t: t[0])[1]
+            logger.info(f"✅ Señal unánime UP para {asset} ({len(up_events)} fuentes)")
+            logger.warning(f"   ⚠️ Ningún evento de {asset} tiene prediction_id (todos omitidos en guardado)")
         return best
 
     # CONFLICTO: hay señales UP y DOWN
@@ -246,7 +260,16 @@ def _resolve_group(asset: str, group: list[dict]) -> dict | None:
     )
 
     # Seleccionar el mejor evento de la dirección ganadora
-    best_event = max(winner_events, key=lambda t: t[0])[1]
+    # Priorizar eventos con prediction_id (fueron guardados en BD)
+    with_pred = [e for e in winner_events if e[1].get("prediction_id")]
+    if with_pred:
+        best_event = max(with_pred, key=lambda t: t[0])[1]
+        logger.debug(f"   → Usando evento con prediction_id={best_event.get('prediction_id')}")
+    else:
+        best_event = max(winner_events, key=lambda t: t[0])[1]
+        logger.warning(f"   ⚠️ Evento ganador de {asset} NO tiene prediction_id (omitido en guardado)")
+
+    # IMPORTANTE: Copiar el evento pero preservar todos los campos (incluido prediction_id)
     resolved_event = dict(best_event)
     resolved_analysis = dict(resolved_event.get("analysis", {}))
 
