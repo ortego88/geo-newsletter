@@ -227,6 +227,58 @@ def create_app():
     def health():
         return jsonify({"status": "ok"})
 
+    @main_bp.route("/test-telegram")
+    def test_telegram():
+        """
+        Endpoint para forzar el envío de una alerta de prueba a Telegram.
+        Útil para verificar que el bot y el chat_id están configurados correctamente.
+        """
+        try:
+            from src.services.telegram_sender import send_telegram
+            from src.services.alert_formatter import format_telegram_alert
+
+            # Evento de prueba
+            test_event = {
+                "title": "🧪 ALERTA DE PRUEBA - Sistema funcionando correctamente",
+                "description": "Esta es una alerta manual disparada desde el endpoint /test-telegram",
+                "score": 85,
+                "category": "test",
+                "sources": ["endpoint_test"],
+                "prediction_id": 999999,
+                "analysis": {
+                    "direction": "up",
+                    "confidence": 90,
+                    "most_affected_assets": ["BTC", "ETH"],
+                    "signal_strength": "high",
+                    "timeframe": "hours",
+                    "reasoning": "Prueba manual del sistema de alertas. Si recibes esto, todo funciona ✅",
+                    "market_impact_percent": 0,
+                }
+            }
+
+            # Formatear y enviar
+            msg = format_telegram_alert(test_event, test_event["analysis"])
+            success = send_telegram(msg)
+
+            if success:
+                return jsonify({
+                    "status": "success",
+                    "message": "✅ Alerta de prueba enviada correctamente a Telegram",
+                    "telegram_message": msg
+                })
+            else:
+                return jsonify({
+                    "status": "error",
+                    "message": "❌ Error al enviar alerta. Verifica TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID"
+                }), 500
+
+        except Exception as e:
+            _logger.error(f"Error en test-telegram: {e}", exc_info=True)
+            return jsonify({
+                "status": "error",
+                "message": f"❌ Error: {str(e)}"
+            }), 500
+
     @main_bp.route("/api/simulate", methods=["POST"])
     def simulate():
         data = request.get_json(silent=True) or {}
