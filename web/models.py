@@ -161,6 +161,7 @@ def init_db():
         Column("stripe_subscription_id", Text),
         Column("stripe_customer_id", Text),
         Column("selected_assets", Text, server_default=""),
+        Column("last_asset_change_at", Text),
         Column("created_at", Text),
         Column("updated_at", Text),
     )
@@ -188,6 +189,18 @@ def init_db():
 
     # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
     meta.create_all(engine, checkfirst=True)
+
+    # Migration: Add last_asset_change_at column if it doesn't exist
+    try:
+        with engine.connect() as conn:
+            # Check if column exists
+            result = conn.execute(text("PRAGMA table_info(subscriptions)")).fetchall()
+            columns = [row[1] for row in result]
+            if "last_asset_change_at" not in columns:
+                conn.execute(text("ALTER TABLE subscriptions ADD COLUMN last_asset_change_at TEXT"))
+                conn.commit()
+    except Exception:
+        pass  # Column already exists or using different DB engine
 
 
 class User(UserMixin):

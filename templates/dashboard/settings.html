@@ -107,10 +107,22 @@
             </span>
           </div>
           <p class="text-slate-400 text-sm mb-5">Selecciona los activos para los que deseas recibir alertas de Telegram.</p>
+
+          <!-- Search box -->
+          <div class="mb-4">
+            <input type="text" id="asset-search" placeholder="🔍 Buscar activo por nombre o símbolo..."
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+          </div>
           {% if plan_config and plan_config.max_assets != -1 %}
           <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
             <p class="text-amber-400 text-sm font-semibold">⚠️ Cambios en activos</p>
-            <p class="text-slate-300 text-sm">Si modificas la selección de activos, deberás esperar 24 horas antes de poder cambiarla nuevamente.</p>
+            <p class="text-slate-300 text-sm">Puedes seleccionar y cambiar libremente antes de guardar. Una vez guardes, deberás esperar 24 horas antes de poder modificar tu selección nuevamente.</p>
+          </div>
+          {% endif %}
+          {% if is_locked_for_changes %}
+          <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
+            <p class="text-red-400 text-sm font-semibold">🔒 Cambios bloqueados temporalmente</p>
+            <p class="text-slate-300 text-sm">Guardaste tu última configuración hace menos de 24 horas. Podrás cambiar tus activos nuevamente el {{ next_change_allowed }}.</p>
           </div>
           {% endif %}
           {% if plan_config and plan_config.max_assets == -1 %}
@@ -125,32 +137,31 @@
             </button>
           </div>
           {% endif %}
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="assets-grid">
             {% for asset in available_assets %}
               {% set is_selected = asset.symbol in (sub.selected_assets or []) %}
-              {% set is_locked = asset.symbol in locked_symbols %}
-              <label class="relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition
-                {% if is_locked %}border-slate-700 bg-slate-800/50 opacity-50 cursor-not-allowed
-                {% elif is_selected %}border-emerald-500/50 bg-emerald-500/10
-                {% else %}border-slate-700 bg-slate-800 hover:border-slate-500{% endif %}">
+              <label class="asset-item relative flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition
+                {% if is_selected %}border-emerald-500/50 bg-emerald-500/10
+                {% else %}border-slate-700 bg-slate-800 hover:border-slate-500{% endif %}"
+                data-name="{{ asset.name|lower }}" data-symbol="{{ asset.symbol|lower }}">
                 <input type="checkbox" name="assets" value="{{ asset.symbol }}"
                   {% if is_selected %}checked{% endif %}
-                  {% if is_locked %}disabled{% endif %}
-                  class="w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
+                  {% if is_locked_for_changes %}disabled{% endif %}
+                  class="asset-checkbox w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
                 <span class="text-lg">{{ asset.icon }}</span>
                 <div>
-                  <p class="text-sm font-medium {% if is_locked %}text-slate-500{% else %}text-white{% endif %}">{{ asset.name }}</p>
+                  <p class="text-sm font-medium text-white">{{ asset.name }}</p>
                   <p class="text-xs text-slate-500">{{ asset.symbol }}</p>
                 </div>
-                {% if is_locked %}
-                  <span class="absolute top-2 right-2 text-slate-600 text-xs">🔒</span>
-                {% endif %}
               </label>
             {% endfor %}
           </div>
+          <div id="no-results" class="hidden text-center py-8">
+            <p class="text-slate-400 text-sm">No se encontraron activos que coincidan con tu búsqueda</p>
+          </div>
           {% if plan_config.max_assets != -1 %}
             <p class="mt-4 text-xs text-slate-500">
-              <span data-i18n="settings.locked_assets_msg">Los activos bloqueados requieren un plan superior.</span>
+              <span data-i18n="settings.upgrade_msg">¿Necesitas más activos?</span>
               <a href="/dashboard/subscription" class="text-emerald-400 hover:text-emerald-300" data-i18n="settings.upgrade_plan">Actualizar plan →</a>
             </p>
           {% endif %}
@@ -335,51 +346,82 @@
   });
 
   const MAX_ASSETS = {{ plan_config.max_assets if plan_config else 1 }};
+  const IS_LOCKED = {{ 'true' if is_locked_for_changes else 'false' }};
   const checkboxes = document.querySelectorAll('input[name="assets"]');
+
+  // Asset search functionality
+  const searchInput = document.getElementById('asset-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      const assetItems = document.querySelectorAll('.asset-item');
+      const noResults = document.getElementById('no-results');
+      let visibleCount = 0;
+
+      assetItems.forEach(item => {
+        const name = item.getAttribute('data-name');
+        const symbol = item.getAttribute('data-symbol');
+        if (name.includes(query) || symbol.includes(query)) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      if (visibleCount === 0) {
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+      }
+    });
+  }
 
   checkboxes.forEach(cb => {
     cb.addEventListener('change', function() {
       updateSaveButton();
-      updateDisabledCheckboxes();
-      if (!this.checked) return;
-      const selected = [...checkboxes].filter(c => c.checked && !c.disabled);
-      if (MAX_ASSETS !== -1 && selected.length > MAX_ASSETS) {
-        if (MAX_ASSETS === 1) {
-          checkboxes.forEach(c => { if (c !== this && !c.disabled) c.checked = false; });
-          checkboxes.forEach(c => {
-            if (c.disabled) return;
-            const label = c.closest('label');
-            if (!label) return;
-            if (c.checked) {
-              label.classList.remove('border-slate-700', 'bg-slate-800');
-              label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
-            } else {
-              label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
-              label.classList.add('border-slate-700', 'bg-slate-800');
-            }
-          });
-        } else {
-          this.checked = false;
-          showToast(dashCurrentLang === 'en'
-            ? `Your plan allows up to ${MAX_ASSETS} assets. Upgrade to Pro to access all of them.`
-            : `Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
-        }
-      }
+      updateCheckboxStates();
+      updateLabelStyles();
     });
   });
 
-  function updateDisabledCheckboxes() {
+  function updateCheckboxStates() {
+    if (IS_LOCKED) return; // Si está bloqueado, no hacer nada
+
     const selected = [...checkboxes].filter(c => c.checked);
+
+    // Si alcanzamos el límite y es plan de 1 activo, desmarcar otros
+    if (MAX_ASSETS === 1 && selected.length > 1) {
+      // Mantener solo el último seleccionado
+      const lastChecked = selected[selected.length - 1];
+      checkboxes.forEach(cb => {
+        if (cb !== lastChecked) {
+          cb.checked = false;
+        }
+      });
+    }
+    // Si superamos el límite en otros planes, mostrar mensaje y no permitir
+    else if (MAX_ASSETS !== -1 && selected.length > MAX_ASSETS) {
+      // Encontrar el último checkbox marcado y desmarcarlo
+      const lastChecked = selected[selected.length - 1];
+      lastChecked.checked = false;
+      showToast(dashCurrentLang === 'en'
+        ? `Your plan allows up to ${MAX_ASSETS} assets. Upgrade to Pro to access all of them.`
+        : `Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
+    }
+  }
+
+  function updateLabelStyles() {
     checkboxes.forEach(cb => {
-      if (cb.disabled) return; // Already disabled by plan
       const label = cb.closest('label');
       if (!label) return;
-      if (MAX_ASSETS !== -1 && selected.length >= MAX_ASSETS && !cb.checked) {
-        cb.disabled = true;
-        label.classList.add('opacity-50', 'cursor-not-allowed');
+
+      if (cb.checked) {
+        label.classList.remove('border-slate-700', 'bg-slate-800');
+        label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
       } else {
-        cb.disabled = false;
-        label.classList.remove('opacity-50', 'cursor-not-allowed');
+        label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
+        label.classList.add('border-slate-700', 'bg-slate-800');
       }
     });
   }
@@ -407,23 +449,17 @@
   function selectAllAssets() {
     document.querySelectorAll('input[name="assets"]:not(:disabled)').forEach(cb => {
       cb.checked = true;
-      const label = cb.closest('label');
-      if (label) {
-        label.classList.remove('border-slate-700', 'bg-slate-800');
-        label.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
-      }
     });
+    updateLabelStyles();
+    updateSaveButton();
   }
 
   function deselectAllAssets() {
     document.querySelectorAll('input[name="assets"]:not(:disabled)').forEach(cb => {
       cb.checked = false;
-      const label = cb.closest('label');
-      if (label) {
-        label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
-        label.classList.add('border-slate-700', 'bg-slate-800');
-      }
     });
+    updateLabelStyles();
+    updateSaveButton();
   }
 
   function openCancelModal() {
@@ -452,7 +488,7 @@
     applyDashLang(dashCurrentLang);
 
     updateSaveButton();
-    updateDisabledCheckboxes();
+    updateLabelStyles();
 
     const inp = document.getElementById('cancel-confirm-input');
     if (inp) {
