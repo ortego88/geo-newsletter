@@ -3,289 +3,270 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Historial — GEO-NEWSLETTER</title>
+  <title>Historial de Alertas — GEO-NEWSLETTER</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/responsive.css">
+  <style>
+    [data-tooltip] { position: relative; cursor: help; }
+    [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute; left: 50%; transform: translateX(-50%);
+      bottom: calc(100% + 6px); white-space: nowrap;
+      background: #1e293b; color: #e2e8f0; font-size: 11px; font-weight: 500;
+      padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;
+      z-index: 50; pointer-events: none;
+    }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-200 antialiased">
 
-  <!-- NAV — same as landing.html -->
   {% include 'partials/nav.html' %}
 
-  <main class="pt-32 py-16 px-6">
-    <div class="max-w-6xl mx-auto">
+  <div class="pt-20 min-h-screen">
 
-      <div class="mb-8">
-        <h1 class="text-4xl font-extrabold text-white mb-2">Historial de Alertas</h1>
-        <p class="text-slate-400">Todas las predicciones generadas por nuestro sistema de análisis</p>
+    <!-- Top bar -->
+    <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <h1 class="text-white font-bold text-lg md:text-xl">Historial de Alertas</h1>
+        <span class="hidden sm:inline text-slate-500 text-xs">{{ total_alerts }} predicciones</span>
       </div>
+      <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+        Recibir alertas →
+      </a>
+    </div>
 
-      <!-- Flash messages -->
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-          <div class="mb-6 p-4 rounded-xl text-sm
-            {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
-            {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
-            {% else %}bg-blue-500/10 border border-blue-500/30 text-blue-400{% endif %}">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endwith %}
+    <div class="px-4 md:px-8 py-4 md:py-6">
 
-      <!-- Time Range Toggle -->
-      <div class="mb-6 flex gap-2 flex-wrap">
-        <a href="?days=7" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '7' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
-          Últimos 7 días
-        </a>
-        <a href="?days=30" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == '30' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
-          Últimos 30 días
-        </a>
-        <a href="?days=all" class="px-4 py-2 rounded-lg font-semibold transition {{ 'bg-emerald-500 text-white' if time_range == 'all' else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">
-          Todo el historial
-        </a>
-      </div>
-
-      <!-- Filters -->
-      <div class="mb-6 flex flex-wrap gap-4 bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <form method="GET" class="flex flex-wrap gap-4 w-full" id="filters-form">
-          <div class="flex-1 min-w-48">
-            <label class="block text-xs text-slate-400 mb-2 uppercase font-semibold">Tipo de activo</label>
-            <select name="asset_type" class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-4 pr-10 py-2 text-white focus:outline-none focus:border-emerald-500 appearance-none" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2712%27 height=%2712%27 viewBox=%220 0 12 12%22><path fill=%22%2394a3b8%22 d=%22M6 9L1 4h10z%22/></svg>'); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem;" onchange="updateAssetOptions(); submitFilters();">
-              <option value="">Todos</option>
-              <option value="crypto" {{ 'selected' if asset_type_filter == 'crypto' else '' }}>Criptomonedas</option>
-              <option value="ibex35" {{ 'selected' if asset_type_filter == 'ibex35' else '' }}>IBEX 35</option>
-            </select>
-          </div>
-          <div class="flex-1 min-w-48">
-            <label class="block text-xs text-slate-400 mb-2 uppercase font-semibold">Activo</label>
-            <select name="asset" class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-4 pr-10 py-2 text-white focus:outline-none focus:border-emerald-500 appearance-none" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2712%27 height=%2712%27 viewBox=%220 0 12 12%22><path fill=%22%2394a3b8%22 d=%22M6 9L1 4h10z%22/></svg>'); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem;" onchange="submitFilters();">
-              <option value="">Todos</option>
-              {% if asset_type_filter %}
-                {% for symbol in asset_types.get(asset_type_filter, []) %}
-                  <option value="{{ symbol }}" {{ 'selected' if asset_filter == symbol else '' }}>{{ symbol }} - {{ asset_names.get(symbol, symbol) }}</option>
-                {% endfor %}
-              {% else %}
-                {% for symbol in asset_types['crypto'] + asset_types['ibex35'] %}
-                  <option value="{{ symbol }}" {{ 'selected' if asset_filter == symbol else '' }}>{{ symbol }} - {{ asset_names.get(symbol, symbol) }}</option>
-                {% endfor %}
-              {% endif %}
-            </select>
-          </div>
-          <input type="hidden" name="days" value="{{ 'all' if time_range == 'all' else time_range }}">
-          <input type="hidden" name="page" value="1">
-        </form>
-      </div>
-
-      <!-- Stats -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-          <p class="text-slate-400 text-sm mb-1">Total de alertas</p>
-          <p class="text-2xl font-bold">{{ total_alerts }}</p>
+      <!-- Stats row -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Alertas</p>
+          <p class="text-white font-bold text-xl">{{ total_alerts }}</p>
         </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-          <p class="text-slate-400 text-sm mb-1">Aciertos</p>
-          <p class="text-2xl font-bold text-emerald-400">{{ accuracy_stats.correct }}</p>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-          <p class="text-slate-400 text-sm mb-1">Fallos</p>
-          <p class="text-2xl font-bold text-red-400">{{ accuracy_stats.incorrect }}</p>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4">
-          <p class="text-slate-400 text-sm mb-1">% Acierto</p>
-          <p class="text-2xl font-bold {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-red-400{% endif %}">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">% Aciertos</p>
+          <p class="font-bold text-xl {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-red-400{% endif %}">
             {% if accuracy_stats.total > 0 %}{{ accuracy_stats.accuracy_pct }}%{% else %}—{% endif %}
           </p>
         </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Correctas / Incorrectas</p>
+          <p class="font-bold text-lg">
+            <span class="text-emerald-400">{{ accuracy_stats.correct }}</span>
+            <span class="text-slate-500 font-normal mx-1">/</span>
+            <span class="text-red-400">{{ accuracy_stats.incorrect }}</span>
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Pendientes</p>
+          <p class="text-amber-400 font-bold text-xl">{{ accuracy_stats.pending }}</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Neutrales</p>
+          <p class="text-slate-400 font-bold text-xl">{{ accuracy_stats.neutral }}</p>
+        </div>
       </div>
 
-      <!-- Alerts Table -->
-      <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-slate-900 border-b border-slate-700">
-              <tr>
-                <th class="px-4 py-3 text-left font-semibold text-slate-300">Activo</th>
-                <th class="px-4 py-3 text-left font-semibold text-slate-300">Dirección</th>
-                <th class="px-4 py-3 text-left font-semibold text-slate-300">Impacto</th>
-                <th class="px-4 py-3 text-left font-semibold text-slate-300">Confianza</th>
-                <th class="px-4 py-3 text-left font-semibold text-slate-300">Resultado</th>
-                <th class="px-4 py-3 text-left font-semibold text-slate-300">Fecha</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-700">
-              {% if alerts %}
-                {% for alert in alerts %}
-                <tr class="hover:bg-slate-700/50 transition">
-                  <td class="px-4 py-3 font-semibold" title="{{ asset_names.get(alert.asset, alert.asset) }}">{{ alert.asset }}</td>
-                  <td class="px-4 py-3">
-                    {% if alert.direction == 'up' %}
-                      <span class="text-emerald-400">📈 Alza</span>
-                    {% elif alert.direction == 'down' %}
-                      <span class="text-red-400">📉 Baja</span>
-                    {% else %}
-                      <span class="text-slate-400">↔️ Lateral</span>
-                    {% endif %}
-                  </td>
-                  <td class="px-4 py-3">
-                    {% if alert.impact_percent %}
-                      <span class="{% if alert.impact_percent > 0 %}text-emerald-400{% else %}text-red-400{% endif %}">
-                        {{ "%+.1f" | format(alert.impact_percent) }}%
-                      </span>
-                    {% else %}
-                      <span class="text-slate-500">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="px-4 py-3">
-                    {% if alert.confidence %}
-                      <div class="flex items-center gap-2">
-                        <div class="w-12 bg-slate-700 rounded h-1.5">
-                          <div class="bg-emerald-500 h-1.5 rounded" style="width: {{ alert.confidence }}%"></div>
-                        </div>
-                        <span class="text-xs text-slate-400">{{ alert.confidence }}%</span>
-                      </div>
-                    {% else %}
-                      <span class="text-slate-500">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="px-4 py-3">
-                    {% if alert.outcome == 'correct' %}
-                      <span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded text-xs font-semibold">✓ Correcta</span>
-                    {% elif alert.outcome == 'incorrect' %}
-                      <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs font-semibold">✗ Incorrecta</span>
-                    {% elif alert.outcome == 'pending' %}
-                      <span class="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-xs font-semibold">⏳ Pendiente</span>
-                    {% else %}
-                      <span class="text-slate-500">—</span>
-                    {% endif %}
-                  </td>
-                  <td class="px-4 py-3 text-slate-400">
-                    {{ alert.predicted_at_madrid[:10] }} {{ alert.predicted_at_madrid[11:16] }}
-                  </td>
+      <!-- Filters -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 md:px-5 py-4 mb-4">
+        <form method="GET" action="/historial" class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+          <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+            <option value="">Todos los tipos</option>
+            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>🪙 Criptomonedas</option>
+            <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>📈 IBEX 35</option>
+          </select>
+          <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+            <option value="">Todos los activos</option>
+            {% for a in available_assets %}
+              {% set atype = asset_type_map.get(a.symbol, '') %}
+              <option value="{{ a.symbol }}" data-type="{{ atype }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
+            {% endfor %}
+          </select>
+          <a href="/historial" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
+            Limpiar filtros
+          </a>
+        </form>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+        {% if alerts %}
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-slate-700 bg-slate-900/50">
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">#</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">Título</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">Activo</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium">Dir</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">
+                    <a href="?asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Conf.{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">
+                    <a href="?asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                      Score{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio entrada</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio valid.</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Cambio real</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium">Resultado</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium">
+                    <a href="?asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition">
+                      Fecha{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                    </a>
+                  </th>
                 </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700/50">
+                {% for pred in alerts %}
+                  {% set outcome = pred.outcome or 'pending' %}
+                  <tr class="hover:bg-slate-700/30 transition" title="{{ (pred.reasoning or '')[:150] }}">
+                    <td class="px-3 py-3 text-slate-500">{{ (page - 1) * per_page + loop.index }}</td>
+                    <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
+                    <td class="px-3 py-3 font-semibold text-white">
+                      <span data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
+                    </td>
+                    <td class="px-3 py-3 text-center">
+                      {% set dir = pred.direction or 'neutral' %}
+                      {% if dir in ('up', 'bullish', 'positive', 'alza') %}
+                        <span class="text-emerald-400 font-bold text-base">↑</span>
+                      {% elif dir in ('down', 'bearish', 'negative', 'baja') %}
+                        <span class="text-red-400 font-bold text-base">↓</span>
+                      {% else %}
+                        <span class="text-slate-400">→</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-slate-300">
+                      {% if pred.confidence %}{{ pred.confidence|int }}%{% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-slate-300">
+                      {% if pred.score %}{{ pred.score|int }}{% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono text-slate-300">
+                      {% if pred.price_at_prediction %}
+                        {% if pred.price_at_prediction >= 1000 %}${{ "{:,.0f}".format(pred.price_at_prediction) }}
+                        {% elif pred.price_at_prediction >= 1 %}${{ "%.2f"|format(pred.price_at_prediction) }}
+                        {% else %}${{ "%.4f"|format(pred.price_at_prediction) }}{% endif %}
+                      {% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono text-slate-300">
+                      {% if pred.price_at_validation %}
+                        {% if pred.price_at_validation >= 1000 %}${{ "{:,.0f}".format(pred.price_at_validation) }}
+                        {% elif pred.price_at_validation >= 1 %}${{ "%.2f"|format(pred.price_at_validation) }}
+                        {% else %}${{ "%.4f"|format(pred.price_at_validation) }}{% endif %}
+                      {% else %}<span class="text-slate-500">pendiente</span>{% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono">
+                      {% if pred.price_change_pct is not none %}
+                        <span class="{% if pred.price_change_pct > 0 %}text-emerald-400{% elif pred.price_change_pct < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+                          {{ "%+.2f"|format(pred.price_change_pct) }}%
+                        </span>
+                      {% else %}
+                        <span class="text-slate-500">pendiente</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-center">
+                      {% if outcome == 'correct' %}
+                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
+                      {% elif outcome == 'incorrect' %}
+                        <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
+                      {% elif outcome == 'neutral' %}
+                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⚪ Neutral</span>
+                      {% else %}
+                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⏳ Pendiente</span>
+                      {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-slate-500 whitespace-nowrap">{{ pred.predicted_at_madrid or '—' }}</td>
+                  </tr>
                 {% endfor %}
-              {% else %}
-                <tr>
-                  <td colspan="6" class="px-4 py-8 text-center text-slate-400">
-                    No hay alertas en este período
-                  </td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if total_pages > 1 %}
+          <div class="flex flex-wrap items-center justify-center gap-2 px-4 py-4 border-t border-slate-700">
+            {% if page > 1 %}
+              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+              <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
+            {% endfor %}
+            {% if page < total_pages %}
+              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
+            {% endif %}
+          </div>
+          {% endif %}
+
+        {% else %}
+          <div class="px-6 py-12 text-center">
+            <div class="text-4xl mb-3">📡</div>
+            <p class="text-slate-400">No hay predicciones en el histórico.</p>
+          </div>
+        {% endif %}
       </div>
 
-      <!-- Pagination -->
-      {% if total_pages > 1 %}
-      <div class="mt-8 flex justify-center">
-        <div class="flex items-center gap-2">
-          {% if page > 1 %}
-            <a href="?days={{ 'all' if time_range == 'all' else time_range }}&asset_type={{ asset_type_filter }}&asset={{ asset_filter }}&page={{ page - 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">« Anterior</a>
-          {% endif %}
-          {% for p in range(max(1, page - 2), min(total_pages + 1, page + 3)) %}
-            <a href="?days={{ 'all' if time_range == 'all' else time_range }}&asset_type={{ asset_type_filter }}&asset={{ asset_filter }}&page={{ p }}" class="px-3 py-2 rounded-lg transition {{ 'bg-emerald-500 text-white' if p == page else 'bg-slate-800 hover:bg-slate-700 text-slate-300' }}">{{ p }}</a>
-          {% endfor %}
-          {% if page < total_pages %}
-            <a href="?days={{ 'all' if time_range == 'all' else time_range }}&asset_type={{ asset_type_filter }}&asset={{ asset_filter }}&page={{ page + 1 }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">Siguiente »</a>
-          {% endif %}
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- Footer CTA -->
-      <div class="mt-12 bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
-        <h2 class="text-2xl font-bold mb-2">¿Quieres recibir estas alertas?</h2>
-        <p class="text-slate-400 mb-6">Suscríbete y configura tus activos favoritos para recibir predicciones personalizadas</p>
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl transition inline-block">
-          Registrarse gratis
+      <!-- CTA -->
+      <div class="mt-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
+        <p class="text-white font-semibold mb-2">¿Quieres recibir estas alertas en tu Telegram?</p>
+        <p class="text-slate-400 text-sm mb-4">7 días gratis, sin compromiso</p>
+        <a href="/register" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl transition">
+          Empezar gratis →
         </a>
       </div>
 
-    </div>
-  </main>
-
-  <!-- Logout Modal -->
-  <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-8">
-      <div class="text-center mb-6">
-        <div class="text-4xl mb-3">🚪</div>
-        <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
-        <p class="text-slate-400 text-sm">Se cerrará tu sesión actual y volverás a la página principal.</p>
-      </div>
-      <div class="flex gap-3">
-        <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
-          class="flex-1 border border-slate-600 text-slate-300 hover:bg-slate-800 px-4 py-3 rounded-xl transition">
-          Cancelar
-        </button>
-        <a href="/logout" class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-4 py-3 rounded-xl transition text-center">
-          Cerrar sesión
-        </a>
-      </div>
     </div>
   </div>
 
-  <script>
-    // Language menu
-    function toggleLangMenu() {
-      const menu = document.getElementById('lang-dropdown');
-      menu.classList.toggle('hidden');
-    }
+<script>
+  function toggleMobileNav() {
+    document.getElementById('mobile-nav-menu').classList.toggle('hidden');
+  }
+  function closeMobileNav() {
+    document.getElementById('mobile-nav-menu').classList.add('hidden');
+  }
+  function toggleLangMenu() {}
 
-    // Mobile nav
-    function toggleMobileNav() {
-      const menu = document.getElementById('mobile-nav-menu');
-      menu.classList.toggle('hidden');
-    }
-
-    function closeMobileNav() {
-      document.getElementById('mobile-nav-menu').classList.add('hidden');
-    }
-
-    // Close menus on click outside
-    document.addEventListener('click', function(e) {
-      const langWrapper = document.getElementById('lang-menu-wrapper');
-      const langMenu = document.getElementById('lang-dropdown');
-      if (!langWrapper.contains(e.target)) {
-        langMenu.classList.add('hidden');
-      }
+  function initializeAssetOptions() {
+    var assetSelect = document.getElementById('asset-select');
+    var assetOptions = Array.from(assetSelect.querySelectorAll('option.asset-option')).map(function(opt) {
+      return { value: opt.value, text: opt.textContent, type: opt.getAttribute('data-type') || '', selected: opt.selected };
     });
+    assetSelect._allOptions = assetOptions;
+    updateAssetDropdown(false);
+  }
 
-    // Filters
-    function updateAssetOptions() {
-      const assetType = document.querySelector('select[name="asset_type"]').value;
-      const assetSelect = document.querySelector('select[name="asset"]');
-      const assetTypes = {{ asset_types | tojson }};
-      const assetNames = {{ asset_names | tojson }};
-      const currentAsset = assetSelect.value;
-      
-      // Clear options except "Todos"
-      assetSelect.innerHTML = '<option value="">Todos</option>';
-      
-      let options = [];
-      if (assetType && assetTypes[assetType]) {
-        options = assetTypes[assetType];
-      } else {
-        // Combine all assets when no type selected
-        options = (assetTypes['crypto'] || []).concat(assetTypes['ibex35'] || []);
-      }
-      
-      options.forEach(symbol => {
-        const option = document.createElement('option');
-        option.value = symbol;
-        option.textContent = `${symbol} - ${assetNames[symbol] || symbol}`;
-        if (symbol === currentAsset) {
-          option.selected = true;
-        }
+  function updateAssetDropdown(shouldSubmit) {
+    if (shouldSubmit === undefined) shouldSubmit = true;
+    var typeSelect = document.getElementById('asset-type-select');
+    var assetSelect = document.getElementById('asset-select');
+    var selectedType = typeSelect.value;
+    var currentAsset = assetSelect.value;
+
+    assetSelect.innerHTML = '<option value="">Todos los activos</option>';
+    (assetSelect._allOptions || []).forEach(function(optData) {
+      if (!selectedType || optData.type === selectedType) {
+        var option = document.createElement('option');
+        option.value = optData.value;
+        option.textContent = optData.text;
+        option.setAttribute('data-type', optData.type);
+        option.className = 'asset-option';
+        if (optData.value === currentAsset) option.selected = true;
         assetSelect.appendChild(option);
-      });
-    }
-
-    function submitFilters() {
-      document.getElementById('filters-form').submit();
-    }
-
-    window.addEventListener('DOMContentLoaded', function() {
-      updateAssetOptions();
+      }
     });
-  </script>
+
+    if (shouldSubmit) document.querySelector('form').submit();
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    initializeAssetOptions();
+  });
+</script>
+
+{% include 'partials/cookie_banner.html' %}
 </body>
 </html>

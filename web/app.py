@@ -1,12 +1,5 @@
 """
 web/app.py — Aplicación Flask principal con todos los blueprints.
-
-CAMBIOS v2:
-- Fix error 500 en /historial: manejo robusto de valores None en predicted_at,
-  conversión explícita de set a list en get_assets_by_type(), y protección
-  contra filas con campos faltantes.
-- Fix: stats de accuracy en /historial ahora excluyen outcome='neutral'
-  (consistente con el nuevo sistema de validación de prediction_tracker).
 """
 import logging
 import os
@@ -15,42 +8,49 @@ from flask import Flask, render_template, request, jsonify
 from flask_login import LoginManager
 from sqlalchemy import text
 from src.services.alert_formatter import ASSET_NAMES
-from src.services.market_config import get_assets_by_type
+from src.services.market_config import get_assets_by_type, get_asset_type
 from web.models import init_db, User, PLANS, get_conn, AVAILABLE_ASSETS
 from web.db_engine import get_engine
 import pytz
 
 _logger = logging.getLogger(__name__)
-
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
+
+_VALID_SORTS = [
+    "predicted_at", "score", "confidence", "impact_percent",
+    "price_at_prediction", "price_at_validation",
+]
+_SORT_FIELD_MAP = {s: s for s in _VALID_SORTS}
+
 
 def _get_predictions_conn():
     return get_engine("predictions").connect()
 
 
-def _to_madrid_time(dt_str: str) -> str:
-    """Converts a UTC ISO datetime string to Madrid local time. Returns '—' on any error."""
+def _to_madrid_str(dt_str) -> str:
+    """UTC ISO string → 'dd/mm HH:MM' hora Madrid. Devuelve '—' si falla."""
     if not dt_str:
         return "—"
     try:
         dt = datetime.fromisoformat(str(dt_str).replace("Z", "+00:00"))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=pytz.utc)
-        return dt.astimezone(_MADRID_TZ).isoformat()
+        return dt.astimezone(_MADRID_TZ).strftime("%d/%m %H:%M")
     except Exception:
-        return str(dt_str)[:16] if dt_str else "—"
+        return str(dt_str)[:16]
 
 
 def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
-    # Enable template auto-reload in development mode
-    debug_mode = os.getenv("FLASK_ENV", "production") == "development" or os.getenv("DEBUG", "").lower() in ("1", "true")
+    debug_mode = (
+        os.getenv("FLASK_ENV", "production") == "development"
+        or os.getenv("DEBUG", "").lower() in ("1", "true")
+    )
     if debug_mode:
         app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-    # Flask-Login
     login_manager = LoginManager(app)
     login_manager.login_view = "auth.login"
     login_manager.login_message = "Inicia sesión para acceder a esta página"
@@ -60,10 +60,8 @@ def create_app():
     def load_user(user_id):
         return User.get_by_id(int(user_id))
 
-    # Initialize DB
     init_db()
 
-    # Blueprints
     from web.admin import admin_bp
     from web.auth import auth_bp
     from web.billing import billing_bp
@@ -74,7 +72,6 @@ def create_app():
     app.register_blueprint(billing_bp)
     app.register_blueprint(dashboard_bp)
 
-    # Main routes
     from flask import Blueprint
     main_bp = Blueprint("main", __name__)
 
@@ -92,131 +89,116 @@ def create_app():
 
     @main_bp.route("/historial")
     def history():
+        """
+        Página pública de historial. Misma lógica que el dashboard privado,
+        sin requerir login. Muestra todas las predicciones de la BD.
+        """
         page = max(1, int(request.args.get("page", 1)))
         per_page = 20
         offset = (page - 1) * per_page
+
         asset_filter = request.args.get("asset", "").strip()
         asset_type_filter = request.args.get("asset_type", "").strip()
-        days_param = request.args.get("days", "all")
-        time_range = days_param if days_param in ("7", "30", "all") else "all"
+        sort_by = request.args.get("sort", "predicted_at")
+        sort_dir = request.args.get("dir", "desc")
+
+        if sort_by not in _SORT_FIELD_MAP:
+            sort_by = "predicted_at"
+        sort_col = _SORT_FIELD_MAP[sort_by]
+        sort_order = "DESC" if sort_dir == "desc" else "ASC"
 
         alerts = []
         total_alerts = 0
         total_pages = 1
-        # neutral se excluye de correct/incorrect (nuevo sistema de validación)
         accuracy_stats = {
-            "correct": 0, "incorrect": 0, "pending": 0,
-            "neutral": 0, "total": 0, "accuracy_pct": 0,
+            "total": 0, "correct": 0, "incorrect": 0,
+            "accuracy_pct": 0.0, "pending": 0, "neutral": 0,
         }
 
         try:
-            cutoff_days = {"7": 7, "30": 30, "all": 9999}.get(time_range, 9999)
-            cutoff = (datetime.utcnow() - timedelta(days=cutoff_days)).isoformat()
-
-            with _get_predictions_conn() as conn2:
-                where = "WHERE predicted_at >= :cutoff"
-                extra_params: dict = {"cutoff": cutoff}
-
-                # Filtro por tipo de activo — convertir set a list para evitar errores
-                if asset_type_filter and not asset_filter:
-                    type_assets = list(get_assets_by_type(asset_type_filter))  # set → list
-                    if type_assets:
-                        # Usar parámetros posicionales para evitar SQL injection
-                        placeholders = ",".join([f"'{a}'" for a in type_assets])
-                        where += f" AND asset IN ({placeholders})"
+            with _get_predictions_conn() as conn:
+                where = "WHERE 1=1"
+                params: dict = {}
 
                 if asset_filter:
                     where += " AND asset = :asset"
-                    extra_params["asset"] = asset_filter
+                    params["asset"] = asset_filter
 
-                total_alerts = conn2.execute(
-                    text(f"SELECT COUNT(*) FROM predictions {where}"),
-                    extra_params,
+                if asset_type_filter and not asset_filter:
+                    type_assets = sorted(list(get_assets_by_type(asset_type_filter)))
+                    if type_assets:
+                        placeholders = ",".join(f"'{a}'" for a in type_assets)
+                        where += f" AND asset IN ({placeholders})"
+
+                total_alerts = conn.execute(
+                    text(f"SELECT COUNT(*) FROM predictions {where}"), params
                 ).fetchone()[0]
                 total_pages = max(1, (total_alerts + per_page - 1) // per_page)
 
-                # Stats: excluir 'neutral' del cómputo de correct/incorrect
-                # (consistente con prediction_tracker.get_accuracy_stats)
-                outcome_counts = conn2.execute(
-                    text(f"SELECT outcome, COUNT(*) as cnt FROM predictions {where} GROUP BY outcome"),
-                    extra_params,
-                ).mappings().fetchall()
+                # Stats — neutral no entra en correct/incorrect
+                all_outcomes = conn.execute(
+                    text(f"SELECT outcome, confidence FROM predictions {where}"), params
+                ).fetchall()
 
-                for row in outcome_counts:
-                    outcome_val = row["outcome"] or "pending"
-                    if outcome_val == "correct":
-                        accuracy_stats["correct"] = row["cnt"]
-                    elif outcome_val == "incorrect":
-                        accuracy_stats["incorrect"] = row["cnt"]
-                    elif outcome_val == "pending":
-                        accuracy_stats["pending"] = row["cnt"]
-                    elif outcome_val == "neutral":
-                        accuracy_stats["neutral"] = row["cnt"]
+                pending = sum(1 for r in all_outcomes if r[0] == "pending")
+                neutral = sum(1 for r in all_outcomes if r[0] == "neutral")
+                decisive = [r for r in all_outcomes if r[0] not in ("pending", "neutral")]
+                correct = sum(1 for r in decisive if r[0] == "correct")
+                total_decisive = len(decisive)
 
-                # total solo cuenta correct + incorrect (no neutral ni pending)
-                accuracy_stats["total"] = accuracy_stats["correct"] + accuracy_stats["incorrect"]
-                if accuracy_stats["total"] > 0:
-                    accuracy_stats["accuracy_pct"] = round(
-                        100 * accuracy_stats["correct"] / accuracy_stats["total"]
-                    )
+                accuracy_stats = {
+                    "total": total_decisive,
+                    "correct": correct,
+                    "incorrect": total_decisive - correct,
+                    "accuracy_pct": round(correct / total_decisive * 100, 1) if total_decisive else 0.0,
+                    "pending": pending,
+                    "neutral": neutral,
+                }
 
-                alerts_raw = conn2.execute(
+                rows = conn.execute(
                     text(f"""
-                        SELECT id, asset, direction, impact_percent, confidence,
-                               outcome, predicted_at
+                        SELECT id, title, asset, direction, impact_percent, confidence,
+                               price_at_prediction, price_at_validation, predicted_at,
+                               outcome, score, reasoning
                         FROM predictions {where}
-                        ORDER BY predicted_at DESC
-                        LIMIT :limit OFFSET :offset
+                        ORDER BY {sort_col} {sort_order}
+                        LIMIT :lim OFFSET :off
                     """),
-                    {**extra_params, "limit": per_page, "offset": offset},
+                    {**params, "lim": per_page, "off": offset},
                 ).mappings().fetchall()
 
         except Exception as exc:
-            _logger.error("Error cargando historial de predicciones: %s", exc, exc_info=True)
-            alerts_raw = []
+            _logger.error("Error cargando historial: %s", exc, exc_info=True)
+            rows = []
 
-        # Convertir filas a dicts con hora Madrid — protección contra None
-        for row in alerts_raw:
-            try:
-                raw_dt = row.get("predicted_at") or ""
-                if raw_dt:
-                    dt = datetime.fromisoformat(str(raw_dt).replace("Z", "+00:00"))
-                    if dt.tzinfo is None:
-                        dt = dt.replace(tzinfo=pytz.utc)
-                    madrid_time = dt.astimezone(_MADRID_TZ).isoformat()
-                else:
-                    madrid_time = "—"
-            except Exception:
-                madrid_time = str(row.get("predicted_at", "—"))[:16]
+        for row in rows:
+            d = dict(row)
+            d["predicted_at_madrid"] = _to_madrid_str(d.get("predicted_at"))
+            p_in = d.get("price_at_prediction") or 0
+            p_out = d.get("price_at_validation")
+            if p_in and p_in > 0 and p_out:
+                d["price_change_pct"] = round((p_out - p_in) / p_in * 100, 2)
+            else:
+                d["price_change_pct"] = None
+            alerts.append(d)
 
-            alerts.append({
-                "asset": row.get("asset") or "—",
-                "direction": row.get("direction") or "neutral",
-                "impact_percent": row.get("impact_percent"),
-                "confidence": row.get("confidence"),
-                "outcome": row.get("outcome") or "pending",
-                "predicted_at_madrid": madrid_time,
-            })
-
-        # Construir asset_types para los filtros del frontend
-        # get_assets_by_type devuelve un set → convertir a lista ordenada
-        asset_types = {
-            "crypto": sorted(list(get_assets_by_type("crypto"))),
-            "ibex35": sorted(list(get_assets_by_type("ibex35"))),
-        }
+        asset_type_map = {a["symbol"]: get_asset_type(a["symbol"]) for a in AVAILABLE_ASSETS}
 
         return render_template(
             "history.html",
             alerts=alerts,
             accuracy_stats=accuracy_stats,
+            available_assets=AVAILABLE_ASSETS,
+            asset_type_map=asset_type_map,
+            asset_names=ASSET_NAMES,
             page=page,
-            total_pages=total_pages,
+            per_page=per_page,
             total_alerts=total_alerts,
+            total_pages=total_pages,
             asset_filter=asset_filter,
             asset_type_filter=asset_type_filter,
-            time_range=time_range,
-            asset_types=asset_types,
-            asset_names=ASSET_NAMES,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
         )
 
     @main_bp.route("/health")
@@ -243,14 +225,14 @@ def create_app():
         start_date = end_date - timedelta(days=period_days)
 
         try:
-            with get_engine("predictions").connect() as conn:
+            with _get_predictions_conn() as conn:
                 rows = conn.execute(text("""
-                    SELECT direction, price_at_prediction, predicted_at
+                    SELECT direction, price_at_prediction
                     FROM predictions
                     WHERE asset = :asset
-                    AND predicted_at >= :start
-                    AND predicted_at <= :end
-                    AND outcome != 'pending'
+                      AND predicted_at >= :start
+                      AND predicted_at <= :end
+                      AND outcome != 'pending'
                     ORDER BY predicted_at ASC
                 """), {
                     "asset": asset,
@@ -265,9 +247,7 @@ def create_app():
         position = 0.0
         last_price = None
 
-        for row in rows:
-            direction = row[0] or "neutral"
-            price = row[1]
+        for direction, price in rows:
             if price and price > 0:
                 if direction in ("up", "bullish", "positive", "alza") and cash > 0:
                     position = cash / price
@@ -280,13 +260,12 @@ def create_app():
         if position > 0 and last_price:
             cash = position * last_price
 
-        final_amount = cash
-        profit_loss = final_amount - amount
+        profit_loss = cash - amount
         percentage = (profit_loss / amount) * 100 if amount > 0 else 0.0
 
         return jsonify({
             "initial_amount": f"{amount:.2f}",
-            "final_amount": f"{final_amount:.2f}",
+            "final_amount": f"{cash:.2f}",
             "profit_loss": f"{profit_loss:+.2f}",
             "percentage": f"{percentage:+.2f}",
         })
