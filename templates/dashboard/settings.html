@@ -18,7 +18,7 @@
   <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-transform duration-300">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-20 md:h-[calc(100vh-5rem)] transition-transform duration-300">
     <div class="px-6 py-5 border-b border-slate-800">
       <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
       <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
@@ -146,7 +146,7 @@
                 data-name="{{ asset.name|lower }}" data-symbol="{{ asset.symbol|lower }}">
                 <input type="checkbox" name="assets" value="{{ asset.symbol }}"
                   {% if is_selected %}checked{% endif %}
-                  {% if is_locked_for_changes %}disabled{% endif %}
+                  {% if is_locked_for_changes %}disabled data-originally-disabled="true"{% endif %}
                   class="asset-checkbox w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
                 <span class="text-lg">{{ asset.icon }}</span>
                 <div>
@@ -379,23 +379,23 @@
 
   checkboxes.forEach(cb => {
     cb.addEventListener('change', function() {
-      updateSaveButton();
       updateCheckboxStates();
       updateLabelStyles();
+      updateSaveButton();
     });
   });
 
   function updateCheckboxStates() {
     if (IS_LOCKED) return; // Si está bloqueado, no hacer nada
 
-    const selected = [...checkboxes].filter(c => c.checked);
+    const selected = [...checkboxes].filter(c => c.checked && !c.disabled);
 
     // Si alcanzamos el límite y es plan de 1 activo, desmarcar otros
     if (MAX_ASSETS === 1 && selected.length > 1) {
       // Mantener solo el último seleccionado
       const lastChecked = selected[selected.length - 1];
       checkboxes.forEach(cb => {
-        if (cb !== lastChecked) {
+        if (cb !== lastChecked && !cb.disabled) {
           cb.checked = false;
         }
       });
@@ -409,6 +409,25 @@
         ? `Your plan allows up to ${MAX_ASSETS} assets. Upgrade to Pro to access all of them.`
         : `Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
     }
+
+    // Deshabilitar checkboxes si se alcanzó el límite
+    const currentSelected = [...checkboxes].filter(c => c.checked && !c.disabled);
+    checkboxes.forEach(cb => {
+      if (cb.disabled) return; // No modificar los que ya están deshabilitados por bloqueo
+
+      const label = cb.closest('label');
+      if (!label) return;
+
+      // Si se alcanzó el límite y este checkbox NO está marcado, deshabilitarlo
+      if (MAX_ASSETS !== -1 && currentSelected.length >= MAX_ASSETS && !cb.checked) {
+        cb.disabled = true;
+        label.classList.add('opacity-50', 'cursor-not-allowed');
+      } else if (!cb.hasAttribute('data-originally-disabled')) {
+        // Si no está en el límite, habilitarlo (solo si no estaba deshabilitado originalmente)
+        cb.disabled = false;
+        label.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    });
   }
 
   function updateLabelStyles() {
@@ -487,8 +506,10 @@
     }
     applyDashLang(dashCurrentLang);
 
-    updateSaveButton();
+    // Inicializar estado de checkboxes
+    updateCheckboxStates();
     updateLabelStyles();
+    updateSaveButton();
 
     const inp = document.getElementById('cancel-confirm-input');
     if (inp) {
