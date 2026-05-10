@@ -328,33 +328,44 @@ def settings():
             assets_changed = current_assets != new_assets
 
             if assets_changed:
-                # Verificar último cambio
-                with get_conn() as conn:
-                    last_change = conn.execute(
-                        text("SELECT last_asset_change_at FROM subscriptions WHERE user_id=:uid"),
-                        {"uid": current_user.id}
-                    ).fetchone()
+                # Verificar último cambio (solo si la columna existe)
+                try:
+                    with get_conn() as conn:
+                        last_change = conn.execute(
+                            text("SELECT last_asset_change_at FROM subscriptions WHERE user_id=:uid"),
+                            {"uid": current_user.id}
+                        ).fetchone()
 
-                    if last_change and last_change[0]:
-                        last_change_dt = datetime.fromisoformat(last_change[0])
-                        hours_since_change = (datetime.utcnow() - last_change_dt).total_seconds() / 3600
+                        if last_change and last_change[0]:
+                            last_change_dt = datetime.fromisoformat(last_change[0])
+                            hours_since_change = (datetime.utcnow() - last_change_dt).total_seconds() / 3600
 
-                        if hours_since_change < 24:
-                            hours_remaining = 24 - hours_since_change
-                            flash(f"Debes esperar {int(hours_remaining)} horas más para cambiar tus activos", "error")
-                            return redirect(url_for("dashboard_web.settings"))
+                            if hours_since_change < 24:
+                                hours_remaining = 24 - hours_since_change
+                                flash(f"Debes esperar {int(hours_remaining)} horas más para cambiar tus activos", "error")
+                                return redirect(url_for("dashboard_web.settings"))
+                except Exception:
+                    # Si la columna no existe, permitir el cambio
+                    pass
 
             language = request.form.get("language", "es")
             telegram_id = request.form.get("telegram_chat_id", "").strip()
             now_iso = datetime.utcnow().isoformat()
 
             with get_conn() as conn:
-                # Si cambió activos, actualizar timestamp
+                # Si cambió activos, actualizar timestamp (si la columna existe)
                 if assets_changed:
-                    conn.execute(
-                        text("UPDATE subscriptions SET selected_assets=:assets, last_asset_change_at=:now WHERE user_id=:uid"),
-                        {"assets": ",".join(selected_assets), "now": now_iso, "uid": current_user.id},
-                    )
+                    try:
+                        conn.execute(
+                            text("UPDATE subscriptions SET selected_assets=:assets, last_asset_change_at=:now WHERE user_id=:uid"),
+                            {"assets": ",".join(selected_assets), "now": now_iso, "uid": current_user.id},
+                        )
+                    except Exception:
+                        # Si la columna no existe, solo actualizar activos
+                        conn.execute(
+                            text("UPDATE subscriptions SET selected_assets=:assets WHERE user_id=:uid"),
+                            {"assets": ",".join(selected_assets), "uid": current_user.id},
+                        )
                 else:
                     # Solo actualizar activos sin timestamp
                     conn.execute(
@@ -379,23 +390,27 @@ def settings():
     is_locked_for_changes = False
     next_change_allowed = None
 
-    with get_conn() as conn:
-        last_change = conn.execute(
-            text("SELECT last_asset_change_at FROM subscriptions WHERE user_id=:uid"),
-            {"uid": current_user.id}
-        ).fetchone()
+    try:
+        with get_conn() as conn:
+            last_change = conn.execute(
+                text("SELECT last_asset_change_at FROM subscriptions WHERE user_id=:uid"),
+                {"uid": current_user.id}
+            ).fetchone()
 
-        if last_change and last_change[0]:
-            last_change_dt = datetime.fromisoformat(last_change[0])
-            hours_since_change = (datetime.utcnow() - last_change_dt).total_seconds() / 3600
+            if last_change and last_change[0]:
+                last_change_dt = datetime.fromisoformat(last_change[0])
+                hours_since_change = (datetime.utcnow() - last_change_dt).total_seconds() / 3600
 
-            if hours_since_change < 24:
-                is_locked_for_changes = True
-                next_change_dt = last_change_dt + timedelta(hours=24)
-                # Convertir a timezone Madrid para mostrar
-                madrid_tz = pytz.timezone("Europe/Madrid")
-                next_change_madrid = next_change_dt.replace(tzinfo=pytz.utc).astimezone(madrid_tz)
-                next_change_allowed = next_change_madrid.strftime("%d/%m/%Y a las %H:%M")
+                if hours_since_change < 24:
+                    is_locked_for_changes = True
+                    next_change_dt = last_change_dt + timedelta(hours=24)
+                    # Convertir a timezone Madrid para mostrar
+                    madrid_tz = pytz.timezone("Europe/Madrid")
+                    next_change_madrid = next_change_dt.replace(tzinfo=pytz.utc).astimezone(madrid_tz)
+                    next_change_allowed = next_change_madrid.strftime("%d/%m/%Y a las %H:%M")
+    except Exception:
+        # Si la columna no existe todavía, no hay bloqueo
+        is_locked_for_changes = False
 
     next_step = request.args.get("next_step", "")
     is_new_user = next_step == "select_assets"

@@ -190,17 +190,22 @@ def init_db():
     # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
     meta.create_all(engine, checkfirst=True)
 
-    # Migration: Add last_asset_change_at column if it doesn't exist
+    # Migration: Add last_asset_change_at column if it doesn't exist (PostgreSQL)
     try:
         with engine.connect() as conn:
-            # Check if column exists
-            result = conn.execute(text("PRAGMA table_info(subscriptions)")).fetchall()
-            columns = [row[1] for row in result]
-            if "last_asset_change_at" not in columns:
+            # Check if column exists in PostgreSQL
+            result = conn.execute(text("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name='subscriptions' AND column_name='last_asset_change_at'
+            """)).fetchone()
+
+            if not result:
                 conn.execute(text("ALTER TABLE subscriptions ADD COLUMN last_asset_change_at TEXT"))
                 conn.commit()
-    except Exception:
-        pass  # Column already exists or using different DB engine
+    except Exception as e:
+        # Column already exists or table doesn't exist yet
+        pass
 
 
 class User(UserMixin):
