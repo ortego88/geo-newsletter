@@ -17,8 +17,16 @@ from typing import List, Dict, Optional
 
 logger = logging.getLogger("claude")
 
+# Configuración para API directa de Anthropic
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+
+# Configuración para AWS Bedrock
+USE_BEDROCK = os.getenv("USE_BEDROCK", "false").lower() in ("true", "1", "yes")
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
 
 # ── System prompt mejorado para Claude ────────────────────────────────────────
 SYSTEM_PROMPT = """Eres un analista cuantitativo experto en mercados financieros españoles (IBEX 35), ETFs y criptomonedas.
@@ -217,8 +225,54 @@ def _format_historical_context(similar_events: List[Dict]) -> str:
     return "\n".join(context_lines) + "\n"
 
 
-def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
-    """Llama a la API de Claude (Anthropic)."""
+def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
+    """Llama a Claude a través de AWS Bedrock."""
+    try:
+        import boto3
+        import json as json_lib
+
+        # Crear cliente de Bedrock
+        bedrock = boto3.client(
+            service_name='bedrock-runtime',
+            region_name=AWS_REGION,
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+        )
+
+        # Formato de request para Bedrock (ligeramente diferente a API directa)
+        request_body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "temperature": 0.2,
+            "system": system_prompt,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        }
+
+        # Llamar a Bedrock
+        response = bedrock.invoke_model(
+            modelId=BEDROCK_MODEL_ID,
+            body=json_lib.dumps(request_body)
+        )
+
+        # Parsear respuesta
+        response_body = json_lib.loads(response['body'].read())
+        raw_response = response_body['content'][0]['text'].strip()
+
+        logger.debug(f"Claude (Bedrock) response: {raw_response}")
+        return _parse_json_response(raw_response)
+
+    except Exception as e:
+        logger.error(f"Error llamando a Claude via Bedrock: {e}", exc_info=True)
+        return None
+
+
+def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
+    """Llama a la API directa de Claude (Anthropic)."""
     try:
         import anthropic
 
@@ -227,7 +281,7 @@ def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None
         message = client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=1024,
-            temperature=0.2,  # Ligeramente más alto que GPT para mejor reasoning
+            temperature=0.2,
             system=system_prompt,
             messages=[
                 {"role": "user", "content": prompt}
@@ -236,13 +290,25 @@ def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None
 
         # Claude devuelve la respuesta en message.content[0].text
         raw_response = message.content[0].text.strip()
-        logger.debug(f"Claude response: {raw_response}")
+        logger.debug(f"Claude (Direct API) response: {raw_response}")
 
         return _parse_json_response(raw_response)
 
     except Exception as e:
-        logger.error(f"Error llamando a Claude API: {e}", exc_info=True)
+        logger.error(f"Error llamando a Claude API directa: {e}", exc_info=True)
         return None
+
+
+def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
+    """
+    Llama a Claude usando Bedrock o API directa según configuración.
+    """
+    if USE_BEDROCK:
+        logger.info(f"Usando Claude via AWS Bedrock (región: {AWS_REGION})")
+        return _call_claude_bedrock(prompt, system_prompt)
+    else:
+        logger.info("Usando Claude via API directa de Anthropic")
+        return _call_claude_direct(prompt, system_prompt)
 
 
 def _parse_json_response(text: str) -> dict | None:
@@ -305,14 +371,24 @@ def analyze_event_with_claude(event: dict) -> Optional[dict]:
     """
     Analiza un evento usando Claude con contexto histórico (RAG básico).
 
+    Soporta dos modos:
+    - AWS Bedrock (si USE_BEDROCK=true)
+    - API directa de Anthropic (si ANTHROPIC_API_KEY está configurada)
+
     Mejoras vs GPT-3.5:
     1. Claude tiene mejor razonamiento causal
     2. Incluye eventos históricos similares (aprende de aciertos/errores)
     3. Contexto de mercado técnico
     4. Calibración de confidence mejorada
     """
-    if not ANTHROPIC_API_KEY:
-        logger.warning("ANTHROPIC_API_KEY no configurada, Claude no disponible")
+    # Verificar que al menos uno de los métodos esté configurado
+    if USE_BEDROCK:
+        if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+            logger.warning("USE_BEDROCK activado pero credenciales AWS no configuradas")
+            return None
+        logger.info("✅ Claude via Bedrock configurado correctamente")
+    elif not ANTHROPIC_API_KEY:
+        logger.warning("Ni Bedrock ni API directa de Anthropic configuradas")
         return None
 
     title = event.get("title", "")
@@ -388,5 +464,7 @@ class ClaudeAnalyzer:
         return analyze_event_with_claude(event)
 
     def is_available(self) -> bool:
-        """Verifica si Claude está disponible."""
+        """Verifica si Claude está disponible (via Bedrock o API directa)."""
+        if USE_BEDROCK:
+            return bool(AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
         return bool(ANTHROPIC_API_KEY)
