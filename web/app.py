@@ -271,14 +271,21 @@ def create_app():
 
         for direction, price in rows:
             if price and price > 0:
-                if direction in ("up", "bullish", "positive", "alza") and cash > 0:
-                    position = cash / price
-                    cash = 0.0
-                elif direction in ("down", "bearish", "negative", "baja") and position > 0:
-                    cash = position * price
-                    position = 0.0
+                # Señal alcista: si tenemos efectivo, compramos; si ya tenemos posición, mantenemos
+                if direction in ("up", "bullish", "positive", "alza"):
+                    if cash > 0:
+                        # Compramos con todo el efectivo disponible
+                        position = cash / price
+                        cash = 0.0
+                # Señal bajista: si tenemos posición, vendemos; si ya estamos en efectivo, mantenemos
+                elif direction in ("down", "bearish", "negative", "baja"):
+                    if position > 0:
+                        # Vendemos toda la posición y convertimos a efectivo
+                        cash = position * price
+                        position = 0.0
                 last_price = price
 
+        # Al final, si quedamos con posición abierta, la cerramos al último precio
         if position > 0 and last_price:
             cash = position * last_price
 
