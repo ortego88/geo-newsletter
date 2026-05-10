@@ -388,14 +388,15 @@
   function updateCheckboxStates() {
     if (IS_LOCKED) return; // Si está bloqueado, no hacer nada
 
-    const selected = [...checkboxes].filter(c => c.checked && !c.disabled);
+    // Primero, contar los seleccionados (excluyendo los deshabilitados por bloqueo de 24h)
+    const selected = [...checkboxes].filter(c => c.checked && !c.hasAttribute('data-originally-disabled'));
 
     // Si alcanzamos el límite y es plan de 1 activo, desmarcar otros
     if (MAX_ASSETS === 1 && selected.length > 1) {
       // Mantener solo el último seleccionado
       const lastChecked = selected[selected.length - 1];
       checkboxes.forEach(cb => {
-        if (cb !== lastChecked && !cb.disabled) {
+        if (cb !== lastChecked && !cb.hasAttribute('data-originally-disabled')) {
           cb.checked = false;
         }
       });
@@ -410,10 +411,13 @@
         : `Tu plan permite seleccionar hasta ${MAX_ASSETS} activos. Actualiza a Profesional para acceder a todos.`);
     }
 
-    // Deshabilitar checkboxes si se alcanzó el límite
-    const currentSelected = [...checkboxes].filter(c => c.checked && !c.disabled);
+    // Actualizar el conteo después de las correcciones
+    const currentSelected = [...checkboxes].filter(c => c.checked && !c.hasAttribute('data-originally-disabled'));
+
+    // Deshabilitar/habilitar checkboxes según el límite
     checkboxes.forEach(cb => {
-      if (cb.disabled) return; // No modificar los que ya están deshabilitados por bloqueo
+      // No tocar los que están bloqueados por el período de 24h
+      if (cb.hasAttribute('data-originally-disabled')) return;
 
       const label = cb.closest('label');
       if (!label) return;
@@ -422,8 +426,8 @@
       if (MAX_ASSETS !== -1 && currentSelected.length >= MAX_ASSETS && !cb.checked) {
         cb.disabled = true;
         label.classList.add('opacity-50', 'cursor-not-allowed');
-      } else if (!cb.hasAttribute('data-originally-disabled')) {
-        // Si no está en el límite, habilitarlo (solo si no estaba deshabilitado originalmente)
+      } else {
+        // Si no se alcanzó el límite, habilitarlo
         cb.disabled = false;
         label.classList.remove('opacity-50', 'cursor-not-allowed');
       }
@@ -619,6 +623,78 @@
     updateCookieBannerLang();
   }
 
+</script>
+
+<!-- Logout modal -->
+<div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-8 text-center">
+    <div class="text-4xl mb-4">👋</div>
+    <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
+    <p class="text-slate-400 text-sm mb-6">¿Estás seguro de que quieres cerrar sesión?</p>
+    <div class="flex gap-3 justify-center">
+      <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
+        class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-5 py-2.5 rounded-xl transition">
+        Cancelar
+      </button>
+      <a href="/logout"
+        class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-5 py-2.5 rounded-xl transition">
+        Cerrar sesión
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Language menu toggle for main nav
+  var LANG_META = {
+    es: { flag: '🇪🇸', label: 'Español' },
+    en: { flag: '🇬🇧', label: 'English' }
+  };
+
+  function toggleLangMenu() {
+    var dd = document.getElementById('lang-dropdown');
+    if (!dd) return;
+
+    if (dd.classList.contains('hidden')) {
+      dd.innerHTML = '';
+      var currentLang = localStorage.getItem('geo_lang') || 'es';
+
+      Object.keys(LANG_META).forEach(function(code) {
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition' + (code === currentLang ? ' text-emerald-400 font-semibold' : '');
+        item.innerHTML = '<span>' + LANG_META[code].flag + '</span><span class="uppercase font-semibold">' + code.toUpperCase() + '</span><span class="text-slate-500">' + LANG_META[code].label + '</span>';
+        item.onclick = function() {
+          localStorage.setItem('geo_lang', code);
+          document.getElementById('lang-flag').textContent = LANG_META[code].flag;
+          document.getElementById('lang-code').textContent = code.toUpperCase();
+          dd.classList.add('hidden');
+        };
+        dd.appendChild(item);
+      });
+      dd.classList.remove('hidden');
+    } else {
+      dd.classList.add('hidden');
+    }
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    var wrapper = document.getElementById('lang-menu-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+      var dd = document.getElementById('lang-dropdown');
+      if (dd) dd.classList.add('hidden');
+    }
+  });
+
+  // Initialize lang display
+  (function() {
+    var lang = localStorage.getItem('geo_lang') || 'es';
+    var flagEl = document.getElementById('lang-flag');
+    var codeEl = document.getElementById('lang-code');
+    if (flagEl && LANG_META[lang]) flagEl.textContent = LANG_META[lang].flag;
+    if (codeEl) codeEl.textContent = lang.toUpperCase();
+  })();
 </script>
 
 {% include 'partials/cookie_banner.html' %}
