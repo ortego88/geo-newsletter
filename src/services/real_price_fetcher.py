@@ -1,14 +1,18 @@
 """
 Fetcher de precios reales para activos financieros.
-- Crypto: CoinGecko free API
+- Crypto: CoinGecko (primary) → CoinMarketCap (fallback) → yfinance
 - Acciones/Índices/Commodities: yfinance (incluye futuros de materias primas)
 - Caché en memoria con TTL de 60 segundos
 """
 
 import time
 import logging
+import os
 
 logger = logging.getLogger("real_price_fetcher")
+
+# API keys for premium sources
+COINMARKETCAP_API_KEY = os.getenv("COINMARKETCAP_API_KEY", "")
 
 # --- Caché en memoria ---
 _cache: dict = {}  # {asset: (price, timestamp)}
@@ -130,8 +134,8 @@ def _set_cached(asset: str, price: float):
     _cache[asset] = (price, time.time())
 
 
-def _fetch_crypto_price(asset: str):
-    """Obtiene precio de crypto desde CoinGecko."""
+def _fetch_crypto_price_coingecko(asset: str):
+    """Obtiene precio de crypto desde CoinGecko (primary source)."""
     gecko_id = CRYPTO_IDS.get(asset.upper())
     if not gecko_id:
         return None
@@ -148,7 +152,80 @@ def _fetch_crypto_price(asset: str):
         if price is not None:
             return float(price)
     except Exception as e:
-        logger.warning(f"CoinGecko error para {asset}: {e}")
+        logger.debug(f"CoinGecko error para {asset}: {e}")
+    return None
+
+
+def _fetch_crypto_price_coinmarketcap(asset: str):
+    """Obtiene precio de crypto desde CoinMarketCap (fallback)."""
+    if not COINMARKETCAP_API_KEY:
+        return None
+
+    asset_upper = asset.upper()
+    try:
+        import requests
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+        headers = {
+            "X-CMC_PRO_API_KEY": COINMARKETCAP_API_KEY,
+            "Accept": "application/json",
+        }
+        params = {"symbol": asset_upper, "convert": "USD"}
+        resp = requests.get(url, headers=headers, params=params, timeout=8)
+        resp.raise_for_status()
+        data = resp.json()
+        if data.get("data") and asset_upper in data["data"]:
+            price = data["data"][asset_upper].get("quote", {}).get("USD", {}).get("price")
+            if price is not None:
+                return float(price)
+    except Exception as e:
+        logger.debug(f"CoinMarketCap error para {asset}: {e}")
+    return None
+
+
+def _fetch_crypto_price_yfinance(asset: str):
+    """Obtiene precio de crypto desde yfinance (último recurso)."""
+    try:
+        import yfinance as yf
+        ticker_symbol = f"{asset.upper()}-USD"
+        ticker = yf.Ticker(ticker_symbol)
+        info = ticker.fast_info
+        price = getattr(info, "last_price", None)
+        if price is None:
+            hist = ticker.history(period="1d")
+            if not hist.empty:
+                price = float(hist["Close"].iloc[-1])
+        if price is not None:
+            return float(price)
+    except Exception as e:
+        logger.debug(f"yfinance error para crypto {asset}: {e}")
+    return None
+
+
+def _fetch_crypto_price(asset: str):
+    """
+    Obtiene precio de crypto con fallback múltiple.
+    Orden: CoinGecko → CoinMarketCap → yfinance
+    """
+    # Intentar CoinGecko primero (más fiable, gratis)
+    price = _fetch_crypto_price_coingecko(asset)
+    if price is not None:
+        return price
+
+    logger.debug(f"CoinGecko no disponible para {asset}, intentando CoinMarketCap...")
+    # Fallback a CoinMarketCap si está configurado
+    price = _fetch_crypto_price_coinmarketcap(asset)
+    if price is not None:
+        logger.info(f"Usando precio de CoinMarketCap para {asset}")
+        return price
+
+    logger.debug(f"CoinMarketCap no disponible para {asset}, intentando yfinance...")
+    # Último recurso: yfinance
+    price = _fetch_crypto_price_yfinance(asset)
+    if price is not None:
+        logger.info(f"Usando precio de yfinance para {asset}")
+        return price
+
+    logger.warning(f"No se pudo obtener precio para crypto {asset} en ninguna fuente")
     return None
 
 

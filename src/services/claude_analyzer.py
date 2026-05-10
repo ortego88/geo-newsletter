@@ -109,7 +109,11 @@ ANÁLISIS PASO A PASO (piensa cada punto antes de responder):
 2. ¿QUÉ ocurrió? (hecho confirmado / opinión de analista / rumor / previsión)
 3. ¿CUÁL es la reacción de mercado más probable a corto plazo? (up / down / neutral — evita neutral salvo justificación)
 4. ¿QUÉ TAN SEGURO estás? (25-95, usa rango completo, consulta reglas de calibración)
-5. ¿HAY EVENTOS SIMILARES EN LA HISTORIA? Si sí, ¿qué enseñan sobre la dirección y confidence correctas?
+5. ¿CUÁNDO verificar? Estima cuántas HORAS después de esta alerta debería ocurrir el movimiento esperado:
+   - Eventos de impacto INMEDIATO (datos económicos, decisiones de tasas, earnings): 2-4 horas
+   - Noticias de impacto A CORTO PLAZO (sanciones, acuerdos geopolíticos): 4-8 horas
+   - Eventos de tendencia A LARGO PLAZO (cambios regulatorios, restructuraciones): 12-24 horas
+6. ¿HAY EVENTOS SIMILARES EN LA HISTORIA? Si sí, ¿qué enseñan sobre la dirección y confidence correctas?
 
 VERIFICACIÓN DE CALIDAD antes de finalizar:
 - ¿La noticia se basa en un hecho confirmado o solo en opinión de alguien? (opinión → confidence ≤55)
@@ -126,7 +130,8 @@ Responde con este JSON exacto:
   "signal_strength": "high|medium|low",
   "most_affected_assets": [<2-3 símbolos de ALLOWED SYMBOLS, sujeto principal primero>],
   "reasoning": "<UNA frase máx 150 chars EN ESPAÑOL explicando activo principal, dirección y por qué>",
-  "historical_learning": "<Si usaste eventos históricos, explica brevemente qué aprendiste de ellos>"
+  "historical_learning": "<Si usaste eventos históricos, explica brevemente qué aprendiste de ellos>",
+  "verification_window_hours": <entero 2-24 estimando HORAS después de esta alerta para verificar>
 }}"""
 
 
@@ -358,6 +363,13 @@ def _validate_analysis(data: dict) -> dict:
     reasoning = str(data.get("reasoning", ""))[:300]
     historical_learning = str(data.get("historical_learning", ""))[:200]
 
+    # Validar verification_window_hours
+    try:
+        verification_window_hours = int(data.get("verification_window_hours", 6))
+        verification_window_hours = max(2, min(24, verification_window_hours))
+    except (ValueError, TypeError):
+        verification_window_hours = 6
+
     return {
         "market_impact_percent": 0,
         "direction": direction,
@@ -367,6 +379,7 @@ def _validate_analysis(data: dict) -> dict:
         "most_affected_assets": assets,
         "reasoning": reasoning,
         "historical_learning": historical_learning,
+        "verification_window_hours": verification_window_hours,
     }
 
 

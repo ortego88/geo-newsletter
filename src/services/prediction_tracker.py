@@ -73,6 +73,7 @@ class PredictionTracker:
             Column("source", Text),
             Column("verify_at", Text),  # cuándo verificar esta predicción
             Column("source_url", Text),  # URL de la noticia original
+            Column("verification_window_hours", Integer),  # recomendado por Claude
         )
         # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
         meta.create_all(engine, checkfirst=True)
@@ -80,6 +81,8 @@ class PredictionTracker:
         self._migrate_add_verify_at(engine)
         # Add source_url column to existing tables (migration for existing DBs)
         self._migrate_add_source_url(engine)
+        # Add verification_window_hours column to existing tables
+        self._migrate_add_verification_window(engine)
 
     def _migrate_add_verify_at(self, engine):
         """Adds verify_at column to existing predictions tables (safe migration)."""
@@ -110,6 +113,21 @@ class PredictionTracker:
                     logger.info("Migración: columna source_url añadida a predictions")
         except Exception as e:
             logger.debug(f"source_url migration note: {e}")
+
+    def _migrate_add_verification_window(self, engine):
+        """Adds verification_window_hours column to existing predictions tables (safe migration)."""
+        try:
+            with engine.connect() as conn:
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='verification_window_hours'"
+                )).fetchone()
+                if not exists:
+                    conn.execute(text("ALTER TABLE predictions ADD COLUMN verification_window_hours INTEGER"))
+                    conn.commit()
+                    logger.info("Migración: columna verification_window_hours añadida a predictions")
+        except Exception as e:
+            logger.debug(f"verification_window_hours migration note: {e}")
 
     def _timeframe_to_minutes(self, timeframe: str) -> int:
         # Capped at 3 days max to prevent stale predictions that can't be
@@ -166,9 +184,15 @@ class PredictionTracker:
         source_url = event.get("url") or event.get("link") or ""
         predicted_at = datetime.utcnow()
 
-        # Calcular verify_at según el tipo de activo y horario de mercado
+        # Usar verification_window_hours recomendado por Claude (si está disponible)
+        verification_window_hours = analysis.get("verification_window_hours")
+        if not verification_window_hours:
+            from src.services.market_config import get_verification_window
+            verification_window_hours = get_verification_window(asset)
+
+        # Calcular verify_at usando la ventana de verificación recomendada
         try:
-            verify_dt = calculate_verification_time(asset, predicted_at)
+            verify_dt = predicted_at + timedelta(hours=verification_window_hours)
             verify_at = verify_dt.isoformat()
         except Exception:
             verify_at = None
@@ -179,10 +203,12 @@ class PredictionTracker:
                     INSERT INTO predictions
                     (event_id, title, category, asset, direction, impact_percent,
                      timeframe, timeframe_minutes, confidence, reasoning,
-                     price_at_prediction, predicted_at, outcome, score, source, verify_at, source_url)
+                     price_at_prediction, predicted_at, outcome, score, source, verify_at,
+                     source_url, verification_window_hours)
                     VALUES (:event_id, :title, :category, :asset, :direction, :impact_percent,
                             :timeframe, :timeframe_minutes, :confidence, :reasoning,
-                            :price, :predicted_at, 'pending', :score, :source, :verify_at, :source_url)
+                            :price, :predicted_at, 'pending', :score, :source, :verify_at,
+                            :source_url, :verification_window_hours)
                     RETURNING id
                 """), {
                     "event_id": event_id, "title": title, "category": category,
@@ -191,11 +217,11 @@ class PredictionTracker:
                     "confidence": confidence, "reasoning": reasoning,
                     "price": current_price, "predicted_at": predicted_at.isoformat(),
                     "score": score, "source": source, "verify_at": verify_at,
-                    "source_url": source_url,
+                    "source_url": source_url, "verification_window_hours": verification_window_hours,
                 })
                 conn.commit()
                 prediction_id = result.fetchone()[0]
-                logger.info(f"Predicción guardada: ID={prediction_id} | {title[:60]}")
+                logger.info(f"Predicción guardada: ID={prediction_id} | {title[:60]} | verificar en {verification_window_hours}h")
                 return prediction_id
         except Exception as e:
             err_str = str(e)
