@@ -26,7 +26,7 @@
         </div>
       </div>
       {% if not current_user.is_authenticated %}
-      <a href="/register" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
+      <a href="/#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition" data-i18n="nav.start_free">
         Empezar gratis
       </a>
       {% endif %}
@@ -34,7 +34,7 @@
     <!-- Mobile: CTA + hamburger -->
     <div class="flex md:hidden items-center gap-3">
       {% if not current_user.is_authenticated %}
-      <a href="/register" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+      <a href="/#precios" onclick="closeMobileNav()" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
         Empezar gratis
       </a>
       {% endif %}

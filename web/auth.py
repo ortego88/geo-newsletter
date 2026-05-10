@@ -18,7 +18,9 @@ def _is_safe_redirect(url: str) -> bool:
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("dashboard_web.index"))
+        # Redirigir según el estado del flujo
+        return _redirect_based_on_completion_status()
+
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
@@ -28,15 +30,47 @@ def login():
             next_page = request.args.get("next", "")
             if _is_safe_redirect(next_page):
                 return redirect(next_page)
-            return redirect(url_for("dashboard_web.index"))
+            # Redirigir según el estado del flujo del usuario
+            return _redirect_based_on_completion_status()
         flash("Email o contraseña incorrectos", "error")
     return render_template("auth/login.html")
+
+
+def _redirect_based_on_completion_status():
+    """Redirige al usuario al siguiente paso incompleto del flujo de onboarding."""
+    from web.models import get_conn
+    from sqlalchemy import text
+
+    sub = current_user.get_subscription()
+
+    # Si no tiene suscripción, a pricing
+    if not sub or sub["status"] not in ("active", "trial"):
+        return redirect(url_for("billing.pricing"))
+
+    # Si no tiene método de pago, a checkout
+    with get_conn() as conn:
+        has_payment = conn.execute(
+            text("SELECT 1 FROM payment_methods WHERE user_id = :uid LIMIT 1"),
+            {"uid": current_user.id}
+        ).fetchone()
+
+    if not has_payment:
+        return redirect(url_for("billing.checkout_trial", plan=sub["plan"], next_step="select_assets"))
+
+    # Si no tiene activos seleccionados, a settings
+    user_selected_assets = [a for a in (sub.get("selected_assets") or []) if a]
+    if not user_selected_assets:
+        return redirect(url_for("dashboard_web.settings", next_step="select_assets"))
+
+    # Si completó todo, al dashboard
+    return redirect(url_for("dashboard_web.index"))
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for("dashboard_web.index"))
+        # Si ya está autenticado, redirigir según el estado del flujo
+        return _redirect_based_on_completion_status()
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip().lower()

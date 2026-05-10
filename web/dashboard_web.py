@@ -60,10 +60,30 @@ def _user_has_payment_method(user_id: int) -> bool:
 
 
 def _require_active_subscription():
+    """
+    Valida que el usuario tenga suscripción activa Y que haya completado el flujo completo:
+    1. Suscripción activa o trial
+    2. Método de pago guardado
+    3. Activos seleccionados
+    """
     sub = current_user.get_subscription()
+
+    # Paso 1: Verificar suscripción activa
     if not sub or sub["status"] not in ("active", "trial"):
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
+
+    # Paso 2: Verificar método de pago
+    if not _user_has_payment_method(current_user.id):
+        flash("Añade tu método de pago para continuar", "warning")
+        return redirect(url_for("billing.checkout_trial", plan=sub["plan"], next_step="select_assets"))
+
+    # Paso 3: Verificar activos seleccionados
+    user_selected_assets = [a for a in (sub.get("selected_assets") or []) if a]
+    if not user_selected_assets:
+        flash("Selecciona al menos un activo para empezar a recibir alertas", "info")
+        return redirect(url_for("dashboard_web.settings", next_step="select_assets"))
+
     return None
 
 
@@ -277,11 +297,18 @@ def index():
 @dashboard_bp.route("/dashboard/settings", methods=["GET", "POST"])
 @login_required
 def settings():
-    redirect_resp = _require_active_subscription()
-    if redirect_resp:
-        return redirect_resp
-
+    # Para settings, solo validamos suscripción y método de pago, no activos
+    # (porque es aquí donde los seleccionan por primera vez)
     sub = current_user.get_subscription()
+    if not sub or sub["status"] not in ("active", "trial"):
+        flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
+        return redirect(url_for("billing.pricing"))
+
+    # Si no tiene método de pago, redirigir a checkout
+    if not _user_has_payment_method(current_user.id):
+        flash("Añade tu método de pago antes de seleccionar activos", "warning")
+        return redirect(url_for("billing.checkout_trial", plan=sub["plan"], next_step="select_assets"))
+
     plan_config = PLANS.get(sub["plan"], PLANS["basic"])
 
     if request.method == "POST":
@@ -340,10 +367,12 @@ def settings():
 @dashboard_bp.route("/dashboard/subscription")
 @login_required
 def subscription():
-    redirect_resp = _require_active_subscription()
-    if redirect_resp:
-        return redirect_resp
+    # Para subscription, solo validamos suscripción activa (pueden no tener pago aún)
     sub = current_user.get_subscription()
+    if not sub or sub["status"] not in ("active", "trial"):
+        flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
+        return redirect(url_for("billing.pricing"))
+
     plan_config = PLANS.get(sub["plan"], PLANS["basic"]) if sub else None
     has_payment_method = _user_has_payment_method(current_user.id)
     return render_template(
