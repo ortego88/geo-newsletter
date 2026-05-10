@@ -99,6 +99,8 @@ def create_app():
 
         asset_filter = request.args.get("asset", "").strip()
         asset_type_filter = request.args.get("asset_type", "").strip()
+        outcome_filter = request.args.get("outcome", "").strip()
+        time_filter = request.args.get("time_filter", "").strip()
         sort_by = request.args.get("sort", "predicted_at")
         sort_dir = request.args.get("dir", "desc")
 
@@ -120,6 +122,20 @@ def create_app():
                 where = "WHERE 1=1"
                 params: dict = {}
 
+                # Time filter
+                if time_filter == "24h":
+                    cutoff = datetime.utcnow() - timedelta(hours=24)
+                    where += " AND predicted_at >= :time_cutoff"
+                    params["time_cutoff"] = cutoff.isoformat()
+                elif time_filter == "7d":
+                    cutoff = datetime.utcnow() - timedelta(days=7)
+                    where += " AND predicted_at >= :time_cutoff"
+                    params["time_cutoff"] = cutoff.isoformat()
+                elif time_filter == "30d":
+                    cutoff = datetime.utcnow() - timedelta(days=30)
+                    where += " AND predicted_at >= :time_cutoff"
+                    params["time_cutoff"] = cutoff.isoformat()
+
                 if asset_filter:
                     where += " AND asset = :asset"
                     params["asset"] = asset_filter
@@ -129,6 +145,10 @@ def create_app():
                     if type_assets:
                         placeholders = ",".join(f"'{a}'" for a in type_assets)
                         where += f" AND asset IN ({placeholders})"
+
+                if outcome_filter in ("correct", "incorrect", "pending", "neutral"):
+                    where += " AND outcome = :outcome"
+                    params["outcome"] = outcome_filter
 
                 total_alerts = conn.execute(
                     text(f"SELECT COUNT(*) FROM predictions {where}"), params
@@ -197,6 +217,8 @@ def create_app():
             total_pages=total_pages,
             asset_filter=asset_filter,
             asset_type_filter=asset_type_filter,
+            outcome_filter=outcome_filter,
+            time_filter=time_filter,
             sort_by=sort_by,
             sort_dir=sort_dir,
         )

@@ -86,6 +86,7 @@ def index():
     asset_filter = request.args.get("asset", "").strip()
     outcome_filter = request.args.get("outcome", "").strip()
     asset_type_filter = request.args.get("asset_type", "").strip()
+    time_filter = request.args.get("time_filter", "").strip()
     sort_by = request.args.get("sort", "predicted_at")
     sort_dir = request.args.get("dir", "desc")
 
@@ -102,6 +103,20 @@ def index():
         with _get_predictions_conn() as conn2:
             where = "WHERE 1=1"
             extra_params: dict = {}
+
+            # Time filter
+            if time_filter == "24h":
+                cutoff = datetime.utcnow() - timedelta(hours=24)
+                where += " AND predicted_at >= :time_cutoff"
+                extra_params["time_cutoff"] = cutoff.isoformat()
+            elif time_filter == "7d":
+                cutoff = datetime.utcnow() - timedelta(days=7)
+                where += " AND predicted_at >= :time_cutoff"
+                extra_params["time_cutoff"] = cutoff.isoformat()
+            elif time_filter == "30d":
+                cutoff = datetime.utcnow() - timedelta(days=30)
+                where += " AND predicted_at >= :time_cutoff"
+                extra_params["time_cutoff"] = cutoff.isoformat()
 
             if user_selected_assets:
                 asset_list = ",".join([f"'{a}'" for a in user_selected_assets])
@@ -170,6 +185,20 @@ def index():
             stats_where = "WHERE 1=1"
             stats_params: dict = {}
 
+            # Time filter for stats
+            if time_filter == "24h":
+                cutoff = datetime.utcnow() - timedelta(hours=24)
+                stats_where += " AND predicted_at >= :time_cutoff"
+                stats_params["time_cutoff"] = cutoff.isoformat()
+            elif time_filter == "7d":
+                cutoff = datetime.utcnow() - timedelta(days=7)
+                stats_where += " AND predicted_at >= :time_cutoff"
+                stats_params["time_cutoff"] = cutoff.isoformat()
+            elif time_filter == "30d":
+                cutoff = datetime.utcnow() - timedelta(days=30)
+                stats_where += " AND predicted_at >= :time_cutoff"
+                stats_params["time_cutoff"] = cutoff.isoformat()
+
             if user_selected_assets:
                 asset_list = ",".join([f"'{a}'" for a in user_selected_assets])
                 stats_where += f" AND asset IN ({asset_list})"
@@ -237,6 +266,7 @@ def index():
         asset_filter=asset_filter,
         asset_type_filter=asset_type_filter,
         outcome_filter=outcome_filter,
+        time_filter=time_filter,
         sort_by=sort_by,
         sort_dir=sort_dir,
         per_page=per_page,

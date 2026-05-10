@@ -29,7 +29,7 @@
   <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-transform duration-300">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-20 md:h-[calc(100vh-5rem)] transition-transform duration-300">
     <div class="px-6 py-5 border-b border-slate-800">
       <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
       <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
@@ -162,6 +162,12 @@
       <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 md:px-5 py-4 mb-4">
         <form method="GET" action="/dashboard" class="filters-form flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
           <input type="hidden" name="outcome" id="outcome-filter" value="{{ outcome_filter }}">
+          <select name="time_filter" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+            <option value="">📅 Todo el historial</option>
+            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>⏰ Últimas 24 horas</option>
+            <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>📆 Últimos 7 días</option>
+            <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>📊 Últimos 30 días</option>
+          </select>
           <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los tipos</option>
             <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>🪙 Criptomonedas</option>
@@ -192,29 +198,29 @@
                   <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_confidence">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_confidence">
                       Conf.{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_score">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_score">
                       Score{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_price_entry">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_price_entry">
                       Precio entrada{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=price_at_validation&dir={% if sort_by == 'price_at_validation' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=price_at_validation&dir={% if sort_by == 'price_at_validation' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
                       Precio valid.{% if sort_by == 'price_at_validation' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Cambio real</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Resultado</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
-                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
+                    <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
                       Fecha{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
@@ -296,15 +302,15 @@
           {% if total_pages > 1 %}
           <div class="flex flex-wrap items-center justify-center gap-2 px-4 md:px-6 py-4 border-t border-slate-700">
             {% if page > 1 %}
-              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+              <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
             {% endif %}
             {% for p in range(1, total_pages + 1) %}
-              <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+              <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
             {% endfor %}
             {% if page < total_pages %}
-              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
+              <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
             {% endif %}
           </div>
