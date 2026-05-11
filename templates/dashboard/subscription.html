@@ -17,35 +17,7 @@
   <!-- Mobile sidebar overlay -->
   <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
 
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-20 md:h-[calc(100vh-5rem)] transition-transform duration-300">
-    <div class="px-6 py-5 border-b border-slate-800">
-      <a href="/" class="text-emerald-400 font-bold text-lg">GEO-NEWSLETTER</a>
-      <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
-    </div>
-
-    <nav class="flex-1 px-4 py-6 space-y-1">
-      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>📊</span> <span data-i18n="dash.dashboard">Dashboard</span>
-      </a>
-      <a href="/dashboard/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>⚙️</span> <span data-i18n="dash.settings">Configuración</span>
-      </a>
-      <a href="/dashboard/subscription" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-slate-800 text-slate-300 font-medium text-sm">
-        <span>💳</span> <span data-i18n="dash.subscription">Suscripción</span>
-      </a>
-    </nav>
-
-    <div class="px-4 py-4 border-t border-slate-800">
-      <div class="px-3 py-2 mb-2">
-        <p class="text-white text-sm font-medium">{{ current_user.name }}</p>
-        <p class="text-slate-500 text-xs">{{ current_user.email }}</p>
-      </div>
-      <a href="/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        <span>🚪</span> <span data-i18n="dash.sign_out">Cerrar sesión</span>
-      </a>
-    </div>
-  </aside>
+  {% include 'dashboard/_sidebar.html' %}
 
   <!-- MAIN -->
   <main class="flex-1 overflow-auto">
@@ -56,15 +28,6 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.subscription">Suscripción</h1>
-      </div>
-      <!-- Compact lang switcher -->
-      <div class="relative" id="dash-lang-wrapper">
-        <button onclick="toggleDashLang()" class="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-700" id="dash-lang-btn">
-          <span id="dash-lang-flag">🇪🇸</span>
-          <span id="dash-lang-code" class="text-xs font-semibold uppercase">ES</span>
-        </button>
-        <div id="dash-lang-dropdown" class="hidden absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[120px]">
-        </div>
       </div>
     </div>
 
