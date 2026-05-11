@@ -137,18 +137,17 @@
             {% set all_langs = [('es', 'Español'), ('en', 'English')] %}
             {% for lang_code, lang_name in all_langs %}
               {% set is_available = lang_code in available_langs %}
-              <label class="flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition
+              <label class="lang-option flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition
                 {% if not is_available %}border-slate-700 opacity-50 cursor-not-allowed
                 {% elif current_user.language == lang_code %}border-emerald-500/50 bg-emerald-500/10
-                {% else %}border-slate-700 hover:border-slate-500{% endif %}">
+                {% else %}border-slate-700 hover:border-slate-500{% endif %}"
+                data-lang="{{ lang_code }}">
                 <input type="radio" name="language" value="{{ lang_code }}"
                   {% if current_user.language == lang_code %}checked{% endif %}
                   {% if not is_available %}disabled{% endif %}
-                  class="text-emerald-500 focus:ring-emerald-500">
+                  class="text-emerald-500 focus:ring-emerald-500"
+                  onchange="updateLangVisual(this)">
                 <span class="text-sm {% if not is_available %}text-slate-500{% else %}text-white{% endif %}">{{ lang_name }}</span>
-                {% if not is_available %}
-                  <span class="text-slate-600 text-xs">🔒</span>
-                {% endif %}
               </label>
             {% endfor %}
           </div>
@@ -245,6 +244,20 @@
 </div>
 
 <script>
+  // Sync server language with localStorage on page load
+  localStorage.setItem('geo_lang', '{{ current_user.language }}');
+
+  function updateLangVisual(radio) {
+    document.querySelectorAll('.lang-option').forEach(function(label) {
+      label.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
+      label.classList.add('border-slate-700');
+    });
+    var parent = radio.closest('.lang-option');
+    parent.classList.remove('border-slate-700');
+    parent.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
+    localStorage.setItem('geo_lang', radio.value);
+  }
+
   function toggleMobileSidebar() {
     var sidebar = document.getElementById('sidebar');
     var overlay = document.getElementById('sidebar-overlay');

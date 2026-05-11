@@ -615,21 +615,23 @@ def format_alert(event: dict, analysis: dict) -> str:
     return "\n".join(lines)
 
 
-def format_telegram_alert(event: dict, analysis: dict) -> str:
+def format_telegram_alert(event: dict, analysis: dict, language: str = "es") -> str:
     """
     Genera un mensaje compacto para Telegram en texto plano.
-    El título, la fuente y el reasoning se incluyen sin truncado adicional más allá
-    de los 150 caracteres del reasoning; el tamaño total es típicamente ~300-500 chars.
+    Soporta español (es) e inglés (en).
     """
     fetcher = AssetPriceFetcher()
+    is_en = language == "en"
 
-    title = _translate_title(event.get("title", "Sin título"))
+    title = event.get("title", "No title" if is_en else "Sin título")
+    if not is_en:
+        title = _translate_title(title)
     score = event.get("score", event.get("impact_score", 0))
-    category = event.get("category", "geopolítico").upper()
+    category = event.get("category", "geopolitical" if is_en else "geopolítico").upper()
     sources = event.get("sources", [])
     if isinstance(sources, str):
         sources = [sources]
-    source_text = (sources[0][:40] if sources else "Desconocido")
+    source_text = (sources[0][:40] if sources else ("Unknown" if is_en else "Desconocido"))
     timestamp = _now_madrid().strftime("%d/%m/%Y %H:%M")
 
     direction = analysis.get("direction", "neutral")
@@ -637,26 +639,33 @@ def format_telegram_alert(event: dict, analysis: dict) -> str:
 
     if direction in ("up", "bullish", "positive", "alza"):
         impact_pct = abs(impact_pct)
-        direction_icon = "📈"
-        direction_label = "Subida esperada"
+        direction_label = "Expected rise" if is_en else "Subida esperada"
     elif direction in ("down", "bearish", "negative", "baja"):
         impact_pct = -abs(impact_pct)
-        direction_icon = "📉"
-        direction_label = "Bajada esperada"
+        direction_label = "Expected drop" if is_en else "Bajada esperada"
     else:
         impact_pct = 0
-        direction_icon = "➡️"
-        direction_label = "Lateral"
+        direction_label = "Sideways" if is_en else "Lateral"
 
-    timeframe = analysis.get("timeframe", "desconocido")
-    timeframe_es = {
-        "hours": "horas",
-        "days": "días",
-        "hours to days": "horas a días",
-        "days to weeks": "días a semanas",
-        "weeks": "semanas",
-        "immediate": "inmediato",
-    }.get(timeframe, timeframe)
+    timeframe = analysis.get("timeframe", "unknown" if is_en else "desconocido")
+    if is_en:
+        timeframe_label = {
+            "hours": "hours",
+            "days": "days",
+            "hours to days": "hours to days",
+            "days to weeks": "days to weeks",
+            "weeks": "weeks",
+            "immediate": "immediate",
+        }.get(timeframe, timeframe)
+    else:
+        timeframe_label = {
+            "hours": "horas",
+            "days": "días",
+            "hours to days": "horas a días",
+            "days to weeks": "días a semanas",
+            "weeks": "semanas",
+            "immediate": "inmediato",
+        }.get(timeframe, timeframe)
 
     confidence = analysis.get("confidence", 0)
     reasoning_raw = (analysis.get("reasoning", "") or "")
@@ -695,7 +704,7 @@ def format_telegram_alert(event: dict, analysis: dict) -> str:
     lines.append("")
     lines.append(f"📍 {title}")
     lines.append("")
-    lines.append(f"{direction_icon} {direction_label}")
+    lines.append(f"{direction_label}")
 
     # Primary asset line
     if affected_assets:
@@ -703,12 +712,15 @@ def format_telegram_alert(event: dict, analysis: dict) -> str:
         icon = ASSET_ICONS.get(asset, "💹")
         name = ASSET_NAMES.get(asset, asset)
         price_str = fetcher.get_formatted_price(asset)
-        lines.append(f"🎯 Activo: {icon} {name} ({price_str})")
+        asset_label = "Asset" if is_en else "Activo"
+        lines.append(f"{asset_label}: {name} ({price_str})")
 
-    lines.append(f"⏳ Plazo: {timeframe_es}")
+    timeframe_word = "Timeframe" if is_en else "Plazo"
+    lines.append(f"{timeframe_word}: {timeframe_label}")
 
     if confidence >= 60:
-        lines.append(f"🔮 Confianza: {confidence}%")
+        conf_label = "Confidence" if is_en else "Confianza"
+        lines.append(f"{conf_label}: {confidence}%")
 
     if reasoning:
         lines.append("")

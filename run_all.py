@@ -82,7 +82,7 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> int:
     try:
         with _get_engine("app").connect() as conn:
             rows = conn.execute(_text("""
-                SELECT u.id, u.telegram_chat_id, s.plan, s.status, s.selected_assets
+                SELECT u.id, u.telegram_chat_id, s.plan, s.status, s.selected_assets, u.language
                 FROM users u
                 JOIN subscriptions s ON s.user_id = u.id
                 WHERE u.telegram_chat_id IS NOT NULL
@@ -103,7 +103,8 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> int:
 
     user_sent = 0
     for row in rows:
-        user_id, chat_id, plan, status, selected_assets_raw = row
+        user_id, chat_id, plan, status, selected_assets_raw, user_language = row
+        user_language = user_language or "es"
         selected = {a.strip().upper() for a in (selected_assets_raw or "").split(",") if a.strip()}
         if not selected:
             continue
@@ -132,7 +133,7 @@ def _send_per_user_alerts(events: list, format_fn, send_fn) -> int:
             if not (event_assets & selected):
                 continue
 
-            msg = format_fn(event, event["analysis"])
+            msg = format_fn(event, event["analysis"], language=user_language)
             if send_fn(msg, chat_id=chat_id):
                 user_sent += 1
                 daily_count += 1
