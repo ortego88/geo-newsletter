@@ -7,6 +7,7 @@ var GEO_LANG = localStorage.getItem('geo_lang') || 'es';
 
 function setLanguage(lang) {
   localStorage.setItem('geo_lang', lang);
+  document.cookie = 'geo_lang=' + lang + ';path=/;max-age=31536000;SameSite=Lax';
   GEO_LANG = lang;
 
   // Intentar guardar en servidor (falla silenciosamente si no está autenticado)

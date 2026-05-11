@@ -392,7 +392,20 @@ def create_app():
     app.register_blueprint(main_bp)
 
     @app.context_processor
-    def inject_cookiebot():
-        return dict(cookiebot_id=os.environ.get("COOKIEBOT_ID", ""))
+    def inject_globals():
+        from flask_login import current_user
+        from web.i18n import get_translations
+
+        # Detectar idioma: usuario autenticado > cookie > default
+        if hasattr(current_user, 'language') and current_user.is_authenticated:
+            lang = current_user.language or "es"
+        else:
+            lang = request.cookies.get("geo_lang", "es")
+
+        return dict(
+            cookiebot_id=os.environ.get("COOKIEBOT_ID", ""),
+            t=get_translations(lang),
+            lang=lang,
+        )
 
     return app

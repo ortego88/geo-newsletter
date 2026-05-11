@@ -46,7 +46,7 @@
         {% if sub %}
           {% if sub.status == 'trial' and not trial_expired %}
             <span class="hidden sm:inline bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-3 py-1.5 rounded-full">
-              <span data-i18n="dash.trial_active">Período de prueba activo</span>
+              <span data-i18n="dash.trial_active">{{ t.trial_active }}</span>
             </span>
           {% elif sub.status == 'active' %}
             <span class="hidden sm:inline bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
@@ -75,7 +75,7 @@
       {% if sub and sub.status == 'trial' %}
         <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 md:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <p class="text-amber-400 font-semibold">Período de prueba activo</p>
+            <p class="text-amber-400 font-semibold">{{ t.trial_active }}</p>
             <p class="text-slate-400 text-sm mt-1">
               {% if sub.trial_ends_at %}
                 Tu prueba gratuita finaliza el {{ sub.trial_ends_at[:10] }}.
@@ -126,18 +126,18 @@
         <form method="GET" action="/dashboard" class="filters-form flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
           <input type="hidden" name="outcome" id="outcome-filter" value="{{ outcome_filter }}">
           <select name="time_filter" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
-            <option value="">Todo el historial</option>
-            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>Últimas 24 horas</option>
-            <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>Últimos 7 días</option>
-            <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>Últimos 30 días</option>
+            <option value="">{{ t.all_history }}</option>
+            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>{{ t.last_24h }}</option>
+            <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>{{ t.last_7d }}</option>
+            <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>{{ t.last_30d }}</option>
           </select>
           <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
-            <option value="">Todos los tipos</option>
-            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>Criptomonedas</option>
+            <option value="">{{ t.all_assets }}</option>
+            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>{{ t.crypto }}</option>
             <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>IBEX 35</option>
           </select>
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
-            <option value="">Todos los activos</option>
+            <option value="">{{ t.all_assets }}</option>
             {% for a in available_assets %}
               {% set asset_type = asset_type_map.get(a.symbol, '') %}
               <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }} — {{ a.name }}</option>
@@ -266,7 +266,7 @@
           <div class="flex flex-wrap items-center justify-center gap-2 px-4 md:px-6 py-4 border-t border-slate-700">
             {% if page > 1 %}
               <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
-                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">{{ t.previous }}</a>
             {% endif %}
 
             {# Mostrar solo: 1, 2, ..., penúltima, última #}
@@ -300,7 +300,7 @@
 
             {% if page < total_pages %}
               <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
-                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">{{ t.next }}</a>
             {% endif %}
           </div>
           {% endif %}
@@ -537,7 +537,7 @@
     var selectedType = typeSelect.value;
     var currentAsset = assetSelect.value;
 
-    assetSelect.innerHTML = '<option value="">Todos los activos</option>';
+    assetSelect.innerHTML = '<option value="">{{ t.all_assets }}</option>';
     assetSelect._allOptions.forEach(function(optData) {
       if (!selectedType || optData.type === selectedType) {
         var option = document.createElement('option');

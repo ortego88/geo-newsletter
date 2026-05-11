@@ -463,9 +463,10 @@ def subscription():
 @dashboard_bp.route("/dashboard/set-language", methods=["POST"])
 @login_required
 def set_language():
+    from flask import make_response
     data = request.get_json(silent=True) or {}
     lang = data.get("language", "es")
-    VALID = {"es", "en", "fr", "de", "it", "pt", "zh", "ar"}
+    VALID = {"es", "en"}
     if lang not in VALID:
         lang = "es"
     with get_conn() as conn:
@@ -474,4 +475,6 @@ def set_language():
             {"lang": lang, "uid": current_user.id},
         )
         conn.commit()
-    return jsonify({"ok": True, "language": lang})
+    resp = make_response(jsonify({"ok": True, "language": lang}))
+    resp.set_cookie("geo_lang", lang, max_age=365*24*3600, samesite="Lax")
+    return resp
