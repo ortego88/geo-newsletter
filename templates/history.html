@@ -199,9 +199,32 @@
             {% if page > 1 %}
               <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">← Anterior</a>
             {% endif %}
-            {% for p in range(1, total_pages + 1) %}
-              <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
-            {% endfor %}
+
+            {# Mostrar solo: 1, 2, ..., penúltima, última #}
+            {% if total_pages <= 6 %}
+              {# Si hay pocas páginas, mostrar todas #}
+              {% for p in range(1, total_pages + 1) %}
+                <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
+              {% endfor %}
+            {% else %}
+              {# Mostrar 1, 2 #}
+              {% for p in [1, 2] %}
+                <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
+              {% endfor %}
+
+              {# Puntos suspensivos #}
+              {% if page > 3 and page < total_pages - 2 %}
+                <span class="px-2 text-slate-500">...</span>
+                <a href="?page={{ page }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg text-sm bg-emerald-500 text-white">{{ page }}</a>
+              {% endif %}
+              <span class="px-2 text-slate-500">...</span>
+
+              {# Mostrar penúltima, última #}
+              {% for p in [total_pages - 1, total_pages] %}
+                <a href="?page={{ p }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg text-sm transition {% if p == page %}bg-emerald-500 text-white{% else %}bg-slate-700 hover:bg-slate-600 text-white{% endif %}">{{ p }}</a>
+              {% endfor %}
+            {% endif %}
+
             {% if page < total_pages %}
               <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">Siguiente →</a>
             {% endif %}

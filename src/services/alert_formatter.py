@@ -659,7 +659,22 @@ def format_telegram_alert(event: dict, analysis: dict) -> str:
     }.get(timeframe, timeframe)
 
     confidence = analysis.get("confidence", 0)
-    reasoning = (analysis.get("reasoning", "") or "")[:150]
+    reasoning_raw = (analysis.get("reasoning", "") or "")
+    # Truncar reasoning en frase completa (último punto antes de 150 chars)
+    if len(reasoning_raw) > 150:
+        # Buscar último punto antes de 150 chars
+        last_period = reasoning_raw[:150].rfind('. ')
+        if last_period > 50:  # Si hay un punto razonable, cortar ahí
+            reasoning = reasoning_raw[:last_period + 1]
+        else:
+            # Si no hay punto, buscar último espacio
+            last_space = reasoning_raw[:150].rfind(' ')
+            if last_space > 50:
+                reasoning = reasoning_raw[:last_space] + "..."
+            else:
+                reasoning = reasoning_raw[:150] + "..."
+    else:
+        reasoning = reasoning_raw
     affected_assets = analysis.get("most_affected_assets", [])
 
     if score >= 80:

@@ -240,7 +240,23 @@ class User(UserMixin):
 
     def get_plan_config(self):
         sub = self.get_subscription()
-        if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
+        if not sub:
+            return None
+
+        # Verificar si el trial expiró
+        if sub["status"] == "trial":
+            trial_end = sub.get("trial_ends_at")
+            if trial_end:
+                try:
+                    from datetime import datetime, timezone
+                    trial_end_dt = datetime.fromisoformat(trial_end.replace("Z", "+00:00"))
+                    if datetime.now(timezone.utc) > trial_end_dt:
+                        # Trial expirado → bloquear acceso
+                        return None
+                except Exception:
+                    pass
+
+        if sub["status"] not in ("active", "trial", "cancelled_pending"):
             return None
         return PLANS.get(sub["plan"], PLANS["basic"])
 

@@ -270,6 +270,17 @@ def index():
     for asset in AVAILABLE_ASSETS:
         asset_type_map[asset["symbol"]] = get_asset_type(asset["symbol"])
 
+    # Verificar si el trial expiró
+    trial_expired = False
+    if sub and sub["status"] == "trial":
+        trial_end = sub.get("trial_ends_at")
+        if trial_end:
+            try:
+                trial_end_dt = datetime.fromisoformat(trial_end.replace("Z", "+00:00"))
+                trial_expired = datetime.now(pytz.utc) > trial_end_dt
+            except Exception:
+                pass
+
     return render_template(
         "dashboard/index.html",
         sub=sub,
@@ -291,6 +302,7 @@ def index():
         sort_dir=sort_dir,
         per_page=per_page,
         history_label="Histórico completo",
+        trial_expired=trial_expired,
     )
 
 
