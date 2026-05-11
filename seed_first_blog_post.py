@@ -113,7 +113,7 @@ def main():
             conn.execute(text("""
                 INSERT INTO blog_posts
                 (slug, title, excerpt, content, author, published_at, updated_at, is_published, meta_description, keywords)
-                VALUES (:slug, :title, :excerpt, :content, :author, :published, :updated, 1, :meta_desc, :keywords)
+                VALUES (:slug, :title, :excerpt, :content, :author, :published, :updated, TRUE, :meta_desc, :keywords)
             """), {
                 "slug": slug,
                 "title": FIRST_POST["title"],
