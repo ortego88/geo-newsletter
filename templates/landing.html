@@ -837,33 +837,10 @@
 
   </script>
 
-  <!-- Botón sticky al simulador (aparece después de scroll) -->
-  <a href="#simulador" id="sticky-simulator-btn" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40 opacity-0 pointer-events-none flex items-center gap-2">
-    <span>💰</span>
-    <span>¿Cuánto ganarías?</span>
+  <!-- Botón sticky al simulador (siempre visible) -->
+  <a href="#simulador" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40">
+    ¿Cuánto ganarías?
   </a>
-
-  <script>
-    // Mostrar botón sticky después de scroll
-    window.addEventListener('scroll', function() {
-      var btn = document.getElementById('sticky-simulator-btn');
-      var simulatorSection = document.getElementById('simulador');
-
-      if (btn && simulatorSection) {
-        var rect = simulatorSection.getBoundingClientRect();
-        var isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-
-        // Mostrar botón solo si el simulador NO está visible
-        if (!isVisible && window.scrollY > 800) {
-          btn.classList.remove('opacity-0', 'pointer-events-none');
-          btn.classList.add('opacity-100', 'pointer-events-auto');
-        } else {
-          btn.classList.add('opacity-0', 'pointer-events-none');
-          btn.classList.remove('opacity-100', 'pointer-events-auto');
-        }
-      }
-    });
-  </script>
 
 {% include 'partials/cookie_banner.html' %}
 </body>

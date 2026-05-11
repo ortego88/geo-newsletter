@@ -274,8 +274,33 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="weekly_digest",
     )
+    # Daily blog post: every day at 9:00 AM (Madrid time)
+    def publish_daily_blog_post():
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["python3", "create_daily_blog_post.py"],
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            if result.returncode == 0:
+                logger.info("✅ Artículo de blog publicado correctamente")
+            else:
+                logger.warning(f"⚠️ Error publicando artículo: {result.stderr}")
+        except Exception as e:
+            logger.error(f"❌ Error en job de blog diario: {e}")
+
+    scheduler.add_job(
+        publish_daily_blog_post,
+        "cron",
+        hour=9,
+        minute=0,
+        timezone="Europe/Madrid",
+        id="daily_blog_post",
+    )
     scheduler.start()
-    logger.info("✅ Scheduler iniciado (pipeline cada 10 minutos, resumen semanal domingos 10:00 AM)")
+    logger.info("✅ Scheduler iniciado (pipeline cada 10 minutos, resumen semanal domingos 10:00 AM, blog diario 9:00 AM)")
     logger.info("✅ Alertas: enviadas 24/7 sin restricción de horarios")
     logger.info("✅ Verificación: respeta horarios de mercado (IBEX35 9-17:30 L-V, Crypto 24/7)")
     return scheduler

@@ -36,28 +36,36 @@ def _slugify(text):
 
 def _init_blog_table():
     """Crea la tabla blog_posts si no existe."""
-    from sqlalchemy import MetaData, Table, Column, Integer, Text, Boolean
+    try:
+        from sqlalchemy import MetaData, Table, Column, Integer, Text, Boolean
 
-    engine = get_engine("app")
-    meta = MetaData()
-    Table("blog_posts", meta,
-        Column("id", Integer, primary_key=True, autoincrement=True),
-        Column("slug", Text, unique=True, nullable=False),
-        Column("title", Text, nullable=False),
-        Column("excerpt", Text),  # Resumen corto para listados
-        Column("content", Text, nullable=False),  # HTML del contenido
-        Column("author", Text, default="Equipo GEO-NEWSLETTER"),
-        Column("published_at", Text),
-        Column("updated_at", Text),
-        Column("is_published", Boolean, default=True),
-        Column("meta_description", Text),  # SEO
-        Column("keywords", Text),  # SEO keywords separadas por comas
-        Column("featured_image", Text),  # URL de imagen destacada
-    )
-    meta.create_all(engine, checkfirst=True)
+        engine = get_engine("app")
+        meta = MetaData()
+        Table("blog_posts", meta,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("slug", Text, unique=True, nullable=False),
+            Column("title", Text, nullable=False),
+            Column("excerpt", Text),  # Resumen corto para listados
+            Column("content", Text, nullable=False),  # HTML del contenido
+            Column("author", Text, default="Equipo GEO-NEWSLETTER"),
+            Column("published_at", Text),
+            Column("updated_at", Text),
+            Column("is_published", Boolean, default=True),
+            Column("meta_description", Text),  # SEO
+            Column("keywords", Text),  # SEO keywords separadas por comas
+            Column("featured_image", Text),  # URL de imagen destacada
+        )
+        meta.create_all(engine, checkfirst=True)
+    except Exception as e:
+        # En desarrollo sin DATABASE_URL, ignorar
+        import logging
+        logging.debug(f"No se pudo inicializar tabla blog_posts: {e}")
 
 
-_init_blog_table()
+# Solo intentar crear tabla si DATABASE_URL está configurado
+import os
+if os.getenv("DATABASE_URL"):
+    _init_blog_table()
 
 
 @blog_bp.route("/blog")
