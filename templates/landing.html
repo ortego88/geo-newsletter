@@ -126,18 +126,18 @@
     <div class="max-w-4xl mx-auto">
       <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/20 rounded-3xl p-10 md:p-14">
         <div class="text-center mb-10">
-          <span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest">Simulador</span>
-          <h2 class="text-3xl font-bold text-white mb-4">¿Cuánto hubieras ganado siguiendo nuestras alertas?</h2>
-          <p class="text-slate-400 max-w-2xl mx-auto">Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.</p>
+          <span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest" data-i18n="sim.label">Simulador</span>
+          <h2 class="text-3xl font-bold text-white mb-4" data-i18n="sim.title">¿Cuánto hubieras ganado siguiendo nuestras alertas?</h2>
+          <p class="text-slate-400 max-w-2xl mx-auto" data-i18n="sim.desc">Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-8">
           <!-- Form -->
           <div class="space-y-6">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">Activo</label>
+              <label class="block text-sm font-medium text-slate-300 mb-2" data-i18n="sim.asset">Activo</label>
               <select id="sim-asset" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none">
-                <option value="">Seleccionar activo...</option>
+                <option value="" data-i18n="sim.select_asset">Seleccionar activo...</option>
                 <!-- IBEX 35 -->
                 <optgroup label="IBEX 35">
                   <option value="IBEX35">IBEX 35</option>
@@ -162,12 +162,12 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">Cantidad inicial (€)</label>
+              <label class="block text-sm font-medium text-slate-300 mb-2" data-i18n="sim.amount">Cantidad inicial (€)</label>
               <input type="number" id="sim-amount" placeholder="1000" min="1" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none" />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">Período</label>
+              <label class="block text-sm font-medium text-slate-300 mb-2" data-i18n="sim.period">Período</label>
               <select id="sim-period" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none">
                 <option value="7">Últimos 7 días</option>
                 <option value="30">Últimos 30 días</option>
@@ -177,7 +177,7 @@
               </select>
             </div>
 
-            <button id="sim-btn" onclick="runSimulation()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button id="sim-btn" onclick="runSimulation()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="sim.calculate">
               Calcular simulación
             </button>
           </div>
@@ -185,22 +185,22 @@
           <!-- Results -->
           <div id="sim-results" class="hidden">
             <div class="bg-slate-700/50 rounded-xl p-6">
-              <h3 class="text-xl font-bold text-white mb-4">Resultado de la simulación</h3>
+              <h3 class="text-xl font-bold text-white mb-4" data-i18n="sim.result_title">Resultado de la simulación</h3>
               <div class="space-y-4">
                 <div class="flex justify-between">
-                  <span class="text-slate-300">Inversión inicial:</span>
+                  <span class="text-slate-300" data-i18n="sim.initial">Inversión inicial:</span>
                   <span id="initial-amount" class="text-white font-semibold"></span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-300">Valor final:</span>
+                  <span class="text-slate-300" data-i18n="sim.final">Valor final:</span>
                   <span id="final-amount" class="text-white font-semibold"></span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-300">Ganancia/Pérdida:</span>
+                  <span class="text-slate-300" data-i18n="sim.profit">Ganancia/Pérdida:</span>
                   <span id="profit-loss" class="font-semibold"></span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-slate-300">Porcentaje:</span>
+                  <span class="text-slate-300" data-i18n="sim.percentage">Porcentaje:</span>
                   <span id="percentage" class="font-semibold"></span>
                 </div>
               </div>
@@ -523,6 +523,7 @@
         "nav.faq": "FAQ",
         "nav.login": "Iniciar sesión",
         "nav.start_free": "Empezar gratis",
+        "nav.history": "Historial",
         "hero.badge": "Alertas en tiempo real · Más de 12 activos · IA en constante aprendizaje",
         "hero.h1_part1": "Alertas geopolíticas con",
         "hero.h1_ai": "IA",
@@ -604,6 +605,20 @@
         "plan.pro.f8": "API key personal",
         "plan.pro.f9": "Soporte prioritario Telegram",
         "plan.pro.f10": "Informes PDF semanales",
+        "sticky.cta": "¿Cuánto ganarías?",
+        "sim.label": "Simulador",
+        "sim.title": "¿Cuánto hubieras ganado siguiendo nuestras alertas?",
+        "sim.desc": "Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.",
+        "sim.asset": "Activo",
+        "sim.select_asset": "Seleccionar activo...",
+        "sim.amount": "Cantidad inicial (€)",
+        "sim.period": "Período",
+        "sim.calculate": "Calcular simulación",
+        "sim.result_title": "Resultado de la simulación",
+        "sim.initial": "Inversión inicial:",
+        "sim.final": "Valor final:",
+        "sim.profit": "Ganancia/Pérdida:",
+        "sim.percentage": "Porcentaje:",
         "logout.title": "¿Cerrar sesión?",
         "logout.message": "¿Estás seguro de que quieres cerrar sesión?",
         "logout.cancel": "Cancelar",
@@ -619,6 +634,7 @@
         "nav.faq": "FAQ",
         "nav.login": "Sign in",
         "nav.start_free": "Start free",
+        "nav.history": "History",
         "hero.badge": "Real-time alerts · 12+ assets · Constantly learning AI",
         "hero.h1_part1": "Geopolitical alerts with",
         "hero.h1_ai": "AI",
@@ -700,6 +716,20 @@
         "plan.pro.f8": "Personal API key",
         "plan.pro.f9": "Priority Telegram support",
         "plan.pro.f10": "Weekly PDF reports",
+        "sticky.cta": "How much would you earn?",
+        "sim.label": "Simulator",
+        "sim.title": "How much would you have earned following our alerts?",
+        "sim.desc": "Select an asset, a time period and an initial amount. We show you the result of investing following our buy/sell signals based on geopolitical events.",
+        "sim.asset": "Asset",
+        "sim.select_asset": "Select asset...",
+        "sim.amount": "Initial amount (€)",
+        "sim.period": "Period",
+        "sim.calculate": "Run simulation",
+        "sim.result_title": "Simulation result",
+        "sim.initial": "Initial investment:",
+        "sim.final": "Final value:",
+        "sim.profit": "Profit/Loss:",
+        "sim.percentage": "Percentage:",
         "logout.title": "Sign out?",
         "logout.message": "Are you sure you want to sign out?",
         "logout.cancel": "Cancel",
@@ -847,7 +877,7 @@
   </script>
 
   <!-- Botón sticky al simulador (siempre visible) -->
-  <a href="#simulador" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40">
+  <a href="#simulador" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40" data-i18n="sticky.cta">
     ¿Cuánto ganarías?
   </a>
 
