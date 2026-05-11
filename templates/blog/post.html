@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ post.title }} — GEO-NEWSLETTER</title>
+  <meta name="description" content="{{ post.meta_description or post.excerpt }}">
+  {% if post.keywords %}<meta name="keywords" content="{{ post.keywords }}">{% endif %}
+  <link rel="canonical" href="{{ post.canonical_url }}">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="{{ post.canonical_url }}">
+  <meta property="og:title" content="{{ post.title }}">
+  <meta property="og:description" content="{{ post.meta_description or post.excerpt }}">
+  {% if post.featured_image %}<meta property="og:image" content="{{ post.featured_image }}">{% endif %}
+  <meta property="article:published_time" content="{{ post.published_at_iso }}">
+  <meta property="article:author" content="{{ post.author }}">
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="{{ post.canonical_url }}">
+  <meta property="twitter:title" content="{{ post.title }}">
+  <meta property="twitter:description" content="{{ post.meta_description or post.excerpt }}">
+  {% if post.featured_image %}<meta property="twitter:image" content="{{ post.featured_image }}">{% endif %}
+
+  <!-- Schema.org markup para Google -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{{ post.title }}",
+    "description": "{{ post.meta_description or post.excerpt }}",
+    "author": {
+      "@type": "Organization",
+      "name": "{{ post.author }}"
+    },
+    "datePublished": "{{ post.published_at_iso }}",
+    "dateModified": "{{ post.updated_at or post.published_at_iso }}",
+    {% if post.featured_image %}"image": "{{ post.featured_image }}",{% endif %}
+    "publisher": {
+      "@type": "Organization",
+      "name": "GEO-NEWSLETTER",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "{{ url_for('static', filename='logo.png', _external=True) }}"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "{{ post.canonical_url }}"
+    }
+  }
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .prose h2 { @apply text-2xl font-bold text-white mt-8 mb-4; }
+    .prose h3 { @apply text-xl font-bold text-white mt-6 mb-3; }
+    .prose p { @apply text-slate-300 leading-relaxed mb-4; }
+    .prose ul, .prose ol { @apply text-slate-300 mb-4 pl-6; }
+    .prose li { @apply mb-2; }
+    .prose a { @apply text-emerald-400 hover:text-emerald-300 underline; }
+    .prose strong { @apply text-white font-semibold; }
+    .prose blockquote { @apply border-l-4 border-emerald-500 pl-4 italic text-slate-400 my-6; }
+    .prose code { @apply bg-slate-800 px-2 py-1 rounded text-sm text-emerald-400; }
+    .prose pre { @apply bg-slate-800 p-4 rounded-lg overflow-x-auto mb-4; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-200">
+
+  {% include 'partials/nav.html' %}
+
+  <main class="pt-32 pb-20 px-6">
+    <article class="max-w-3xl mx-auto">
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-slate-500 mb-6">
+        <a href="/" class="hover:text-emerald-400">Inicio</a>
+        <span class="mx-2">›</span>
+        <a href="/blog" class="hover:text-emerald-400">Blog</a>
+        <span class="mx-2">›</span>
+        <span class="text-slate-400">{{ post.title }}</span>
+      </nav>
+
+      <!-- Imagen destacada -->
+      {% if post.featured_image %}
+      <div class="mb-8 rounded-2xl overflow-hidden">
+        <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="w-full h-auto">
+      </div>
+      {% endif %}
+
+      <!-- Encabezado -->
+      <header class="mb-8">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4">{{ post.title }}</h1>
+        <div class="flex items-center gap-4 text-sm text-slate-400">
+          <span>📅 {{ post.published_at_formatted }}</span>
+          <span>·</span>
+          <span>✍️ {{ post.author }}</span>
+        </div>
+      </header>
+
+      <!-- Contenido -->
+      <div class="prose max-w-none">
+        {{ post.content | safe }}
+      </div>
+
+      <!-- CTA al final del artículo -->
+      <div class="mt-12 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-8 text-center">
+        <h3 class="text-2xl font-bold text-white mb-3">¿Quieres recibir alertas como estas?</h3>
+        <p class="text-slate-400 mb-6">Únete a GEO-NEWSLETTER y recibe análisis geopolíticos en tiempo real</p>
+        <a href="/#precios" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition">
+          Empezar gratis — 7 días →
+        </a>
+      </div>
+
+      <!-- Volver al blog -->
+      <div class="mt-8 text-center">
+        <a href="/blog" class="text-emerald-400 hover:text-emerald-300 font-semibold">← Volver al blog</a>
+      </div>
+    </article>
+  </main>
+
+  {% include 'partials/footer.html' %}
+
+</body>
+</html>

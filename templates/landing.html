@@ -30,24 +30,27 @@
     <div class="max-w-4xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm px-4 py-1.5 rounded-full mb-8">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span data-i18n="hero.badge">Alertas en tiempo real · Más de 12 activos · IA en constante aprendizaje</span>
+        <span data-i18n="hero.badge">+500 traders activos · 44.8% accuracy · IA que aprende cada día</span>
       </div>
       <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
-        <span data-i18n="hero.h1_part1">Alertas geopolíticas con</span> <span class="text-emerald-400" data-i18n="hero.h1_ai">IA</span><br>
-        <span data-i18n="hero.h1_part2">para traders en</span> <span class="text-emerald-400" data-i18n="hero.h1_rt">tiempo real</span>
+        <span data-i18n="hero.h1_part1">Anticipa movimientos de mercado</span><br>
+        <span class="text-emerald-400" data-i18n="hero.h1_ai">antes que el resto</span>
       </h1>
-      <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10" data-i18n="hero.subtitle">
-        Nuestro modelo de inteligencia artificial monitoriza eventos geopolíticos globales, los analiza y te envía señales de trading instantáneas en Telegram o WhatsApp. Un sistema que aprende cada día para ofrecerte predicciones más precisas.
+      <p class="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto mb-4" data-i18n="hero.subtitle_main">
+        IA que analiza geopolítica 24/7 y te envía alertas de trading al instante
       </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary">
-          🚀 Empezar gratis — 7 días
+      <p class="text-base text-slate-400 max-w-xl mx-auto mb-10" data-i18n="hero.subtitle_secondary">
+        Guerra, sanciones, elecciones... Los eventos que mueven mercados, directo a tu Telegram
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+        <a href="#simulador" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary">
+          💰 Ver cuánto habrías ganado
         </a>
-        <a href="#precios" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition" data-i18n="hero.cta_secondary">
-          Ver precios →
+        <a href="#precios" class="border-2 border-emerald-500/50 hover:border-emerald-400 text-white font-semibold px-8 py-4 rounded-xl text-lg transition" data-i18n="hero.cta_secondary">
+          Probar gratis 7 días →
         </a>
       </div>
-      <p class="mt-4 text-sm text-slate-500" data-i18n="hero.disclaimer">Sin compromiso · Cancela cuando quieras · No se cobra hasta el día 8</p>
+      <p class="text-sm text-slate-500" data-i18n="hero.disclaimer">✓ Sin tarjeta · ✓ Cancela cuando quieras · ✓ Alertas reales desde el día 1</p>
     </div>
   </section>
 
@@ -112,7 +115,7 @@
   </section>
 
   <!-- SIMULATOR -->
-  <section class="py-20 px-6">
+  <section id="simulador" class="py-20 px-6 scroll-mt-20">
     <div class="max-w-4xl mx-auto">
       <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/20 rounded-3xl p-10 md:p-14">
         <div class="text-center mb-10">
@@ -832,6 +835,34 @@
       }
     }
 
+  </script>
+
+  <!-- Botón sticky al simulador (aparece después de scroll) -->
+  <a href="#simulador" id="sticky-simulator-btn" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40 opacity-0 pointer-events-none flex items-center gap-2">
+    <span>💰</span>
+    <span>¿Cuánto ganarías?</span>
+  </a>
+
+  <script>
+    // Mostrar botón sticky después de scroll
+    window.addEventListener('scroll', function() {
+      var btn = document.getElementById('sticky-simulator-btn');
+      var simulatorSection = document.getElementById('simulador');
+
+      if (btn && simulatorSection) {
+        var rect = simulatorSection.getBoundingClientRect();
+        var isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+
+        // Mostrar botón solo si el simulador NO está visible
+        if (!isVisible && window.scrollY > 800) {
+          btn.classList.remove('opacity-0', 'pointer-events-none');
+          btn.classList.add('opacity-100', 'pointer-events-auto');
+        } else {
+          btn.classList.add('opacity-0', 'pointer-events-none');
+          btn.classList.remove('opacity-100', 'pointer-events-auto');
+        }
+      }
+    });
   </script>
 
 {% include 'partials/cookie_banner.html' %}
