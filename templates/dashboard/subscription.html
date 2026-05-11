@@ -20,7 +20,7 @@
   <!-- SIDEBAR -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-20 md:h-[calc(100vh-5rem)] transition-transform duration-300">
     <div class="px-6 py-5 border-b border-slate-800">
-      <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
+      <a href="/" class="text-emerald-400 font-bold text-lg">GEO-NEWSLETTER</a>
       <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
     </div>
 
@@ -111,9 +111,9 @@
               {% endif %}
               {% if plan_config %}
                 <div class="mt-3 space-y-1 text-sm text-slate-400">
-                  <p>📦 Activos: <span class="text-white">{% if plan_config.max_assets == -1 %}Ilimitados{% else %}hasta {{ plan_config.max_assets }}{% endif %}</span></p>
-                  <p>🔔 Alertas/día: <span class="text-white">{% if plan_config.max_daily_alerts == -1 %}Ilimitadas{% else %}hasta {{ plan_config.max_daily_alerts }}{% endif %}</span></p>
-                  <p>📅 Historial: <span class="text-white">{{ plan_config.history_days }} día{% if plan_config.history_days != 1 %}s{% endif %}</span></p>
+                  <p>Activos: <span class="text-white">{% if plan_config.max_assets == -1 %}Ilimitados{% else %}hasta {{ plan_config.max_assets }}{% endif %}</span></p>
+                  <p>Alertas/día: <span class="text-white">{% if plan_config.max_daily_alerts == -1 %}Ilimitadas{% else %}hasta {{ plan_config.max_daily_alerts }}{% endif %}</span></p>
+                  <p>Historial: <span class="text-white">{{ plan_config.history_days }} día{% if plan_config.history_days != 1 %}s{% endif %}</span></p>
                 </div>
               {% endif %}
             </div>
@@ -148,7 +148,7 @@
                 </button>
               {% elif sub.status == 'active' %}
                 <a href="/pricing" class="inline-flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                  🔄 Ver todos los planes
+                  Ver todos los planes
                 </a>
                 <button type="button" onclick="openCancelModal()"
                   class="inline-flex items-center justify-center border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition">
@@ -206,9 +206,9 @@
               </div>
               <p class="text-white font-semibold">{{ p.price_monthly }}€<span class="text-slate-400 text-xs font-normal">/mes</span></p>
               <ul class="space-y-1.5 text-sm text-slate-400 flex-1">
-                <li>📦 {% if p.max_assets == -1 %}Activos ilimitados{% else %}Hasta {{ p.max_assets }} activo{% if p.max_assets != 1 %}s{% endif %}{% endif %}</li>
-                <li>🔔 {% if p.max_daily_alerts == -1 %}Alertas ilimitadas{% else %}Hasta {{ p.max_daily_alerts }} alertas/día{% endif %}</li>
-                <li>📅 Historial {{ p.history_days }} día{% if p.history_days != 1 %}s{% endif %}</li>
+                <li>{% if p.max_assets == -1 %}Activos ilimitados{% else %}Hasta {{ p.max_assets }} activo{% if p.max_assets != 1 %}s{% endif %}{% endif %}</li>
+                <li>{% if p.max_daily_alerts == -1 %}Alertas ilimitadas{% else %}Hasta {{ p.max_daily_alerts }} alertas/día{% endif %}</li>
+                <li>Historial {{ p.history_days }} día{% if p.history_days != 1 %}s{% endif %}</li>
               </ul>
               {% if sub and sub.status in ('active', 'trial', 'cancelled_pending') and sub.plan == plan_key %}
                 <div class="inline-flex items-center justify-center bg-slate-700 text-slate-400 text-xs font-semibold px-4 py-2 rounded-lg mt-1 cursor-default">
@@ -248,7 +248,7 @@
       <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Acceso al dashboard personalizado</li>
     </ul>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6">
-      <p class="text-slate-300 text-sm font-semibold mb-1">💡 ¿Sabías que...?</p>
+      <p class="text-slate-300 text-sm font-semibold mb-1">¿Sabías que...?</p>
       <p class="text-slate-400 text-sm">Puedes pausar tu suscripción o cambiar a un plan inferior en lugar de cancelar. Escríbenos y te ayudamos.</p>
       <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">Contactar soporte →</a>
     </div>
@@ -379,7 +379,7 @@
       "dash.settings": "Configuración",
       "dash.subscription": "Suscripción",
       "dash.sign_out": "Cerrar sesión",
-      "cookies.title": "🍪 Usamos cookies",
+      "cookies.title": "Usamos cookies",
       "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
       "cookies.policy_link": "Política de cookies",
       "cookies.essential_btn": "Solo esenciales",
@@ -391,7 +391,7 @@
       "dash.settings": "Settings",
       "dash.subscription": "Subscription",
       "dash.sign_out": "Sign out",
-      "cookies.title": "🍪 We use cookies",
+      "cookies.title": "We use cookies",
       "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
       "cookies.policy_link": "Cookie policy",
       "cookies.essential_btn": "Essential only",
@@ -403,7 +403,7 @@
     var lang = typeof dashCurrentLang !== 'undefined' ? dashCurrentLang : 'es';
     var isEn = lang === 'en';
     var el = function(id) { return document.getElementById(id); };
-    if (el('cookie-title')) el('cookie-title').textContent = isEn ? '🍪 We use cookies' : '🍪 Usamos cookies';
+    if (el('cookie-title')) el('cookie-title').textContent = isEn ? 'We use cookies' : 'Usamos cookies';
     if (el('cookie-desc')) {
       var descText = isEn
         ? 'We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.'

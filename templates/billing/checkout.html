@@ -61,7 +61,7 @@
 
         {% if is_trial %}
           <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-4">
-            <p class="text-emerald-400 font-semibold text-sm">🎁 Prueba gratuita de 7 días</p>
+            <p class="text-emerald-400 font-semibold text-sm">Prueba gratuita de 7 días</p>
             <p class="text-slate-400 text-xs mt-1">No se realizará ningún cargo hasta el {{ trial_end_date }}. Cancela en cualquier momento.</p>
           </div>
           <div class="flex justify-between text-sm">
@@ -169,9 +169,9 @@
           <button type="submit" id="submit-btn" disabled
             class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition mt-2 opacity-50 cursor-not-allowed">
             {% if is_trial %}
-              🚀 Iniciar prueba gratuita
+              Iniciar prueba gratuita
             {% else %}
-              <span id="submit-btn-text">💳 Confirmar pago — {{ plan_config.price_monthly }}€</span>
+              <span id="submit-btn-text">Confirmar pago — {{ plan_config.price_monthly }}€</span>
             {% endif %}
           </button>
 
@@ -184,7 +184,7 @@
         </form>
 
         <p class="mt-4 text-center text-xs text-slate-600 flex items-center justify-center gap-1">
-          🔒 Conexión segura · Datos encriptados
+          Conexión segura · Datos encriptados
         </p>
       </div>
     </div>
@@ -215,7 +215,7 @@
         if (cycleLabel) cycleLabel.textContent = 'Facturación anual';
         if (totalPrice) totalPrice.textContent = PRICE_YEARLY + '€';
         if (renewalText) renewalText.textContent = '✅ Renovación automática anual';
-        if (submitBtnText) submitBtnText.textContent = '💳 Confirmar pago — ' + PRICE_YEARLY + '€';
+        if (submitBtnText) submitBtnText.textContent = 'Confirmar pago — ' + PRICE_YEARLY + '€';
       } else {
         if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
         if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
@@ -223,7 +223,7 @@
         if (cycleLabel) cycleLabel.textContent = 'Facturación mensual';
         if (totalPrice) totalPrice.textContent = PRICE_MONTHLY + '€';
         if (renewalText) renewalText.textContent = '✅ Renovación automática mensual';
-        if (submitBtnText) submitBtnText.textContent = '💳 Confirmar pago — ' + PRICE_MONTHLY + '€';
+        if (submitBtnText) submitBtnText.textContent = 'Confirmar pago — ' + PRICE_MONTHLY + '€';
       }
     }
 

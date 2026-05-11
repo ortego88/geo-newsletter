@@ -28,7 +28,7 @@
           <tr>
             <td style="background-color:#1e293b;padding:12px 40px;text-align:center;border-left:1px solid #334155;border-right:1px solid #334155;">
               <p style="margin:0;font-size:13px;color:#94a3b8;">
-                📅 Resumen del <strong style="color:#e2e8f0;">{{ week_start }}</strong> al <strong style="color:#e2e8f0;">{{ week_end }}</strong>
+                Resumen del <strong style="color:#e2e8f0;">{{ week_start }}</strong> al <strong style="color:#e2e8f0;">{{ week_end }}</strong>
               </p>
             </td>
           </tr>
@@ -90,7 +90,7 @@
           <!-- Section title: Alerts -->
           <tr>
             <td style="background-color:#1e293b;padding:0 40px 16px 40px;border-left:1px solid #334155;border-right:1px solid #334155;">
-              <h2 style="margin:0;font-size:18px;font-weight:700;color:#ffffff;">📊 Alertas más relevantes de la semana</h2>
+              <h2 style="margin:0;font-size:18px;font-weight:700;color:#ffffff;">Alertas más relevantes de la semana</h2>
             </td>
           </tr>
 
@@ -115,7 +115,7 @@
                       <tr>
                         <td>
                           <span style="font-size:11px;font-weight:700;color:{% if score >= 85 %}#ef4444{% elif score >= 70 %}#f97316{% elif score >= 50 %}#eab308{% else %}#3b82f6{% endif %};text-transform:uppercase;letter-spacing:0.5px;">
-                            {% if score >= 85 %}🔴 CRÍTICO{% elif score >= 70 %}🟠 ALTO{% elif score >= 50 %}🟡 MEDIO{% else %}🔵 BAJO{% endif %}
+                            {% if score >= 85 %}CRÍTICO{% elif score >= 70 %}🟠 ALTO{% elif score >= 50 %}🟡 MEDIO{% else %}BAJO{% endif %}
                           </span>
                         </td>
                         <td style="text-align:right;">
@@ -141,7 +141,7 @@
                         {% if assets %}
                         <td>
                           <span style="font-size:12px;color:#94a3b8;">
-                            📌 {{ assets[:3] | join(', ') }}
+                            {{ assets[:3] | join(', ') }}
                           </span>
                         </td>
                         {% endif %}
@@ -175,7 +175,7 @@
           <!-- Footer -->
           <tr>
             <td style="background-color:#0a0f1e;border-radius:0 0 16px 16px;padding:28px 40px;text-align:center;border:1px solid #1e293b;">
-              <p style="margin:0 0 8px 0;font-size:13px;font-weight:700;color:#34d399;">🌍 GEO-NEWSLETTER</p>
+              <p style="margin:0 0 8px 0;font-size:13px;font-weight:700;color:#34d399;">GEO-NEWSLETTER</p>
               <p style="margin:0 0 16px 0;font-size:12px;color:#475569;">Alertas geopolíticas para traders profesionales</p>
               <p style="margin:0;font-size:11px;color:#334155;line-height:1.6;">
                 © 2025 GEO-NEWSLETTER · Estás recibiendo este email como usuario {{ "Premium" if plan == "premium" else "Profesional" }}.

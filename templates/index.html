@@ -61,7 +61,7 @@ tr:hover td { background: #1c2128; }
 <body>
 <div class="header">
   <div>
-    <h1>🌍 GEO-NEWSLETTER — Sistema de Alertas Geopolíticas</h1>
+    <h1>GEO-NEWSLETTER — Sistema de Alertas Geopolíticas</h1>
     <div class="subtitle">Análisis de eventos globales e impacto en mercados financieros</div>
   </div>
   <div id="scheduler-badge" class="badge badge-gray">⏳ Cargando...</div>
@@ -88,7 +88,7 @@ tr:hover td { background: #1c2128; }
   </div>
   <div class="actions">
     <button class="btn btn-green" id="btn-run" onclick="runPipeline()">▶ Ejecutar Pipeline Ahora</button>
-    <button class="btn btn-gray" onclick="resetDedup()">🔄 Resetear Deduplicador</button>
+    <button class="btn btn-gray" onclick="resetDedup()">Resetear Deduplicador</button>
     <button class="btn btn-blue" onclick="fetchAll()">↻ Actualizar Dashboard</button>
   </div>
   <div class="section" style="margin-bottom:20px">
@@ -129,7 +129,7 @@ tr:hover td { background: #1c2128; }
   </div>
   <div class="section">
     <div class="section-header">
-      <span class="section-title">📈 Predicciones Recientes</span>
+      <span class="section-title">Predicciones Recientes</span>
       <span id="pred-count" class="badge badge-gray">0</span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;padding:12px 20px;border-bottom:1px solid #30363d;flex-wrap:wrap">
@@ -162,7 +162,7 @@ tr:hover td { background: #1c2128; }
   </div>
   <div class="section">
     <div class="section-header">
-      <span class="section-title">📋 Logs del Sistema</span>
+      <span class="section-title">Logs del Sistema</span>
       <div style="display:flex;gap:8px;align-items:center">
         <span id="log-count" class="text-muted" style="font-size:12px"></span>
         <button class="btn btn-gray" style="padding:4px 12px;font-size:12px" onclick="fetchLogs()">↻</button>
@@ -245,7 +245,7 @@ async function fetchStatus() {
     const r=await fetch('/api/status'); const d=await r.json();
     const badge=document.getElementById('scheduler-badge');
     if(d.scheduler_active){badge.className='badge badge-green';badge.textContent='🟢 Scheduler activo';}
-    else if(d.scheduler_log_exists){badge.className='badge badge-red';badge.textContent='🔴 Scheduler inactivo';}
+    else if(d.scheduler_log_exists){badge.className='badge badge-red';badge.textContent='Scheduler inactivo';}
     else{badge.className='badge badge-gray';badge.textContent='⚪ Sin scheduler';}
     document.getElementById('status-dedup').textContent=d.dedup_articles_seen+' noticias';
   } catch(e){}

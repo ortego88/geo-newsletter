@@ -76,7 +76,7 @@ def index():
             rows = conn.execute(text("""
                 SELECT id, slug, title, excerpt, author, published_at, featured_image
                 FROM blog_posts
-                WHERE is_published = 1
+                WHERE is_published = TRUE
                 ORDER BY published_at DESC
                 LIMIT 20
             """)).mappings().fetchall()
@@ -106,7 +106,7 @@ def post(slug):
                 SELECT id, slug, title, excerpt, content, author, published_at, updated_at,
                        meta_description, keywords, featured_image
                 FROM blog_posts
-                WHERE slug = :slug AND is_published = 1
+                WHERE slug = :slug AND is_published = TRUE
             """), {"slug": slug}).mappings().fetchone()
     except Exception:
         row = None
@@ -140,7 +140,7 @@ def sitemap():
             rows = conn.execute(text("""
                 SELECT slug, updated_at, published_at
                 FROM blog_posts
-                WHERE is_published = 1
+                WHERE is_published = TRUE
                 ORDER BY published_at DESC
             """)).fetchall()
     except Exception:

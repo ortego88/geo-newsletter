@@ -20,12 +20,12 @@
   <!-- SIDEBAR -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-56 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-0 transition-transform duration-300">
     <div class="px-5 py-4 border-b border-slate-800">
-      <p class="text-emerald-400 font-bold text-base">🌍 GEO-NEWSLETTER</p>
+      <p class="text-emerald-400 font-bold text-base">GEO-NEWSLETTER</p>
       <p class="text-slate-500 text-xs mt-0.5">Panel de administración</p>
     </div>
     <nav class="flex-1 px-3 py-4 space-y-1">
       <a href="/admin/" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        📊 Dashboard
+        Dashboard
       </a>
     </nav>
     <div class="px-3 py-4 border-t border-slate-800 space-y-1">
@@ -33,7 +33,7 @@
         ← Volver a la app
       </a>
       <a href="/admin/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition text-sm">
-        🚪 Cerrar sesión
+        Cerrar sesión
       </a>
     </div>
   </aside>
@@ -60,15 +60,15 @@
         <hr class="border-red-500/30 mb-4">
         <ul class="space-y-1 text-slate-300 text-sm">
           <li>
-            📊 <strong class="text-white">{{ num_predictions }}</strong>
+            <strong class="text-white">{{ num_predictions }}</strong>
             predicción{% if num_predictions != 1 %}es{% endif %} serán eliminadas
           </li>
           <li>
-            📰 <strong class="text-white">{{ num_recent_articles }}</strong>
+            <strong class="text-white">{{ num_recent_articles }}</strong>
             artículo{% if num_recent_articles != 1 %}s{% endif %} del caché de deduplicación serán eliminados
           </li>
           <li class="text-emerald-400 mt-2">
-            👤 Los usuarios <strong>NO</strong> serán afectados
+            Los usuarios <strong>NO</strong> serán afectados
           </li>
         </ul>
       </div>

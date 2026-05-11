@@ -20,7 +20,7 @@
   <!-- SIDEBAR -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 h-screen -translate-x-full md:translate-x-0 md:sticky md:top-20 md:h-[calc(100vh-5rem)] transition-transform duration-300">
     <div class="px-6 py-5 border-b border-slate-800">
-      <a href="/" class="text-emerald-400 font-bold text-lg">🌍 GEO-NEWSLETTER</a>
+      <a href="/" class="text-emerald-400 font-bold text-lg">GEO-NEWSLETTER</a>
       <p class="text-slate-500 text-xs mt-1" data-i18n="dash.private_area">Área privada</p>
     </div>
 
@@ -110,7 +110,7 @@
 
           <!-- Search box -->
           <div class="mb-4">
-            <input type="text" id="asset-search" placeholder="🔍 Buscar activo por nombre o símbolo..."
+            <input type="text" id="asset-search" placeholder="Buscar activo por nombre o símbolo..."
               class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
           </div>
           {% if plan_config and plan_config.max_assets != -1 %}
@@ -121,7 +121,7 @@
           {% endif %}
           {% if is_locked_for_changes %}
           <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-            <p class="text-red-400 text-sm font-semibold">🔒 Cambios bloqueados temporalmente</p>
+            <p class="text-red-400 text-sm font-semibold">Cambios bloqueados temporalmente</p>
             <p class="text-slate-300 text-sm">Guardaste tu última configuración hace menos de 24 horas. Podrás cambiar tus activos nuevamente el {{ next_change_allowed }}.</p>
           </div>
           {% endif %}
@@ -260,7 +260,7 @@
       <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Acceso al dashboard personalizado</li>
     </ul>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6">
-      <p class="text-slate-300 text-sm font-semibold mb-1">💡 ¿Sabías que...?</p>
+      <p class="text-slate-300 text-sm font-semibold mb-1">¿Sabías que...?</p>
       <p class="text-slate-400 text-sm">Puedes pausar tu suscripción o cambiar a un plan inferior en lugar de cancelar. Escríbenos y te ayudamos.</p>
       <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">Contactar soporte →</a>
     </div>
@@ -550,7 +550,7 @@
       "settings.change_plan": "Cambiar plan",
       "settings.cancel_subscription": "Cancelar suscripción",
       "settings.save_btn": "Guardar configuración",
-      "cookies.title": "🍪 Usamos cookies",
+      "cookies.title": "Usamos cookies",
       "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
       "cookies.policy_link": "Política de cookies",
       "cookies.essential_btn": "Solo esenciales",
@@ -576,7 +576,7 @@
       "settings.change_plan": "Change plan",
       "settings.cancel_subscription": "Cancel subscription",
       "settings.save_btn": "Save settings",
-      "cookies.title": "🍪 We use cookies",
+      "cookies.title": "We use cookies",
       "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
       "cookies.policy_link": "Cookie policy",
       "cookies.essential_btn": "Essential only",
@@ -588,7 +588,7 @@
     var lang = typeof dashCurrentLang !== 'undefined' ? dashCurrentLang : 'es';
     var isEn = lang === 'en';
     var el = function(id) { return document.getElementById(id); };
-    if (el('cookie-title')) el('cookie-title').textContent = isEn ? '🍪 We use cookies' : '🍪 Usamos cookies';
+    if (el('cookie-title')) el('cookie-title').textContent = isEn ? 'We use cookies' : 'Usamos cookies';
     if (el('cookie-desc')) {
       var descText = isEn
         ? 'We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.'
