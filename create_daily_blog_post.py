@@ -156,23 +156,42 @@ def publish_post(title, content, keywords, excerpt=None, featured_image=None):
 
     meta_description = excerpt[:160]
 
+    # Traducir con DeepL si está configurado
+    title_en = ""
+    excerpt_en = ""
+    content_en = ""
+    try:
+        from src.services.translator import translate_blog_post
+        translations = translate_blog_post(title, excerpt, content)
+        title_en = translations.get("title_en", "")
+        excerpt_en = translations.get("excerpt_en", "")
+        content_en = translations.get("content_en", "")
+        if title_en:
+            print(f"   Traducido a EN: {title_en[:60]}...")
+        else:
+            print("   DeepL no disponible, artículo solo en ES")
+    except Exception as e:
+        print(f"   Traducción no disponible: {e}")
+
     try:
         engine = get_engine("app")
         with engine.connect() as conn:
-            # Verificar si ya existe
             exists = conn.execute(text(
                 "SELECT 1 FROM blog_posts WHERE slug = :slug"
             ), {"slug": slug}).fetchone()
 
             if exists:
-                print(f"⚠️  El artículo '{title}' ya existe con slug '{slug}'")
+                print(f"El articulo '{title}' ya existe con slug '{slug}'")
                 return False
 
-            # Insertar
             conn.execute(text("""
                 INSERT INTO blog_posts
-                (slug, title, excerpt, content, author, published_at, updated_at, is_published, meta_description, keywords, featured_image)
-                VALUES (:slug, :title, :excerpt, :content, :author, :published, :updated, TRUE, :meta_desc, :keywords, :featured_image)
+                (slug, title, excerpt, content, author, published_at, updated_at,
+                 is_published, meta_description, keywords, featured_image,
+                 title_en, excerpt_en, content_en)
+                VALUES (:slug, :title, :excerpt, :content, :author, :published, :updated,
+                        TRUE, :meta_desc, :keywords, :featured_image,
+                        :title_en, :excerpt_en, :content_en)
             """), {
                 "slug": slug,
                 "title": title,
@@ -184,10 +203,13 @@ def publish_post(title, content, keywords, excerpt=None, featured_image=None):
                 "meta_desc": meta_description,
                 "keywords": keywords,
                 "featured_image": featured_image or "",
+                "title_en": title_en,
+                "excerpt_en": excerpt_en,
+                "content_en": content_en,
             })
             conn.commit()
 
-        print(f"✅ Artículo publicado: {title}")
+        print(f"Articulo publicado: {title}")
         print(f"   URL: /blog/{slug}")
         return True
 

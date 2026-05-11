@@ -45,19 +45,33 @@ def _init_blog_table():
             Column("id", Integer, primary_key=True, autoincrement=True),
             Column("slug", Text, unique=True, nullable=False),
             Column("title", Text, nullable=False),
-            Column("excerpt", Text),  # Resumen corto para listados
-            Column("content", Text, nullable=False),  # HTML del contenido
+            Column("excerpt", Text),
+            Column("content", Text, nullable=False),
             Column("author", Text, default="Equipo GEO-NEWSLETTER"),
             Column("published_at", Text),
             Column("updated_at", Text),
             Column("is_published", Boolean, default=True),
-            Column("meta_description", Text),  # SEO
-            Column("keywords", Text),  # SEO keywords separadas por comas
-            Column("featured_image", Text),  # URL de imagen destacada
+            Column("meta_description", Text),
+            Column("keywords", Text),
+            Column("featured_image", Text),
+            Column("title_en", Text),
+            Column("excerpt_en", Text),
+            Column("content_en", Text),
         )
         meta.create_all(engine, checkfirst=True)
+
+        # Migración: añadir columnas de traducción si no existen
+        with engine.connect() as conn:
+            for col in ("title_en", "excerpt_en", "content_en"):
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE LOWER(table_name)='blog_posts' AND LOWER(column_name)=:col"
+                ), {"col": col}).fetchone()
+                if not exists:
+                    conn.execute(text(f"ALTER TABLE blog_posts ADD COLUMN {col} TEXT"))
+            conn.commit()
+
     except Exception as e:
-        # En desarrollo sin DATABASE_URL, ignorar
         import logging
         logging.debug(f"No se pudo inicializar tabla blog_posts: {e}")
 
@@ -68,13 +82,26 @@ if os.getenv("DATABASE_URL"):
     _init_blog_table()
 
 
+def _get_user_lang():
+    """Obtiene el idioma del usuario desde cookie/localStorage o sesión."""
+    from flask import request as req
+    from flask_login import current_user
+    if hasattr(current_user, 'language') and current_user.is_authenticated:
+        return current_user.language or "es"
+    return req.args.get("lang", req.cookies.get("geo_lang", "es"))
+
+
 @blog_bp.route("/blog")
 def index():
     """Listado de artículos del blog."""
+    lang = _get_user_lang()
+    is_en = lang == "en"
+
     try:
         with get_engine("app").connect() as conn:
             rows = conn.execute(text("""
-                SELECT id, slug, title, excerpt, author, published_at, featured_image
+                SELECT id, slug, title, excerpt, author, published_at, featured_image,
+                       title_en, excerpt_en
                 FROM blog_posts
                 WHERE is_published = TRUE
                 ORDER BY published_at DESC
@@ -88,29 +115,35 @@ def index():
     posts = []
     for row in rows:
         d = dict(row)
+        if is_en and d.get("title_en"):
+            d["title"] = d["title_en"]
+        if is_en and d.get("excerpt_en"):
+            d["excerpt"] = d["excerpt_en"]
         if d.get("published_at"):
             try:
                 dt = datetime.fromisoformat(d["published_at"])
                 d["published_at_formatted"] = dt.astimezone(_MADRID_TZ).strftime("%d %b %Y")
-            except Exception as e:
-                import logging
-                logging.debug(f"Error formatting date: {e}")
+            except Exception:
                 d["published_at_formatted"] = d["published_at"][:10] if d["published_at"] else ""
         else:
             d["published_at_formatted"] = ""
         posts.append(d)
 
-    return render_template("blog/index.html", posts=posts)
+    return render_template("blog/index.html", posts=posts, lang=lang)
 
 
 @blog_bp.route("/blog/<slug>")
 def post(slug):
     """Detalle de un artículo del blog."""
+    lang = _get_user_lang()
+    is_en = lang == "en"
+
     try:
         with get_engine("app").connect() as conn:
             row = conn.execute(text("""
                 SELECT id, slug, title, excerpt, content, author, published_at, updated_at,
-                       meta_description, keywords, featured_image
+                       meta_description, keywords, featured_image,
+                       title_en, excerpt_en, content_en
                 FROM blog_posts
                 WHERE slug = :slug AND is_published = TRUE
             """), {"slug": slug}).mappings().fetchone()
@@ -121,6 +154,12 @@ def post(slug):
         abort(404)
 
     post = dict(row)
+    if is_en and post.get("title_en"):
+        post["title"] = post["title_en"]
+    if is_en and post.get("excerpt_en"):
+        post["excerpt"] = post["excerpt_en"]
+    if is_en and post.get("content_en"):
+        post["content"] = post["content_en"]
 
     # Formatear fechas
     if post.get("published_at"):

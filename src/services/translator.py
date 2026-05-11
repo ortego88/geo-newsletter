@@ -1,16 +1,78 @@
 """
-Traductor de títulos para el sistema geo-newsletter.
-Usa la API gratuita de MyMemory para traducir inglés → español.
-Cae a un diccionario de términos financieros/geopolíticos si la API falla.
+Traductor para el sistema geo-newsletter.
+- DeepL API: traducción de blog posts (ES → EN) y textos largos.
+- MyMemory: traducción de títulos cortos (EN → ES).
+- Fallback: diccionario de términos financieros/geopolíticos.
+
+Requiere: DEEPL_API_KEY para traducción de blog (Free tier: 500K chars/mes).
 """
 
 import logging
+import os
 import re
 import urllib.parse
 
 import requests as _requests
 
 logger = logging.getLogger("translator")
+
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY", "")
+DEEPL_API_URL = "https://api-free.deepl.com/v2/translate"
+
+
+def translate_text(text: str, target_lang: str = "EN", source_lang: str = "ES") -> str | None:
+    """
+    Traduce texto usando DeepL API.
+    target_lang: "EN", "ES", "FR", etc.
+    Devuelve el texto traducido o None si falla.
+    """
+    if not DEEPL_API_KEY:
+        logger.debug("DEEPL_API_KEY no configurada")
+        return None
+
+    if not text or not text.strip():
+        return text
+
+    try:
+        resp = _requests.post(
+            DEEPL_API_URL,
+            data={
+                "auth_key": DEEPL_API_KEY,
+                "text": text,
+                "source_lang": source_lang,
+                "target_lang": target_lang,
+                "tag_handling": "html",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        translations = result.get("translations", [])
+        if translations:
+            return translations[0]["text"]
+    except Exception as e:
+        logger.error(f"Error DeepL: {e}")
+
+    return None
+
+
+def translate_blog_post(title: str, excerpt: str, content: str) -> dict:
+    """
+    Traduce un artículo completo del blog (ES → EN).
+    Devuelve dict con title_en, excerpt_en, content_en.
+    """
+    title_en = translate_text(title, target_lang="EN") or ""
+    excerpt_en = translate_text(excerpt, target_lang="EN") or ""
+    content_en = translate_text(content, target_lang="EN") or ""
+
+    if title_en:
+        logger.info(f"Blog traducido con DeepL: '{title[:50]}' → '{title_en[:50]}'")
+
+    return {
+        "title_en": title_en,
+        "excerpt_en": excerpt_en,
+        "content_en": content_en,
+    }
 
 # Diccionario de términos comunes financieros/geopolíticos en→es
 _FALLBACK_DICT = {
