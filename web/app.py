@@ -229,6 +229,42 @@ def create_app():
     def health():
         return jsonify({"status": "ok"})
 
+    @main_bp.route("/seed-blog")
+    def seed_blog():
+        """
+        Endpoint para crear el primer artículo del blog.
+        Solo ejecutar una vez, luego se puede eliminar.
+        """
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["python3", "seed_first_blog_post.py"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd=os.path.dirname(os.path.dirname(__file__))
+            )
+
+            if result.returncode == 0:
+                return jsonify({
+                    "status": "success",
+                    "message": "✅ Primer artículo creado correctamente",
+                    "output": result.stdout
+                })
+            else:
+                return jsonify({
+                    "status": "error",
+                    "message": "❌ Error creando artículo",
+                    "error": result.stderr
+                }), 500
+
+        except Exception as e:
+            _logger.error(f"Error en seed-blog: {e}", exc_info=True)
+            return jsonify({
+                "status": "error",
+                "message": f"❌ Error: {str(e)}"
+            }), 500
+
     @main_bp.route("/test-telegram")
     def test_telegram():
         """
