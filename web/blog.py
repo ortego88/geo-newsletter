@@ -80,7 +80,9 @@ def index():
                 ORDER BY published_at DESC
                 LIMIT 20
             """)).mappings().fetchall()
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.error(f"Error loading blog posts: {e}", exc_info=True)
         rows = []
 
     posts = []
@@ -90,8 +92,12 @@ def index():
             try:
                 dt = datetime.fromisoformat(d["published_at"])
                 d["published_at_formatted"] = dt.astimezone(_MADRID_TZ).strftime("%d %b %Y")
-            except:
-                d["published_at_formatted"] = d["published_at"][:10]
+            except Exception as e:
+                import logging
+                logging.debug(f"Error formatting date: {e}")
+                d["published_at_formatted"] = d["published_at"][:10] if d["published_at"] else ""
+        else:
+            d["published_at_formatted"] = ""
         posts.append(d)
 
     return render_template("blog/index.html", posts=posts)
