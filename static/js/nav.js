@@ -18,6 +18,14 @@ function closeMobileNav() {
   }
 }
 
+// Dropdown de idioma
+function toggleLangDropdown() {
+  var dropdown = document.getElementById('lang-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+}
+
 // Dropdown de usuario
 function toggleUserMenu() {
   var dropdown = document.getElementById('user-dropdown');
@@ -46,6 +54,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (userDropdown && userBtn && !userDropdown.classList.contains('hidden')) {
       if (!userBtn.contains(event.target) && !userDropdown.contains(event.target)) {
         userDropdown.classList.add('hidden');
+      }
+    }
+
+    // Cerrar dropdown de idioma
+    var langDropdown = document.getElementById('lang-dropdown');
+    var langBtn = document.getElementById('lang-btn');
+
+    if (langDropdown && langBtn && !langDropdown.classList.contains('hidden')) {
+      if (!langBtn.contains(event.target) && !langDropdown.contains(event.target)) {
+        langDropdown.classList.add('hidden');
       }
     }
   });

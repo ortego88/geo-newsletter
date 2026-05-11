@@ -1,5 +1,6 @@
 <!-- NAV -->
 <script src="/static/js/nav.js"></script>
+<script src="/static/js/i18n.js"></script>
 <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
   <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
     <a href="/" class="text-emerald-400 font-bold text-lg md:text-xl tracking-tight hover:text-emerald-300 transition">GEO-NEWSLETTER</a>
@@ -45,13 +46,17 @@
       {% endif %}
       <!-- Language selector in nav -->
       <div class="relative" id="lang-menu-wrapper">
-        <button onclick="toggleLangMenu()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="lang-btn">
-          <span id="lang-flag"></span>
+        <button onclick="toggleLangDropdown()" class="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition px-2 py-1 rounded-lg hover:bg-slate-800" id="lang-btn">
           <span id="lang-code" class="font-semibold uppercase">ES</span>
           <span class="text-xs text-slate-600">▾</span>
         </button>
         <div id="lang-dropdown" class="hidden absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 z-50 min-w-[140px]">
-          <!-- items injected by JS -->
+          <button type="button" onclick="setLanguage('es')" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">
+            <span class="font-semibold">ES</span> <span class="text-slate-500">Español</span>
+          </button>
+          <button type="button" onclick="setLanguage('en')" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">
+            <span class="font-semibold">EN</span> <span class="text-slate-500">English</span>
+          </button>
         </div>
       </div>
       {% if not current_user.is_authenticated %}
