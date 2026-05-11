@@ -18,27 +18,44 @@ TOPICS = [
     {
         "title": "Cómo interpretar alertas geopolíticas para trading",
         "keywords": "alertas geopolíticas, trading geopolítico, inteligencia artificial trading",
+        "image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=630&fit=crop",
         "prompt": "Escribe un artículo educativo sobre cómo los traders pueden usar alertas geopolíticas para tomar mejores decisiones. Incluye ejemplos concretos de eventos (guerra, sanciones, elecciones) y su impacto en diferentes activos."
     },
     {
         "title": "IA y trading: El futuro del análisis de mercados",
         "keywords": "inteligencia artificial, trading automatizado, GPT trading",
+        "image": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop",
         "prompt": "Artículo sobre cómo la inteligencia artificial está revolucionando el trading. Habla de modelos de IA, aprendizaje automático, y ventajas sobre el análisis tradicional."
     },
     {
         "title": "5 eventos geopolíticos que movieron los mercados este mes",
         "keywords": "eventos geopolíticos, mercados financieros, volatilidad",
+        "image": "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1200&h=630&fit=crop",
         "prompt": "Repaso mensual de eventos geopolíticos relevantes y su impacto real en activos financieros. Incluye datos, gráficos conceptuales, y lecciones aprendidas."
     },
     {
         "title": "Telegram y WhatsApp: Las mejores herramientas para alertas de trading",
         "keywords": "alertas telegram, alertas whatsapp, señales trading",
+        "image": "https://images.unsplash.com/photo-1611606063065-ee7946f0787a?w=1200&h=630&fit=crop",
         "prompt": "Artículo sobre las ventajas de recibir alertas de trading en Telegram/WhatsApp vs email o apps dedicadas. Velocidad, conveniencia, ejemplos de uso."
     },
     {
         "title": "Criptomonedas y geopolítica: ¿Cómo se relacionan?",
         "keywords": "criptomonedas, bitcoin, geopolítica, trading crypto",
+        "image": "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=1200&h=630&fit=crop",
         "prompt": "Análisis de la relación entre eventos geopolíticos y el mercado crypto. Regulación, sanciones, adopción institucional, casos de uso reales."
+    },
+    {
+        "title": "Cómo funciona el scoring de eventos en GEO-NEWSLETTER",
+        "keywords": "scoring eventos, sistema de puntuación, alertas automáticas",
+        "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop",
+        "prompt": "Explica cómo nuestro sistema de IA puntúa cada evento de 0 a 100 según su relevancia de mercado. Habla de factores: fuente, impacto potencial, confianza, y cómo se traduce en alertas."
+    },
+    {
+        "title": "IBEX 35: Guía completa para inversores en el mercado español",
+        "keywords": "IBEX 35, bolsa española, invertir en España, mercado continuo",
+        "image": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&h=630&fit=crop",
+        "prompt": "Guía educativa sobre el IBEX 35: qué es, qué empresas lo componen, cómo invertir, y cómo los eventos geopolíticos afectan específicamente al mercado español."
     },
 ]
 
@@ -122,7 +139,7 @@ NO incluyas el título principal (H1), solo el contenido del artículo.
 """
 
 
-def publish_post(title, content, keywords, excerpt=None):
+def publish_post(title, content, keywords, excerpt=None, featured_image=None):
     """Publica el artículo en la base de datos."""
     slug = _slugify(title)
     now = datetime.utcnow().isoformat()
@@ -154,8 +171,8 @@ def publish_post(title, content, keywords, excerpt=None):
             # Insertar
             conn.execute(text("""
                 INSERT INTO blog_posts
-                (slug, title, excerpt, content, author, published_at, updated_at, is_published, meta_description, keywords)
-                VALUES (:slug, :title, :excerpt, :content, :author, :published, :updated, TRUE, :meta_desc, :keywords)
+                (slug, title, excerpt, content, author, published_at, updated_at, is_published, meta_description, keywords, featured_image)
+                VALUES (:slug, :title, :excerpt, :content, :author, :published, :updated, TRUE, :meta_desc, :keywords, :featured_image)
             """), {
                 "slug": slug,
                 "title": title,
@@ -165,7 +182,8 @@ def publish_post(title, content, keywords, excerpt=None):
                 "published": now,
                 "updated": now,
                 "meta_desc": meta_description,
-                "keywords": keywords
+                "keywords": keywords,
+                "featured_image": featured_image or "",
             })
             conn.commit()
 
@@ -195,11 +213,12 @@ def main():
     content = generate_content_with_ai(topic)
 
     # Publicar
-    print("\n💾 Publicando artículo...")
+    print("\n Publicando articulo...")
     success = publish_post(
         title=topic['title'],
         content=content,
-        keywords=topic['keywords']
+        keywords=topic['keywords'],
+        featured_image=topic.get('image', '')
     )
 
     if success:

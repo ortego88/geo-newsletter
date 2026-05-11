@@ -54,11 +54,11 @@
               <div class="flex items-center gap-3 mb-2">
                 <p class="text-white font-bold text-2xl">{{ plans[sub.plan].name }}</p>
                 {% if sub.status == 'trial' %}
-                  <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">⏳ Prueba gratuita</span>
+                  <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">Prueba gratuita</span>
                 {% elif sub.status == 'active' %}
                   <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full">✅ Activo</span>
                 {% elif sub.status == 'cancelled_pending' %}
-                  <span class="bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">⚠️ Cancelación pendiente</span>
+                  <span class="bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">Cancelación pendiente</span>
                 {% endif %}
               </div>
               {% if sub.status == 'trial' and sub.trial_ends_at %}
@@ -250,7 +250,7 @@
   }
 
   var DASH_LANG_META = {
-    es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }
+    es: { flag: '' }, en: { flag: '' }
   };
   var dashCurrentLang = '{{ current_user.language or "es" }}';
 
@@ -425,8 +425,8 @@
 <script>
   // Language menu toggle for main nav
   var LANG_META = {
-    es: { flag: '🇪🇸', label: 'Español' },
-    en: { flag: '🇬🇧', label: 'English' }
+    es: { flag: '', label: 'Español' },
+    en: { flag: '', label: 'English' }
   };
 
   function toggleLangMenu() {

@@ -73,20 +73,20 @@
           <input type="hidden" name="outcome" id="outcome-filter" value="{{ outcome_filter }}">
           <select name="time_filter" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todo el historial</option>
-            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>⏰ Últimas 24 horas</option>
+            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>Últimas 24 horas</option>
             <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>Últimos 7 días</option>
             <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>Últimos 30 días</option>
           </select>
           <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los tipos</option>
-            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>🪙 Criptomonedas</option>
+            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>Criptomonedas</option>
             <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>IBEX 35</option>
           </select>
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
               {% set atype = asset_type_map.get(a.symbol, '') %}
-              <option value="{{ a.symbol }}" data-type="{{ atype }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
+              <option value="{{ a.symbol }}" data-type="{{ atype }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
           <a href="/historial" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">

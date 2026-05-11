@@ -78,7 +78,7 @@
           </div>
           {% if plan_config and plan_config.max_assets != -1 %}
           <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
-            <p class="text-amber-400 text-sm font-semibold">⚠️ Cambios en activos</p>
+            <p class="text-amber-400 text-sm font-semibold">Cambios en activos</p>
             <p class="text-slate-300 text-sm">Puedes seleccionar y cambiar libremente antes de guardar. Una vez guardes, deberás esperar 24 horas antes de poder modificar tu selección nuevamente.</p>
           </div>
           {% endif %}
@@ -111,7 +111,6 @@
                   {% if is_selected %}checked{% endif %}
                   {% if is_locked_for_changes %}disabled data-originally-disabled="true"{% endif %}
                   class="asset-checkbox w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
-                <span class="text-lg">{{ asset.icon }}</span>
                 <div>
                   <p class="text-sm font-medium text-white">{{ asset.name }}</p>
                   <p class="text-xs text-slate-500">{{ asset.symbol }}</p>
@@ -135,7 +134,7 @@
           <h2 class="font-bold text-white mb-4" data-i18n="settings.lang_title">Idioma de las alertas</h2>
           <div class="flex flex-wrap gap-3">
             {% set available_langs = plan_config.languages %}
-            {% set all_langs = [('es', '🇪🇸 Español'), ('en', '🇬🇧 English')] %}
+            {% set all_langs = [('es', 'Español'), ('en', 'English')] %}
             {% for lang_code, lang_name in all_langs %}
               {% set is_available = lang_code in available_langs %}
               <label class="flex items-center gap-2 px-4 py-2 rounded-xl border cursor-pointer transition
@@ -262,7 +261,7 @@
   }
 
   var DASH_LANG_META = {
-    es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }
+    es: { flag: '' }, en: { flag: '' }
   };
   var dashCurrentLang = '{{ current_user.language or "es" }}';
 
@@ -610,8 +609,8 @@
 <script>
   // Language menu toggle for main nav
   var LANG_META = {
-    es: { flag: '🇪🇸', label: 'Español' },
-    en: { flag: '🇬🇧', label: 'English' }
+    es: { flag: '', label: 'Español' },
+    en: { flag: '', label: 'English' }
   };
 
   function toggleLangMenu() {

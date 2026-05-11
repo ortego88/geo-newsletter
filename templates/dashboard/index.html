@@ -75,7 +75,7 @@
       {% if sub and sub.status == 'trial' %}
         <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 md:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <p class="text-amber-400 font-semibold">⏳ Período de prueba activo</p>
+            <p class="text-amber-400 font-semibold">Período de prueba activo</p>
             <p class="text-slate-400 text-sm mt-1">
               {% if sub.trial_ends_at %}
                 Tu prueba gratuita finaliza el {{ sub.trial_ends_at[:10] }}.
@@ -127,20 +127,20 @@
           <input type="hidden" name="outcome" id="outcome-filter" value="{{ outcome_filter }}">
           <select name="time_filter" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todo el historial</option>
-            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>⏰ Últimas 24 horas</option>
+            <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>Últimas 24 horas</option>
             <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>Últimos 7 días</option>
             <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>Últimos 30 días</option>
           </select>
           <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los tipos</option>
-            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>🪙 Criptomonedas</option>
+            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>Criptomonedas</option>
             <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>IBEX 35</option>
           </select>
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">Todos los activos</option>
             {% for a in available_assets %}
               {% set asset_type = asset_type_map.get(a.symbol, '') %}
-              <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.icon }} {{ a.symbol }} — {{ a.name }}</option>
+              <option value="{{ a.symbol }}" data-type="{{ asset_type }}" title="{{ a.name }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
           <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
@@ -251,7 +251,7 @@
                       {% elif outcome == 'incorrect' %}
                         <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
                       {% else %}
-                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⏳ Pendiente</span>
+                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">Pendiente</span>
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">{{ pred.predicted_at_madrid or '—' }}</td>
@@ -307,7 +307,9 @@
 
         {% else %}
           <div class="px-6 py-12 text-center">
-            <div class="text-4xl mb-3">📡</div>
+            <div class="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
             <p class="text-slate-400">No hay predicciones en el histórico.</p>
           </div>
         {% endif %}
@@ -334,7 +336,7 @@
   }
 
   var DASH_LANG_META = {
-    es: { flag: '🇪🇸' }, en: { flag: '🇬🇧' }
+    es: { flag: '' }, en: { flag: '' }
   };
   var dashCurrentLang = '{{ current_user.language or "es" }}';
 
@@ -584,8 +586,8 @@
 <script>
   // Language menu toggle for main nav
   var LANG_META = {
-    es: { flag: '🇪🇸', label: 'Español' },
-    en: { flag: '🇬🇧', label: 'English' }
+    es: { flag: '', label: 'Español' },
+    en: { flag: '', label: 'English' }
   };
 
   function toggleLangMenu() {
