@@ -77,16 +77,10 @@
             <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>{{ t.last_7d }}</option>
             <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>{{ t.last_30d }}</option>
           </select>
-          <select name="asset_type" id="asset-type-select" onchange="updateAssetDropdown()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
-            <option value="">{{ t.all_assets }}</option>
-            <option value="crypto" {% if asset_type_filter == 'crypto' %}selected{% endif %}>{{ t.crypto }}</option>
-            <option value="ibex35" {% if asset_type_filter == 'ibex35' %}selected{% endif %}>IBEX 35</option>
-          </select>
           <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
             <option value="">{{ t.all_assets }}</option>
             {% for a in available_assets %}
-              {% set atype = asset_type_map.get(a.symbol, '') %}
-              <option value="{{ a.symbol }}" data-type="{{ atype }}" class="asset-option" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }} — {{ a.name }}</option>
+              <option value="{{ a.symbol }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
           <a href="/historial" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
@@ -278,41 +272,6 @@
     window.location.href = url.toString();
   }
 
-  function initializeAssetOptions() {
-    var assetSelect = document.getElementById('asset-select');
-    var assetOptions = Array.from(assetSelect.querySelectorAll('option.asset-option')).map(function(opt) {
-      return { value: opt.value, text: opt.textContent, type: opt.getAttribute('data-type') || '', selected: opt.selected };
-    });
-    assetSelect._allOptions = assetOptions;
-    updateAssetDropdown(false);
-  }
-
-  function updateAssetDropdown(shouldSubmit) {
-    if (shouldSubmit === undefined) shouldSubmit = true;
-    var typeSelect = document.getElementById('asset-type-select');
-    var assetSelect = document.getElementById('asset-select');
-    var selectedType = typeSelect.value;
-    var currentAsset = assetSelect.value;
-
-    assetSelect.innerHTML = '<option value="">{{ t.all_assets }}</option>';
-    (assetSelect._allOptions || []).forEach(function(optData) {
-      if (!selectedType || optData.type === selectedType) {
-        var option = document.createElement('option');
-        option.value = optData.value;
-        option.textContent = optData.text;
-        option.setAttribute('data-type', optData.type);
-        option.className = 'asset-option';
-        if (optData.value === currentAsset) option.selected = true;
-        assetSelect.appendChild(option);
-      }
-    });
-
-    if (shouldSubmit) document.querySelector('form').submit();
-  }
-
-  window.addEventListener('DOMContentLoaded', function() {
-    initializeAssetOptions();
-  });
 </script>
 
 {% include 'partials/cookie_banner.html' %}

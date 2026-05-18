@@ -26,15 +26,7 @@ def _now_madrid():
     return datetime.now(_MADRID_TZ)
 
 
-# Module-level constant for IBEX 35 stocks that trade in euros
-_IBEX35_COMPANY_SYMBOLS = frozenset({
-    "ACS", "ACX", "AENA", "ALM", "AMS", "ANA", "BBVA", "BKT", "CABK",
-    "CLNX", "COL", "ELE", "ENG", "FDR", "FER", "GRF", "IAG", "IBE",
-    "IDR", "ITX", "LOG", "MAP", "MEL", "MRL", "MTS", "NTGY", "PHM",
-    "RED", "REP", "ROVI", "SAB", "SAN", "SGRE", "TEF",
-})
 MOCK_PRICES = {
-    # Crypto
     "BTC": 62450.0,
     "ETH": 3280.0,
     "XRP": 0.52,
@@ -55,79 +47,25 @@ MOCK_PRICES = {
     "NEAR": 4.0,
     "ARB": 0.75,
     "OP": 1.0,
-    # Índices
-    "SPX": 5210.0,
-    "SP500": 5210.0,
-    "INDU": 38500.0,
-    "CCMP": 16400.0,
-    "NASDAQ": 16400.0,
-    "FTSE": 7800.0,
-    "DAX": 17500.0,
-    "IBEX35": 11200.0,
-    "IBEX": 11200.0,
-    # Volatilidad
-    "VIX": 18.0,
-    # Commodities
-    "GOLD": 2350.0,
-    "SILVER": 28.50,
-    # Bonos
-    "US10Y": 4.35,
-    "US2Y": 4.85,
-    "BONDS": 4.35,
-    # ETFs
-    "SPY": 520.0,
-    "QQQ": 440.0,
-    "GLD": 215.0,
-    "SLV": 25.0,
-    "IWM": 200.0,
-    "DIA": 385.0,
-    "EEM": 42.0,
-    "EWZ": 28.0,
-    "VTI": 250.0,
-    "ARKK": 45.0,
-    "TLT": 90.0,
-    "XLF": 44.0,
-    "XLE": 95.0,
-    # ── IBEX 35 empresas (precios en €, aproximados) ────────────────────────
-    "ACS": 43.0,
-    "ACX": 10.0,
-    "AENA": 175.0,
-    "ALM": 4.0,
-    "AMS": 75.0,
-    "ANA": 16.0,
-    "BBVA": 10.0,
-    "BKT": 7.0,
-    "CABK": 7.0,
-    "CLNX": 30.0,
-    "COL": 6.0,
-    "ELE": 22.0,
-    "ENG": 14.0,
-    "FDR": 22.0,
-    "FER": 45.0,
-    "GRF": 7.0,
-    "IAG": 3.0,
-    "IBE": 13.0,
-    "IDR": 14.0,
-    "ITX": 50.0,
-    "LOG": 40.0,
-    "MAP": 3.0,
-    "MEL": 8.0,
-    "MRL": 10.0,
-    "MTS": 28.0,
-    "NTGY": 24.0,
-    "PHM": 20.0,
-    "RED": 16.0,
-    "REP": 13.0,
-    "ROVI": 47.0,
-    "SAB": 2.0,
-    "SAN": 5.0,
-    "SGRE": 23.0,
-    "TEF": 4.0,
+    "SUI": 1.2,
+    "APT": 8.0,
+    "SEI": 0.35,
+    "TIA": 6.0,
+    "INJ": 22.0,
+    "RENDER": 7.5,
+    "FET": 1.5,
+    "PEPE": 0.000012,
+    "WIF": 2.5,
+    "SHIB": 0.000022,
+    "TON": 6.5,
+    "TRX": 0.12,
+    "HBAR": 0.08,
+    "ICP": 12.0,
+    "AAVE": 90.0,
 }
 
-# --- Iconos por tipo de activo ---
+# --- Iconos por activo crypto ---
 ASSET_ICONS = {
-    # Crypto
     "BTC": "🪙",
     "ETH": "🔷",
     "XRP": "💧",
@@ -148,79 +86,25 @@ ASSET_ICONS = {
     "NEAR": "🌐",
     "ARB": "🔵",
     "OP": "🔴",
-    # Índices
-    "SPX": "📈",
-    "SP500": "📈",
-    "INDU": "🏭",
-    "CCMP": "💻",
-    "NASDAQ": "💻",
-    "FTSE": "🇬🇧",
-    "DAX": "🇩🇪",
-    "IBEX35": "🇪🇸",
-    "IBEX": "🇪🇸",
-    # Volatilidad
-    "VIX": "⚡",
-    # Commodities
-    "GOLD": "🥇",
-    "SILVER": "🥈",
-    # Bonos
-    "US10Y": "📊",
-    "US2Y": "📊",
-    "BONDS": "📊",
-    # ETFs
-    "SPY": "📊",
-    "QQQ": "📊",
-    "GLD": "📊",
-    "SLV": "📊",
-    "IWM": "📊",
-    "DIA": "📊",
-    "EEM": "📊",
-    "EWZ": "📊",
-    "VTI": "📊",
-    "ARKK": "🚀",
-    "TLT": "📊",
-    "XLF": "🏦",
-    "XLE": "⚡",
-    # ── IBEX 35 empresas ────────────────────────────────────────────────────
-    "ACS": "🏗️",
-    "ACX": "🔩",
-    "AENA": "✈️",
-    "ALM": "💊",
-    "AMS": "💻",
-    "ANA": "🌱",
-    "BBVA": "🏦",
-    "BKT": "🏦",
-    "CABK": "🏦",
-    "CLNX": "📡",
-    "COL": "🏢",
-    "ELE": "⚡",
-    "ENG": "🔵",
-    "FDR": "💧",
-    "FER": "🌉",
-    "GRF": "🩸",
-    "IAG": "✈️",
-    "IBE": "⚡",
-    "IDR": "💻",
-    "ITX": "👗",
-    "LOG": "📦",
-    "MAP": "🛡️",
-    "MEL": "🏨",
-    "MRL": "🏢",
-    "MTS": "⚙️",
-    "NTGY": "🔥",
-    "PHM": "🧴",
-    "RED": "⚡",
-    "REP": "⛽",
-    "ROVI": "💉",
-    "SAB": "🏦",
-    "SAN": "🏦",
-    "SGRE": "🌬️",
-    "TEF": "📱",
+    "SUI": "💎",
+    "APT": "🟢",
+    "SEI": "🌊",
+    "TIA": "🟣",
+    "INJ": "💉",
+    "RENDER": "🎨",
+    "FET": "🤖",
+    "PEPE": "🐸",
+    "WIF": "🐕",
+    "SHIB": "🐕",
+    "TON": "💎",
+    "TRX": "🔴",
+    "HBAR": "⬡",
+    "ICP": "🌐",
+    "AAVE": "👻",
 }
 
-# --- Nombres legibles en español ---
+# --- Nombres legibles ---
 ASSET_NAMES = {
-    # Crypto
     "BTC": "Bitcoin",
     "ETH": "Ethereum",
     "XRP": "Ripple",
@@ -241,74 +125,21 @@ ASSET_NAMES = {
     "NEAR": "NEAR Protocol",
     "ARB": "Arbitrum",
     "OP": "Optimism",
-    # Índices
-    "SPX": "S&P 500",
-    "SP500": "S&P 500",
-    "INDU": "Dow Jones",
-    "CCMP": "Nasdaq",
-    "NASDAQ": "Nasdaq 100",
-    "FTSE": "FTSE 100",
-    "DAX": "DAX 40",
-    "IBEX35": "IBEX 35",
-    "IBEX": "IBEX 35",
-    # Volatilidad
-    "VIX": "CBOE VIX (Volatilidad)",
-    # Commodities
-    "GOLD": "Oro",
-    "SILVER": "Plata",
-    # Bonos
-    "US10Y": "Bono Tesoro 10Y",
-    "US2Y": "Bono Tesoro 2Y",
-    "BONDS": "Bonos USA",
-    # ETFs
-    "SPY": "SPDR S&P 500 ETF",
-    "QQQ": "Invesco Nasdaq 100 ETF",
-    "GLD": "SPDR Gold ETF",
-    "SLV": "iShares Silver ETF",
-    "IWM": "iShares Russell 2000 ETF",
-    "DIA": "SPDR Dow Jones ETF",
-    "EEM": "iShares Emerging Markets ETF",
-    "EWZ": "iShares MSCI Brazil ETF",
-    "VTI": "Vanguard Total Stock Market ETF",
-    "ARKK": "ARK Innovation ETF",
-    "TLT": "iShares 20+ Year Treasury ETF",
-    "XLF": "Financial Select Sector ETF",
-    "XLE": "Energy Select Sector ETF",
-    # ── IBEX 35 empresas ────────────────────────────────────────────────────
-    "ACS": "ACS Actividades",
-    "ACX": "Acerinox",
-    "AENA": "AENA",
-    "ALM": "Almirall",
-    "AMS": "Amadeus IT",
-    "ANA": "Acciona",
-    "BBVA": "BBVA",
-    "BKT": "Bankinter",
-    "CABK": "CaixaBank",
-    "CLNX": "Cellnex",
-    "COL": "Inmobiliaria Colonial",
-    "ELE": "Endesa",
-    "ENG": "Enagás",
-    "FDR": "Fluidra",
-    "FER": "Ferrovial",
-    "GRF": "Grifols",
-    "IAG": "IAG (Iberia / British Airways)",
-    "IBE": "Iberdrola",
-    "IDR": "Indra Sistemas",
-    "ITX": "Inditex",
-    "LOG": "Logista",
-    "MAP": "Mapfre",
-    "MEL": "Meliá Hotels",
-    "MRL": "Merlin Properties",
-    "MTS": "ArcelorMittal",
-    "NTGY": "Naturgy",
-    "PHM": "Puig",
-    "RED": "Red Eléctrica (REE)",
-    "REP": "Repsol",
-    "ROVI": "Laboratorios Rovi",
-    "SAB": "Banco Sabadell",
-    "SAN": "Banco Santander",
-    "SGRE": "Siemens Gamesa",
-    "TEF": "Telefónica",
+    "SUI": "Sui",
+    "APT": "Aptos",
+    "SEI": "Sei",
+    "TIA": "Celestia",
+    "INJ": "Injective",
+    "RENDER": "Render",
+    "FET": "Fetch.ai",
+    "PEPE": "Pepe",
+    "WIF": "Dogwifhat",
+    "SHIB": "Shiba Inu",
+    "TON": "Toncoin",
+    "TRX": "Tron",
+    "HBAR": "Hedera",
+    "ICP": "Internet Computer",
+    "AAVE": "Aave",
 }
 
 # --- Traducción básica de inglés a español para el campo reasoning ---
@@ -489,21 +320,13 @@ class AssetPriceFetcher:
 
     def get_formatted_price(self, asset: str) -> str:
         price = self.get_price(asset)
-        asset_upper = asset.upper()
-        if asset_upper in ("BTC", "ETH", "GOLD"):
-            return f"${price:,.0f}"
-        if asset_upper in ("SPX", "SP500", "INDU", "CCMP", "NASDAQ", "FTSE", "DAX", "IBEX35", "IBEX"):
-            return f"{price:,.0f}"
-        # IBEX 35 companies trade in euros
-        if asset_upper in _IBEX35_COMPANY_SYMBOLS:
-            if price >= 100:
-                return f"€{price:,.0f}"
-            return f"€{price:.2f}"
         if price >= 1000:
             return f"${price:,.0f}"
         if price >= 1:
             return f"${price:.2f}"
-        return f"${price:.4f}"
+        if price >= 0.01:
+            return f"${price:.4f}"
+        return f"${price:.6f}"
 
 
 def format_alert(event: dict, analysis: dict) -> str:
