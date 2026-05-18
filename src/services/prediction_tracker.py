@@ -172,6 +172,10 @@ class PredictionTracker:
             return None
 
         direction = analysis.get("direction", "neutral")
+        if direction == "neutral":
+            logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
+            return None
+
         impact_percent = float(analysis.get("market_impact_percent", 0))
         timeframe = analysis.get("timeframe", "hours")
         timeframe_minutes = self._timeframe_to_minutes(timeframe)

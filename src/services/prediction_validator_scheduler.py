@@ -173,9 +173,13 @@ class PredictionValidatorScheduler:
                     f"{asset} cambio real: {result['actual_change']:+.2f}% | "
                     f"predicho: {result['predicted_change']:+.1f}%"
                 )
-                # Enviar resultado a Telegram
-                stats = self.tracker.get_accuracy_stats()
-                _send_validation_telegram(result, stats)
+                # Solo enviar resultado a Telegram si la predicción fue alertada
+                # (mismos criterios que en run_all._send_pipeline_alerts)
+                pred_score = pred.get("score", 0)
+                pred_confidence = pred.get("confidence", 0)
+                if pred_score >= 60 and pred_confidence >= 65:
+                    stats = self.tracker.get_accuracy_stats()
+                    _send_validation_telegram(result, stats)
 
         if validated_count:
             stats = self.tracker.get_accuracy_stats()
