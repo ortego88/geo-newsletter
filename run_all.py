@@ -180,16 +180,16 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events (score >= 50 with analysis)
-    # ✅ Sin filtrado por horario — las alertas van 24/7
-    # Bajado de 60 a 50 para permitir más alertas con Claude
+    # Step 1: filter alertable events (score >= 60, confidence >= 65)
     resolved = [
         e for e in events
-        if e.get("score", 0) >= 50 and e.get("analysis")
+        if e.get("score", 0) >= 60
+        and e.get("analysis")
+        and e.get("analysis", {}).get("confidence", 0) >= 65
     ]
 
     if not resolved:
-        logger.info("Sin eventos con score >= 50 para alertar")
+        logger.info("Sin eventos con score >= 60 y confidence >= 65 para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
@@ -237,7 +237,7 @@ def run_pipeline_cycle():
     logger.info(f"⏱️  CICLO DE PIPELINE — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info("=" * 60)
     try:
-        events = pipeline.run(minutes=360, min_score=30)
+        events = pipeline.run(minutes=180, min_score=45)
         if not events:
             logger.info("Sin eventos relevantes en este ciclo.")
             return

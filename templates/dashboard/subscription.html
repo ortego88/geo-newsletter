@@ -24,10 +24,10 @@
 
     <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
       <div class="flex items-center gap-3">
-        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="{{ t.open_menu }}">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.subscription">Suscripción</h1>
+        <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.subscription">{{ t.subscription_title }}</h1>
       </div>
     </div>
 
@@ -47,36 +47,36 @@
 
       <!-- Current subscription card -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
-        <h2 class="font-bold text-white text-lg mb-4">Plan actual</h2>
+        <h2 class="font-bold text-white text-lg mb-4">{{ t.current_plan_title }}</h2>
         {% if sub and sub.status in ('active', 'trial', 'cancelled_pending') %}
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex items-center gap-3 mb-2">
                 <p class="text-white font-bold text-2xl">{{ plans[sub.plan].name }}</p>
                 {% if sub.status == 'trial' %}
-                  <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">Prueba gratuita</span>
+                  <span class="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">{{ t.trial_badge_text }}</span>
                 {% elif sub.status == 'active' %}
-                  <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full">✅ Activo</span>
+                  <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full">✅ {{ t.active_badge_text }}</span>
                 {% elif sub.status == 'cancelled_pending' %}
-                  <span class="bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">Cancelación pendiente</span>
+                  <span class="bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-full">{{ t.cancel_pending_badge_text }}</span>
                 {% endif %}
               </div>
               {% if sub.status == 'trial' and sub.trial_ends_at %}
-                <p class="text-slate-400 text-sm">Prueba gratuita hasta el <span class="text-amber-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
+                <p class="text-slate-400 text-sm">{{ t.trial_until_msg }} <span class="text-amber-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
               {% elif sub.status == 'active' and sub.current_period_end %}
-                <p class="text-slate-400 text-sm">Próximo cobro el <span class="text-white font-semibold">{{ sub.current_period_end[:10] }}</span></p>
+                <p class="text-slate-400 text-sm">{{ t.next_charge_msg }} <span class="text-white font-semibold">{{ sub.current_period_end[:10] }}</span></p>
               {% elif sub.status == 'cancelled_pending' %}
                 {% if sub.trial_ends_at %}
-                  <p class="text-slate-400 text-sm">Tu acceso finalizará el <span class="text-orange-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
+                  <p class="text-slate-400 text-sm">{{ t.access_ends_msg }} <span class="text-orange-400 font-semibold">{{ sub.trial_ends_at[:10] }}</span></p>
                 {% elif sub.current_period_end %}
-                  <p class="text-slate-400 text-sm">Tu acceso finalizará el <span class="text-orange-400 font-semibold">{{ sub.current_period_end[:10] }}</span></p>
+                  <p class="text-slate-400 text-sm">{{ t.access_ends_msg }} <span class="text-orange-400 font-semibold">{{ sub.current_period_end[:10] }}</span></p>
                 {% endif %}
               {% endif %}
               {% if plan_config %}
                 <div class="mt-3 space-y-1 text-sm text-slate-400">
-                  <p>Activos: <span class="text-white">{% if plan_config.max_assets == -1 %}Ilimitados{% else %}hasta {{ plan_config.max_assets }}{% endif %}</span></p>
-                  <p>Alertas/día: <span class="text-white">{% if plan_config.max_daily_alerts == -1 %}Ilimitadas{% else %}hasta {{ plan_config.max_daily_alerts }}{% endif %}</span></p>
-                  <p>Historial: <span class="text-white">{{ plan_config.history_days }} día{% if plan_config.history_days != 1 %}s{% endif %}</span></p>
+                  <p>{{ t.assets_label }}: <span class="text-white">{% if plan_config.max_assets == -1 %}{{ t.unlimited_lowercase }}{% else %}{{ t.assets_up_to }} {{ plan_config.max_assets }}{% endif %}</span></p>
+                  <p>{{ t.alerts_day }}: <span class="text-white">{% if plan_config.max_daily_alerts == -1 %}{{ t.unlimited_alerts }}{% else %}{{ t.assets_up_to }} {{ plan_config.max_daily_alerts }}{% endif %}</span></p>
+                  <p>{{ t.history_days }}: <span class="text-white">{{ plan_config.history_days }} {{ t.day if plan_config.history_days == 1 else t.days }}</span></p>
                 </div>
               {% endif %}
             </div>
@@ -85,37 +85,37 @@
                 {% if has_payment_method %}
                   <form method="POST" action="/subscribe/reactivate">
                     <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                      Activar suscripción con tarjeta guardada
+                      {{ t.activate_with_saved_card }}
                     </button>
                   </form>
                 {% else %}
                   <a href="/subscribe/{{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                    Activar suscripción
+                    {{ t.activate_subscription_btn }}
                   </a>
                 {% endif %}
               {% elif sub.status == 'trial' %}
                 {% if has_payment_method %}
                   <form method="POST" action="/subscribe/activate">
                     <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                      Activar suscripción con tarjeta guardada
+                      {{ t.activate_with_saved_card }}
                     </button>
                   </form>
                 {% else %}
                   <a href="/checkout/trial?plan={{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                    Activar suscripción
+                    {{ t.activate_subscription_btn }}
                   </a>
                 {% endif %}
                 <button type="button" onclick="openCancelModal()"
                   class="inline-flex items-center justify-center border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition">
-                  Cancelar suscripción
+                  {{ t.cancel_sub }}
                 </button>
               {% elif sub.status == 'active' %}
                 <a href="/pricing" class="inline-flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                  Ver todos los planes
+                  {{ t.view_all_plans }}
                 </a>
                 <button type="button" onclick="openCancelModal()"
                   class="inline-flex items-center justify-center border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition">
-                  Cancelar suscripción
+                  {{ t.cancel_sub }}
                 </button>
               {% endif %}
             </div>
@@ -124,31 +124,31 @@
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex items-center gap-3 mb-2">
-                <p class="text-white font-bold text-2xl">Sin plan activo</p>
-                <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-2.5 py-1 rounded-full">❌ Cancelado</span>
+                <p class="text-white font-bold text-2xl">{{ t.no_active_plan }}</p>
+                <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-2.5 py-1 rounded-full">❌ {{ t.cancelled_badge }}</span>
               </div>
-              <p class="text-slate-400 text-sm">Tu suscripción fue cancelada. Reactívala para continuar recibiendo alertas.</p>
+              <p class="text-slate-400 text-sm">{{ t.subscription_cancelled_msg }}</p>
             </div>
             <div class="flex flex-col gap-2">
               {% if has_payment_method %}
                 <form method="POST" action="/subscribe/activate">
                   <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                    Activar suscripción con tarjeta guardada
+                    {{ t.activate_with_saved_card }}
                   </button>
                 </form>
               {% else %}
                 <a href="/pricing" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-                  Seleccionar plan
+                  {{ t.select_plan_btn }}
                 </a>
               {% endif %}
             </div>
           </div>
         {% else %}
           <div>
-            <p class="text-white font-bold text-2xl mb-2">Sin plan activo</p>
-            <p class="text-slate-400 text-sm">No tienes ninguna suscripción activa.</p>
+            <p class="text-white font-bold text-2xl mb-2">{{ t.no_active_plan }}</p>
+            <p class="text-slate-400 text-sm">{{ t.no_active_subscription }}</p>
             <a href="/pricing" class="inline-flex items-center justify-center mt-4 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
-              Ver planes →
+              {{ t.view_plans_btn }}
             </a>
           </div>
         {% endif %}
@@ -156,7 +156,7 @@
 
       <!-- Plans comparison table -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-        <h2 class="font-bold text-white text-lg mb-5">Comparativa de planes</h2>
+        <h2 class="font-bold text-white text-lg mb-5">{{ t.plans_comparison }}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {% for plan_key, p in plans.items() %}
             <div class="bg-slate-900 border rounded-xl p-5 flex flex-col gap-3
@@ -164,26 +164,26 @@
               <div class="flex items-center justify-between">
                 <p class="text-white font-bold text-lg">{{ p.name }}</p>
                 {% if sub and sub.plan == plan_key %}
-                  <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">Actual</span>
+                  <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full">{{ t.current_plan_badge }}</span>
                 {% endif %}
               </div>
-              <p class="text-white font-semibold">{{ p.price_monthly }}€<span class="text-slate-400 text-xs font-normal">/mes</span></p>
+              <p class="text-white font-semibold">{{ p.price_monthly }}€<span class="text-slate-400 text-xs font-normal">{{ t.per_month }}</span></p>
               <ul class="space-y-1.5 text-sm text-slate-400 flex-1">
-                <li>{% if p.max_assets == -1 %}Activos ilimitados{% else %}Hasta {{ p.max_assets }} activo{% if p.max_assets != 1 %}s{% endif %}{% endif %}</li>
-                <li>{% if p.max_daily_alerts == -1 %}Alertas ilimitadas{% else %}Hasta {{ p.max_daily_alerts }} alertas/día{% endif %}</li>
-                <li>Historial {{ p.history_days }} día{% if p.history_days != 1 %}s{% endif %}</li>
+                <li>{% if p.max_assets == -1 %}{{ t.unlimited_assets }}{% else %}{{ t.up_to_assets }} {{ p.max_assets }} {{ t.asset if p.max_assets == 1 else t.assets_plural }}{% endif %}</li>
+                <li>{% if p.max_daily_alerts == -1 %}{{ t.unlimited_alerts_day }}{% else %}{{ t.up_to_alerts }} {{ p.max_daily_alerts }} {{ t.alerts_per_day }}{% endif %}</li>
+                <li>{{ t.history }} {{ p.history_days }} {{ t.day if p.history_days == 1 else t.days }}</li>
               </ul>
               {% if sub and sub.status in ('active', 'trial', 'cancelled_pending') and sub.plan == plan_key %}
                 <div class="inline-flex items-center justify-center bg-slate-700 text-slate-400 text-xs font-semibold px-4 py-2 rounded-lg mt-1 cursor-default">
-                  Plan actual
+                  {{ t.current_plan_btn }}
                 </div>
               {% elif sub and sub.status in ('active', 'trial', 'cancelled_pending') and sub.plan != plan_key %}
                 <a href="/subscribe/{{ plan_key }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition mt-1">
-                  Cambiar a {{ p.name }}
+                  {{ t.change_to }} {{ p.name }}
                 </a>
               {% else %}
                 <a href="/subscribe/{{ plan_key }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-semibold px-4 py-2 rounded-lg transition mt-1">
-                  Plan {{ p.name }}
+                  {{ t.plan_btn }} {{ p.name }}
                 </a>
               {% endif %}
             </div>
@@ -200,34 +200,34 @@
   <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-8">
     <div class="text-center mb-6">
       <div class="text-5xl mb-3">⚠️</div>
-      <h2 class="text-white font-bold text-xl mb-2">¿Seguro que quieres cancelar?</h2>
-      <p class="text-slate-400 text-sm">Al cancelar perderás acceso a:</p>
+      <h2 class="text-white font-bold text-xl mb-2">{{ t.cancel_modal_title }}</h2>
+      <p class="text-slate-400 text-sm">{{ t.cancel_modal_subtitle }}</p>
     </div>
     <ul class="space-y-2 mb-6">
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Alertas geopolíticas en tiempo real</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Notificaciones en Telegram y WhatsApp</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Análisis con IA (GPT de última generación)</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Historial de alertas y señales pasadas</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Acceso al dashboard personalizado</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature1 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature2 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature3 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature4 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature5 }}</li>
     </ul>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6">
-      <p class="text-slate-300 text-sm font-semibold mb-1">¿Sabías que...?</p>
-      <p class="text-slate-400 text-sm">Puedes pausar tu suscripción o cambiar a un plan inferior en lugar de cancelar. Escríbenos y te ayudamos.</p>
-      <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">Contactar soporte →</a>
+      <p class="text-slate-300 text-sm font-semibold mb-1">{{ t.cancel_modal_tip_title }}</p>
+      <p class="text-slate-400 text-sm">{{ t.cancel_modal_tip_msg }}</p>
+      <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">{{ t.cancel_modal_contact }}</a>
     </div>
     <div class="mb-6">
-      <label class="text-slate-400 text-sm mb-2 block">Escribe <span class="text-red-400 font-mono font-bold">CANCELAR</span> para confirmar:</label>
-      <input type="text" id="cancel-confirm-input" placeholder="CANCELAR"
+      <label class="text-slate-400 text-sm mb-2 block">{{ t.cancel_modal_confirm_label }} <span class="text-red-400 font-mono font-bold">{{ t.cancel_modal_confirm_keyword }}</span> {{ t.cancel_modal_confirm_label_part2 }}</label>
+      <input type="text" id="cancel-confirm-input" placeholder="{{ t.cancel_modal_confirm_keyword }}"
         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
     </div>
     <div class="flex flex-col sm:flex-row gap-3">
       <button onclick="closeCancelModal()"
         class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-3 rounded-xl transition">
-        ✓ Conservar mi suscripción
+        {{ t.cancel_modal_keep_btn }}
       </button>
       <button id="btn-confirm-cancel" onclick="confirmCancel()" disabled
         class="flex-1 border border-red-500/30 text-red-400 hover:bg-red-500/10 font-medium px-5 py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed">
-        Sí, cancelar de todos modos
+        {{ t.cancel_modal_confirm_btn }}
       </button>
     </div>
   </div>
@@ -407,16 +407,16 @@
 <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
   <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-8 text-center">
     <div class="text-4xl mb-4">👋</div>
-    <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
-    <p class="text-slate-400 text-sm mb-6">¿Estás seguro de que quieres cerrar sesión?</p>
+    <h2 class="text-white font-bold text-xl mb-2">{{ t.logout_modal_title }}</h2>
+    <p class="text-slate-400 text-sm mb-6">{{ t.logout_modal_msg }}</p>
     <div class="flex gap-3 justify-center">
       <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
         class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-5 py-2.5 rounded-xl transition">
-        Cancelar
+        {{ t.cancel }}
       </button>
       <a href="/logout"
         class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-5 py-2.5 rounded-xl transition">
-        Cerrar sesión
+        {{ t.nav_sign_out }}
       </a>
     </div>
   </div>

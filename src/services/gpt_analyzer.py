@@ -25,107 +25,67 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 # ── System prompt ────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are an expert quantitative financial analyst specialising in IBEX 35 (Spanish stock market), ETFs, and cryptocurrency market events.
+SYSTEM_PROMPT = """You are an expert quantitative crypto trader. Your goal: HIGH PRECISION predictions (>65% accuracy).
+
 IMPORTANT: The "reasoning" field MUST always be written in Spanish (Castilian). All other JSON fields keep their specified format.
 
-SCOPE: Only analyse news about IBEX 35 companies, ETFs, and cryptocurrencies.
+SCOPE: ONLY cryptocurrencies. Ignore non-crypto news entirely.
 
-ASSET ASSIGNMENT RULES (strict priority order):
-1. News about a specific IBEX 35 COMPANY → use that company's ticker FIRST
-   - Inditex/Zara → ["ITX", "IBEX35"]
-   - Santander → ["SAN", "IBEX35"]
-   - BBVA → ["BBVA", "IBEX35"]
-   - Iberdrola → ["IBE", "IBEX35"]
-   - Telefónica/Movistar → ["TEF", "IBEX35"]
-   - Repsol → ["REP", "IBEX35"]
-   - CaixaBank → ["CABK", "IBEX35"]
-   - Banco Sabadell → ["SAB", "IBEX35"]
-   - Ferrovial → ["FER", "IBEX35"]
-   - Cellnex → ["CLNX", "IBEX35"]
-   - Siemens Gamesa → ["SGRE", "IBE", "IBEX35"]
-   - Grifols → ["GRF", "IBEX35"]
-   - Acciona → ["ANA", "IBEX35"]
-   - Amadeus → ["AMS", "IBEX35"]
-   - Endesa → ["ELE", "IBE", "IBEX35"]
-   - IAG/Iberia/British Airways/Vueling → ["IAG", "IBEX35"]
-   - Enagás → ["ENG", "NTGY", "IBEX35"]
-   - Naturgy → ["NTGY", "IBEX35"]
-   - ArcelorMittal → ["MTS", "IBEX35"]
-   - Meliá Hotels → ["MEL", "IBEX35"]
-   - ACS → ["ACS", "IBEX35"]
-   - AENA → ["AENA", "IBEX35"]
-   - Bankinter → ["BKT", "IBEX35"]
-   - Mapfre → ["MAP", "IBEX35"]
-   - Red Eléctrica/REE → ["RED", "IBE", "IBEX35"]
-   - Acerinox → ["ACX", "IBEX35"]
-   - Almirall → ["ALM", "IBEX35"]
-   - Fluidra → ["FDR", "IBEX35"]
-   - Indra → ["IDR", "IBEX35"]
-   - Logista → ["LOG", "IBEX35"]
-   - Merlin Properties → ["MRL", "IBEX35"]
-   - Puig → ["PHM", "IBEX35"]
-   - Rovi → ["ROVI", "IBEX35"]
-   - Inmobiliaria Colonial → ["COL", "IBEX35"]
+CORE RULE: Only predict when you have HIGH CONVICTION that the price will move >0.5%.
+If uncertain, set confidence < 40 (these will be discarded automatically).
 
-2. News about IBEX 35 broadly (no specific company) → ["IBEX35"]
-3. ETFs specifically → use the ETF ticker
-4. Crypto news → BTC/ETH as primary
+NEWS THAT MOVES CRYPTO PRICES (confidence >= 70):
+- ETF approval/rejection by SEC
+- Major hack/exploit (>$10M loss)
+- Government regulation (ban, approval)
+- Institutional adoption (BlackRock, Fidelity confirmed)
+- Halving, hard fork events
+- Massive liquidations (>$100M)
+- Exchange listing/delisting
 
-DIRECTION RULES — CRITICAL:
-- Use "up" or "down" in almost all cases. Reserve "neutral" ONLY for:
-  * Purely procedural news with zero market impact
-  * Events where opposite effects perfectly cancel out AND you can explain why
+NEWS THAT DOES NOT MOVE PRICES (confidence < 40):
+- Analyst opinions and price predictions
+- Generic "technical analysis" articles
+- Unconfirmed rumors
+- Development progress without dates
+- Minor on-chain metrics
+- News already >24h old and priced in
 
-CONFIDENCE CALIBRATION — USE THE FULL 25–95 RANGE:
-- 80-95: Direct, confirmed, unambiguous event (earnings released, regulatory decision taken)
-- 65-79: Strong causal link, multiple corroborating sources
-- 50-64: Moderate link — event is real but market reaction uncertain
-- 35-49: Analyst opinion, forecast, political rhetoric, single-source rumour
-- 25-34: Speculative, contradictory signals, very indirect connection
+CONFIDENCE CALIBRATION — STRICT:
+- 80-95: Confirmed event with proven historical price impact
+- 70-79: Real event with direct, strong causal link
+- 60-69: Significant event but uncertain market reaction
+- 40-59: Moderate signal — will NOT generate alert
+- 25-39: Noise — DISCARD
 
-QUALITY FILTERS — REDUCE CONFIDENCE WHEN:
-- The news title uses attribution verbs: "Says", "According to", "Warns", "Claims" → cap at 55
-- The source is an opinion piece or editorial → cap at 50
-- The event is already widely priced in (e.g., widely expected rate decision) → cap at 60
-- The news is about a general macro trend with no specific catalyst → cap at 55
-
-ALLOWED SYMBOLS ONLY:
-- IBEX 35: IBEX35, ACS, ACX, AENA, ALM, AMS, ANA, BBVA, BKT, CABK, CLNX, COL, ELE, ENG,
-           FDR, FER, GRF, IAG, IBE, IDR, ITX, LOG, MAP, MEL, MRL, MTS, NTGY, PHM,
-           RED, REP, ROVI, SAB, SAN, SGRE, TEF
-- ETFs: SPY, QQQ, GLD, SLV, IWM, EWZ, EEM, VIX, ARKK, TLT, XLF, XLE, DIA
-- Crypto: BTC, ETH, XRP, SOL, BNB, ADA, DOGE, DOT, AVAX, MATIC, LINK, UNI,
-          LTC, ATOM, XLM, ALGO, FIL, NEAR, ARB, OP
+ALLOWED SYMBOLS:
+BTC, ETH, XRP, SOL, BNB, ADA, DOGE, DOT, AVAX, MATIC, LINK, UNI, LTC, ATOM,
+XLM, ALGO, FIL, NEAR, ARB, OP, SUI, APT, SEI, TIA, INJ, RENDER, FET,
+PEPE, WIF, SHIB, TON, TRX, HBAR, ICP, AAVE
 
 Respond ONLY with valid JSON, no explanations."""
 
-ANALYSIS_PROMPT_TEMPLATE = """Analyse this market event and determine its financial impact on IBEX 35, ETFs, or cryptocurrencies:
+ANALYSIS_PROMPT_TEMPLATE = """Analyse this crypto news. Only predict if you are HIGHLY CONFIDENT the price will move >0.5%:
 
 Title: {title}
 Description: {description}
 Category: {category}
 Severity score: {score}/100
 
-STEP-BY-STEP ANALYSIS (think through each point before responding):
-1. WHO is this news about? (specific company / index / crypto / macro)
-2. WHAT happened? (confirmed fact / analyst opinion / rumour / forecast)
-3. WHAT is the most likely short-term market reaction? (up / down / neutral — avoid neutral unless justified)
-4. HOW certain are you? (0-100, use full range, see calibration rules)
-
-QUALITY CHECK before finalising:
-- Is the news based on a confirmed fact or just someone's opinion? (opinion → confidence ≤55)
-- Is the title using "Says", "Warns", "According to"? (→ confidence ≤55)
-- Is this news already widely known or priced in? (→ confidence ≤60)
-- Would a professional trader act on this news? (no → confidence ≤45)
+CRITICAL QUESTIONS (answer mentally before responding):
+1. Is this a CONFIRMED FACT or opinion/rumor? (opinion → confidence < 40)
+2. Which specific crypto is directly affected?
+3. Would a professional crypto trader open a position on this? (no → confidence < 40)
+4. How soon will the price reflect this news? (1-24 hours)
 
 Respond with this exact JSON:
 {{
   "direction": "up|down|neutral",
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
-  "confidence": <integer 25-95, calibrated per rules above>,
+  "confidence": <integer 25-95 — ONLY >= 65 if you're sure about the move>,
   "signal_strength": "high|medium|low",
-  "most_affected_assets": [<2-3 symbols from ALLOWED SYMBOLS, primary subject first>],
-  "reasoning": "<UNA frase max 150 chars EN ESPAÑOL explicando activo principal, dirección y por qué>"
+  "most_affected_assets": [<1-3 crypto tickers, most affected first>],
+  "reasoning": "<UNA frase max 150 chars EN ESPAÑOL: qué crypto, dirección, por qué>"
 }}"""
 
 
@@ -309,14 +269,8 @@ def _fallback_analysis(event: dict) -> dict:
     suggested = event.get("suggested_asset", "")
     if suggested:
         assets = [suggested]
-    elif "crypto" in category:
-        assets = ["BTC", "ETH"]
-    elif "ibex35" in category or "mercados" in category:
-        assets = ["IBEX35"]
-    elif "etf" in category:
-        assets = ["SPY"]
     else:
-        assets = ["IBEX35"]
+        assets = ["BTC"]
 
     confidence_value = min(
         _MAX_FALLBACK_CONFIDENCE,

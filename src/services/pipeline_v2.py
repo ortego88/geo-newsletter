@@ -2,8 +2,8 @@
 Pipeline principal v2.
 Flujo: fetch RSS → deduplicar → scoring → filtrar por activo → analizar con IA → guardar predicciones.
 
-Scope: IBEX 35, ETFs y Criptodivisas únicamente.
-Noticias que no hacen match con ningún activo de estas categorías son descartadas.
+Scope: SOLO Criptodivisas.
+Noticias que no hacen match con ningún activo crypto son descartadas.
 """
 
 import logging
@@ -28,42 +28,28 @@ VALID_ASSETS = set(CRYPTO_IDS.keys()) | set(YAHOO_TICKERS.keys())
 # --- Fallback de activo por categoría cuando el modelo inventa tickers ---
 CATEGORY_FALLBACK = {
     "crypto": "BTC",
-    "ibex35": "IBEX35",
-    "etf": "SPY",
-    "mercados": "IBEX35",
-    "financial": "IBEX35",
-    "finance": "IBEX35",
-    "general": "IBEX35",
-    "geopolítica": "IBEX35",
-    "geopolitical": "IBEX35",
-    "conflicto": "IBEX35",
-    "energía": "IBEX35",
-    "energy": "IBEX35",
-    "commodities": "GLD",
+    "mercados": "BTC",
+    "financial": "BTC",
+    "finance": "BTC",
+    "general": "BTC",
+    "geopolítica": "BTC",
+    "geopolitical": "BTC",
+    "conflicto": "BTC",
+    "energía": "BTC",
+    "energy": "BTC",
+    "commodities": "BTC",
 }
 
-# --- Fuentes RSS: IBEX 35 / Mercados españoles + Crypto ---
+# --- Fuentes RSS: SOLO Crypto ---
 RSS_SOURCES = [
-    # --- Mercado español / IBEX 35 ---
-    {"name": "Expansión Mercados", "url": "https://e00-expansion.uecdn.es/rss/mercados.xml"},
-    {"name": "CincoDías Mercados", "url": "https://cincodias.elpais.com/rss/cincodias/mercados.xml"},
-    {"name": "ElEconomista Bolsa", "url": "https://www.eleconomista.es/rss/rss-bolsa-mercados.php"},
-    {"name": "Bolsamanía", "url": "https://www.bolsamania.com/rss/todas-las-noticias.xml"},
-    {"name": "El Confidencial Mercados", "url": "https://rss.elconfidencial.com/mercados/"},
-    {"name": "Investing.com España", "url": "https://es.investing.com/rss/news.rss"},
-    
-    # --- Mercados globales / ETFs ---
-    {"name": "Financial Times Markets", "url": "https://feeds.ft.com/markets"},
-    {"name": "Reuters Markets", "url": "https://feeds.reuters.com/finance/markets"},
-    {"name": "Bloomberg Markets", "url": "https://www.bloomberg.com/feed/podcast/etf-report.xml"},
-    {"name": "Seeking Alpha ETFs", "url": "https://seekingalpha.com/feed.xml?topic=etfs"},
-    
-    # --- Crypto (inglés) ---
+    # --- Crypto (inglés — alta calidad) ---
     {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
     {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss"},
     {"name": "Decrypt", "url": "https://decrypt.co/feed"},
     {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/.rss/full/"},
-    
+    {"name": "The Block", "url": "https://www.theblock.co/rss.xml"},
+    {"name": "DL News", "url": "https://www.dlnews.com/arc/outboundfeeds/rss/"},
+
     # --- Crypto (español) ---
     {"name": "Cointelegraph ES", "url": "https://es.cointelegraph.com/rss"},
     {"name": "CriptoNoticias", "url": "https://www.criptonoticias.com/feed/"},
@@ -73,108 +59,72 @@ RSS_SOURCES = [
 # ---------------------------------------------------------------------------
 # ASSET_KEYWORDS — diccionario de activos con sus palabras clave de detección.
 # Clave: ticker del activo. Valor: lista de keywords (case-insensitive).
-# Se usa para asignar el activo primario a una noticia y para filtrar noticias
-# que no son relevantes para IBEX 35, ETFs o Criptodivisas.
+# Scope: SOLO criptodivisas.
 # ---------------------------------------------------------------------------
 ASSET_KEYWORDS: dict[str, list[str]] = {
-    # ── IBEX 35 — índice general ────────────────────────────────────────────
-    "IBEX35": [
-        "ibex", "ibex35", "ibex 35", "bolsa española", "bolsa de madrid",
-        "bolsa madrid", "mercado continuo", "bme", "bmex", "cnmv",
-        "bolsa de valores española", "renta variable española",
-    ],
-    # ── IBEX 35 — empresas ──────────────────────────────────────────────────
-    "ACS": ["acs actividades", "grupo acs", "acs construccion", "hochtief"],
-    "ACX": ["acerinox", "acerinox sa", "columbus stainless"],
-    "AENA": ["aena", "aeropuertos españoles", "aeropuerto adolfo suárez", "aeropuerto barajas", "aena sa"],
-    "ALM": ["almirall"],
-    "AMS": ["amadeus it", "amadeus"],
-    "ANA": ["acciona", "acciona energia", "acciona sa"],
-    "BBVA": ["bbva", "banco bilbao vizcaya", "bilbao vizcaya argentaria", "banco bilbao"],
-    "BKT": ["bankinter", "bankinter sa", "bankinter bank"],
-    "CABK": ["caixabank", "la caixa", "caixa bank", "caixabank sa"],
-    "CLNX": ["cellnex", "cellnex telecom", "cellnex towers"],
-    "COL": ["inmobiliaria colonial", "colonial reit"],
-    "ELE": ["endesa", "endesa sa", "enel endesa"],
-    "ENG": ["enagás", "enagas", "enagas sa", "enagás transporte"],
-    "FDR": ["fluidra"],
-    "FER": ["ferrovial", "ferrovial sa", "cintra", "heathrow airport"],
-    "GRF": ["grifols", "grifols sa", "grifols plasma"],
-    "IAG": ["iag", "iberia airlines", "british airways", "vueling", "aer lingus", "iberia express", "international airlines group"],
-    "IBE": ["iberdrola", "iberdrola renovables", "scottish power"],
-    "IDR": ["indra sistemas", "indra", "indra sa"],
-    "ITX": ["inditex", "grupo inditex", "zara", "amancio ortega", "pull&bear", "massimo dutti", "bershka", "stradivarius"],
-    "LOG": ["logista", "compañía de distribución integral logista"],
-    "MAP": ["mapfre", "mapfre sa", "mapfre seguros"],
-    "MEL": ["meliá hotels", "melia hotels", "meliá", "melia international", "sol meliá"],
-    "MRL": ["merlin properties"],
-    "MTS": ["arcelormittal", "arcelor mittal", "arcelor", "mittal steel"],
-    "NTGY": ["naturgy", "gas natural fenosa", "naturgy energy"],
-    "PHM": ["puig brands", "puig beauty"],
-    "RED": ["red eléctrica", "red electrica", "ree", "red eléctrica de españa", "redeia"],
-    "REP": ["repsol", "repsol ypf", "repsol sinopec"],
-    "ROVI": ["laboratorios rovi", "rovi pharma", "rovi"],
-    "SAB": ["banco sabadell", "sabadell", "tsb bank", "banco sabadell sa"],
-    "SAN": ["banco santander", "grupo santander", "santander bank", "santander"],
-    "SGRE": ["siemens gamesa", "gamesa", "siemens gamesa renewable", "sgre"],
-    "TEF": ["telefónica", "telefonica", "movistar", "o2 telefonica", "telefónica españa"],
-    # ── ETFs ────────────────────────────────────────────────────────────────
-    "SPY": ["spy etf", "spdr s&p 500", "s&p 500 etf", "spy", "^spx"],
-    "QQQ": ["qqq etf", "invesco qqq", "nasdaq etf", "invesco nasdaq", "qqq", "nasdaq 100"],
-    "GLD": ["gld etf", "spdr gold", "gold etf", "etf oro", "gld", "precious metals"],
-    "SLV": ["slv etf", "ishares silver", "silver etf", "etf plata", "slv"],
-    "IWM": ["iwm etf", "russell 2000 etf", "ishares russell 2000", "iwm", "small cap"],
-    "EWZ": ["ewz etf", "brazil etf", "ishares msci brazil", "ewz", "emergentes brasil"],
-    "EEM": ["eem etf", "emerging markets etf", "ishares msci emerging", "mercados emergentes etf", "eem"],
-    "VIX": ["vix index", "cboe vix", "fear index", "volatility index", "índice de volatilidad", "vix"],
-    "ARKK": ["arkk etf", "ark innovation", "cathie wood", "arkk", "innovation etf"],
-    "TLT": ["tlt etf", "ishares 20+ year treasury", "treasury bond etf", "tlt", "bonos largo plazo"],
-    "XLF": ["xlf etf", "financial select sector", "financial sector etf", "xlf", "sector financiero"],
-    "XLE": ["xle etf", "energy select sector etf", "xle", "sector energía"],
-    "DIA": ["dia etf", "spdr dow jones", "dow etf", "dia", "dow jones"],
-    # ── Criptodivisas ───────────────────────────────────────────────────────
+    # ── Criptodivisas — Top 35 por capitalización ───────────────────────────
     "BTC": [
-        "bitcoin", "btc", "criptomoneda", "criptomonedas", "crypto",
-        "blockchain", "defi", "nft", "stablecoin", "halving",
-        "altcoin", "moneda digital", "activo digital",
+        "bitcoin", "btc", "halving", "satoshi",
+        "bitcoin etf", "bitcoin spot", "btc etf",
     ],
-    "ETH": ["ethereum", "ether", "eth", "erc-20", "erc20"],
-    "XRP": ["ripple", "xrp"],
-    "SOL": ["solana"],
-    "BNB": ["binance coin", "bnb", "binance smart chain"],
-    "ADA": ["cardano"],
-    "DOGE": ["dogecoin", "doge"],
-    "DOT": ["polkadot"],
-    "AVAX": ["avalanche", "avax"],
-    "MATIC": ["polygon matic", "polygon network"],
-    "LINK": ["chainlink"],
-    "UNI": ["uniswap"],
-    "LTC": ["litecoin"],
-    "ATOM": ["cosmos hub", "cosmos network", "cosmos blockchain"],
-    "XLM": ["stellar lumens", "stellar xlm"],
-    "ALGO": ["algorand"],
-    "FIL": ["filecoin"],
-    "NEAR": ["near protocol"],
-    "ARB": ["arbitrum"],
+    "ETH": ["ethereum", "ether", "eth", "erc-20", "erc20", "ethereum etf", "vitalik"],
+    "XRP": ["ripple", "xrp", "ripple labs"],
+    "SOL": ["solana", "sol token"],
+    "BNB": ["binance coin", "bnb", "binance smart chain", "bsc"],
+    "ADA": ["cardano", "ada token", "charles hoskinson"],
+    "DOGE": ["dogecoin", "doge", "elon musk doge"],
+    "DOT": ["polkadot", "dot token", "parachains"],
+    "AVAX": ["avalanche", "avax", "avalanche subnet"],
+    "MATIC": ["polygon matic", "polygon network", "polygon labs", "pol token"],
+    "LINK": ["chainlink", "link token", "chainlink oracle"],
+    "UNI": ["uniswap", "uni token", "uniswap governance"],
+    "LTC": ["litecoin", "ltc token"],
+    "ATOM": ["cosmos hub", "cosmos network", "cosmos blockchain", "atom token"],
+    "XLM": ["stellar lumens", "stellar xlm", "stellar network"],
+    "ALGO": ["algorand", "algo token"],
+    "FIL": ["filecoin", "fil token"],
+    "NEAR": ["near protocol", "near token"],
+    "ARB": ["arbitrum", "arb token", "arbitrum one"],
     "OP": ["optimism rollup", "optimism network", "optimism l2", "optimism blockchain"],
+    # ── Nuevas criptomonedas ────────────────────────────────────────────────
+    "SUI": ["sui network", "sui blockchain", "sui token"],
+    "APT": ["aptos", "aptos labs", "apt token"],
+    "SEI": ["sei network", "sei blockchain", "sei token"],
+    "TIA": ["celestia", "tia token", "celestia modular"],
+    "INJ": ["injective", "inj token", "injective protocol"],
+    "RENDER": ["render network", "render token", "rndr"],
+    "FET": ["fetch.ai", "fetch ai", "artificial superintelligence", "fet token"],
+    "PEPE": ["pepe coin", "pepe token", "pepe memecoin"],
+    "WIF": ["dogwifhat", "wif token"],
+    "SHIB": ["shiba inu", "shib token", "shibarium"],
+    "TON": ["toncoin", "ton network", "telegram open network", "ton blockchain"],
+    "TRX": ["tron", "trx token", "tron network", "justin sun"],
+    "HBAR": ["hedera", "hbar token", "hedera hashgraph"],
+    "ICP": ["internet computer", "icp token", "dfinity"],
+    "AAVE": ["aave", "aave protocol", "aave lending"],
+    # ── Genérico crypto (catch-all para noticias de mercado general) ────────
+    "CRYPTO_MARKET": [
+        "criptomoneda", "criptomonedas", "crypto", "cryptocurrency",
+        "blockchain", "defi", "nft", "stablecoin", "altcoin",
+        "moneda digital", "activo digital", "web3", "dex", "cex",
+        "mercado crypto", "crypto market",
+    ],
 }
 
 
 
 # Tiers de prioridad — un ticker de Nivel 1 siempre gana sobre Nivel 2, etc.
 _PRIORITY_TIERS = [
-    # Tier 1: Empresas específicas IBEX35
-    frozenset({"ACS", "ACX", "AENA", "ALM", "AMS", "ANA", "BBVA", "BKT", "CABK",
-               "CLNX", "COL", "ELE", "ENG", "FDR", "FER", "GRF", "IAG", "IBE",
-               "IDR", "ITX", "LOG", "MAP", "MEL", "MRL", "MTS", "NTGY", "PHM",
-               "RED", "REP", "ROVI", "SAB", "SAN", "SGRE", "TEF"}),
-    # Tier 2: Criptos específicas (no BTC)
-    frozenset({"ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "DOT", "AVAX", "MATIC",
-               "LINK", "UNI", "LTC", "ATOM", "XLM", "ALGO", "FIL", "NEAR", "ARB", "OP"}),
-    # Tier 3: ETFs específicos
-    frozenset({"SPY", "QQQ", "GLD", "SLV", "IWM", "EWZ", "EEM", "VIX", "ARKK", "TLT", "XLF", "XLE"}),
-    # Tier 4: Genéricos — solo si no hay nada en tiers superiores
-    frozenset({"IBEX35", "BTC"}),
+    # Tier 1: Criptos específicas de alta cap (BTC, ETH, SOL, etc.)
+    frozenset({"BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "TON", "DOGE", "DOT",
+               "AVAX", "LINK", "SHIB", "TRX", "MATIC"}),
+    # Tier 2: Criptos de media cap
+    frozenset({"UNI", "LTC", "ATOM", "XLM", "ALGO", "FIL", "NEAR", "ARB", "OP",
+               "SUI", "APT", "SEI", "TIA", "INJ", "RENDER", "FET", "HBAR", "ICP", "AAVE"}),
+    # Tier 3: Memecoins y baja cap
+    frozenset({"PEPE", "WIF"}),
+    # Tier 4: Genérico crypto — solo si no hay nada en tiers superiores
+    frozenset({"CRYPTO_MARKET"}),
 ]
 
 
@@ -250,54 +200,42 @@ def _match_asset(article: dict) -> tuple[str | None, list[str]]:
 
 # --- Taxonomía de eventos para scoring de calidad ---
 EVENT_TAXONOMY = {
-    "ibex35_companies": {
+    "crypto_high_impact": {
         "keywords": [
-            # Empresas IBEX 35 (nombres completos y abreviados)
-            "inditex", "zara", "santander", "bbva", "iberdrola", "telefónica", "telefonica",
-            "repsol", "caixabank", "bankinter", "sabadell", "mapfre", "endesa", "ferrovial",
-            "acciona", "amadeus", "cellnex", "grifols", "acerinox", "aena", "almirall",
-            "enagás", "enagas", "fluidra", "logista", "meliá", "melia", "arcelormittal",
-            "naturgy", "puig", "red eléctrica", "rovi", "laboratorios rovi", "siemens gamesa",
-            "colonial", "indra", "merlin properties", "vueling", "iberia", "movistar",
-            "grupo acs", "acs actividades", "acerinox", "ferrovial", "inmobiliaria colonial",
-            "fluidra", "merlin", "siemens gamesa", "gamesa", "bankinter", "naturgy",
-            # IBEX genérico
-            "ibex", "ibex 35", "bolsa española", "bolsa de madrid", "mercado continuo",
-            "bolsa madrid", "bme", "cnmv", "prima de riesgo", "bono español",
+            "bitcoin", "ethereum", "btc", "eth", "solana", "xrp", "ripple",
+            "sec", "etf approved", "etf aprobado", "halving", "hack", "exploit",
+            "regulation", "regulación", "ban", "prohibición", "adoption",
+            "blackrock", "fidelity", "institutional", "institucional",
+            "fed", "interest rate", "tipo de interés",
+            "whale", "ballena", "liquidation", "liquidación",
         ],
-        "base_severity": 58,
-        "category": "IBEX35",
+        "base_severity": 65,
+        "category": "CRYPTO",
     },
-    "etf_market": {
+    "crypto_medium_impact": {
         "keywords": [
-            "etf", "spy", "qqq", "gld", "slv", "iwm", "eem", "ewz",
-            "arkk", "tlt", "xlf", "xle", "vix", "ishares", "spdr", "invesco",
-            "fondo cotizado", "exchange traded fund",
-        ],
-        "base_severity": 52,
-        "category": "ETF",
-    },
-    "crypto_market": {
-        "keywords": [
-            "bitcoin", "ethereum", "crypto", "blockchain", "defi", "nft",
-            "stablecoin", "ripple", "xrp", "solana", "cardano", "dogecoin",
-            "criptomoneda", "criptomonedas", "moneda digital", "halving",
-            "altcoin", "binance", "polkadot", "avalanche", "chainlink",
+            "crypto", "blockchain", "defi", "nft", "stablecoin",
+            "criptomoneda", "criptomonedas", "moneda digital",
+            "altcoin", "binance", "coinbase", "kraken",
+            "polkadot", "avalanche", "chainlink", "cardano",
             "uniswap", "litecoin", "algorand", "filecoin", "arbitrum",
+            "dogecoin", "polygon", "cosmos", "stellar",
+            "sui", "aptos", "celestia", "injective", "toncoin",
+            "layer 2", "l2", "rollup", "airdrop", "staking",
+            "token", "dex", "cex", "exchange", "trading",
         ],
         "base_severity": 55,
         "category": "CRYPTO",
     },
-    "financial_market": {
+    "crypto_macro": {
         "keywords": [
             "stock market", "fed", "interest rate", "inflation", "recession",
-            "central bank", "bond market", "yield curve",
-            "s&p 500", "nasdaq", "dow jones", "wall street",
-            "mercado bursátil", "tipo de interés", "banco central europeo",
-            "bce", "bolsa de valores", "renta variable", "renta fija",
+            "central bank", "risk assets", "activos de riesgo",
+            "liquidity", "liquidez", "dollar", "dólar", "dxy",
+            "treasury", "bond yield",
         ],
-        "base_severity": 48,
-        "category": "MERCADOS",
+        "base_severity": 45,
+        "category": "CRYPTO",
     },
 }
 
@@ -422,8 +360,8 @@ class AnalysisPipeline:
         scored.sort(key=lambda x: x["score"], reverse=True)
         logger.info(f"   ✅ {len(scored)} eventos con score >= {min_score}")
 
-        # Paso 3b: Filtrar por activo IBEX35 / ETF / Crypto
-        logger.info("🎯 PASO 3b: Filtrando por activos IBEX35/ETF/Crypto...")
+        # Paso 3b: Filtrar por activo Crypto
+        logger.info("🎯 PASO 3b: Filtrando por activos Crypto...")
         relevant = []
         for article in scored:
             primary_asset, matched_assets = _match_asset(article)
@@ -434,7 +372,7 @@ class AnalysisPipeline:
             article["matched_assets"] = matched_assets
             relevant.append(article)
         logger.info(
-            f"   ✅ {len(relevant)} eventos relevantes (IBEX35/ETF/Crypto) "
+            f"   ✅ {len(relevant)} eventos relevantes (Crypto) "
             f"de {len(scored)} totales"
         )
         scored = relevant
@@ -500,7 +438,7 @@ class AnalysisPipeline:
                     primary_asset = best
                 else:
                     category = event.get("category", "general").lower()
-                    fallback = CATEGORY_FALLBACK.get(category, "IBEX35")
+                    fallback = CATEGORY_FALLBACK.get(category, "BTC")
                     logger.warning(
                         f"   Activo desconocido '{primary_asset}' → fallback '{fallback}'"
                     )

@@ -36,11 +36,11 @@
     <!-- Top bar -->
     <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
       <div class="flex items-center gap-3">
-        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="{{ t.open_menu }}">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.dashboard">Dashboard</h1>
-        <span class="hidden sm:inline text-slate-500 text-xs">{{ history_label }} · {{ total_alerts }} predicciones</span>
+        <span class="hidden sm:inline text-slate-500 text-xs">{{ history_label }} · {{ total_alerts }} {{ t.predictions }}</span>
       </div>
       <div class="flex items-center gap-3">
         {% if sub %}
@@ -78,13 +78,13 @@
             <p class="text-amber-400 font-semibold">{{ t.trial_active }}</p>
             <p class="text-slate-400 text-sm mt-1">
               {% if sub.trial_ends_at %}
-                Tu prueba gratuita finaliza el {{ sub.trial_ends_at[:10] }}.
+                {{ t.trial_ends_msg }} {{ sub.trial_ends_at[:10] }}.
               {% endif %}
-              Añade tu método de pago para no perder el acceso.
+              {{ t.add_payment_msg }}
             </p>
           </div>
           <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0 w-full sm:w-auto text-center">
-            Activar plan
+            {{ t.activate_plan_btn }}
           </a>
         </div>
       {% endif %}
@@ -104,9 +104,9 @@
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.correct_incorrect">Correctas / Incorrectas</p>
           <p class="font-bold text-lg">
-            <span class="text-emerald-400 cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas correctas" onclick="filterByOutcome('correct')">{{ accuracy_stats.correct }}</span>
+            <span class="text-emerald-400 cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_correct }}" onclick="filterByOutcome('correct')">{{ accuracy_stats.correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-red-400 cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas incorrectas" onclick="filterByOutcome('incorrect')">{{ accuracy_stats.incorrect }}</span>
+            <span class="text-red-400 cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_incorrect }}" onclick="filterByOutcome('incorrect')">{{ accuracy_stats.incorrect }}</span>
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -117,7 +117,7 @@
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
-          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas pendientes" onclick="filterByOutcome('pending')">{{ accuracy_stats.pending }}</p>
+          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_pending }}" onclick="filterByOutcome('pending')">{{ accuracy_stats.pending }}</p>
         </div>
       </div>
 
@@ -144,7 +144,7 @@
             {% endfor %}
           </select>
           <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
-            Limpiar filtros
+            {{ t.clear_filters }}
           </a>
         </form>
       </div>
@@ -157,34 +157,34 @@
               <thead>
                 <tr class="border-b border-slate-700 bg-slate-900/50">
                   <th class="text-left px-3 py-3 text-slate-400 font-medium">#</th>
-                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">Título</th>
-                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">Activo</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">{{ t.col_title }}</th>
+                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">{{ t.col_asset }}</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=confidence&dir={% if sort_by == 'confidence' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_confidence">
-                      Conf.{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                      {{ t.col_confidence }}{% if sort_by == 'confidence' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=score&dir={% if sort_by == 'score' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_score">
-                      Score{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                      {{ t.col_score }}{% if sort_by == 'score' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=price_at_prediction&dir={% if sort_by == 'price_at_prediction' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition" data-i18n-title="dash.col_price_entry">
-                      Precio entrada{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                      {{ t.col_price_entry }}{% if sort_by == 'price_at_prediction' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=price_at_validation&dir={% if sort_by == 'price_at_validation' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center justify-end gap-1 hover:text-white transition">
-                      Precio valid.{% if sort_by == 'price_at_validation' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                      {{ t.col_price_valid }}{% if sort_by == 'price_at_validation' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
-                  <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">Cambio real</th>
-                  <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">Resultado</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">{{ t.col_change }}</th>
+                  <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">{{ t.col_outcome }}</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
-                      Fecha{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
+                      {{ t.col_date }}{% if sort_by == 'predicted_at' %} <span>{% if sort_dir == 'desc' %}↓{% else %}↑{% endif %}</span>{% endif %}
                     </a>
                   </th>
                 </tr>
@@ -234,7 +234,7 @@
                         {% else %}
                           ${{ "%.4f"|format(pred.price_at_validation) }}
                         {% endif %}
-                      {% else %}<span class="text-slate-500">pendiente</span>{% endif %}
+                      {% else %}<span class="text-slate-500">{{ t.pending_lowercase }}</span>{% endif %}
                     </td>
                     <td class="px-3 py-3 text-right font-mono">
                       {% if pred.price_change_pct is not none %}
@@ -242,16 +242,16 @@
                           {{ "%+.2f"|format(pred.price_change_pct) }}%
                         </span>
                       {% else %}
-                        <span class="text-slate-500">pendiente</span>
+                        <span class="text-slate-500">{{ t.pending_lowercase }}</span>
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-center">
                       {% if outcome == 'correct' %}
-                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
+                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ {{ t.outcome_correct }}</span>
                       {% elif outcome == 'incorrect' %}
-                        <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
+                        <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ {{ t.outcome_incorrect }}</span>
                       {% else %}
-                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">Pendiente</span>
+                        <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">{{ t.outcome_pending }}</span>
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">{{ pred.predicted_at_madrid or '—' }}</td>
@@ -310,7 +310,7 @@
             <div class="w-12 h-12 rounded-xl bg-slate-700/50 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             </div>
-            <p class="text-slate-400">No hay predicciones en el histórico.</p>
+            <p class="text-slate-400">{{ t.no_predictions_history }}</p>
           </div>
         {% endif %}
       </div>
@@ -570,16 +570,16 @@
 <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
   <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-8 text-center">
     <div class="text-4xl mb-4">👋</div>
-    <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
-    <p class="text-slate-400 text-sm mb-6">¿Estás seguro de que quieres cerrar sesión?</p>
+    <h2 class="text-white font-bold text-xl mb-2">{{ t.logout_modal_title }}</h2>
+    <p class="text-slate-400 text-sm mb-6">{{ t.logout_modal_msg }}</p>
     <div class="flex gap-3 justify-center">
       <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
         class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-5 py-2.5 rounded-xl transition">
-        Cancelar
+        {{ t.cancel }}
       </button>
       <a href="/logout"
         class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-5 py-2.5 rounded-xl transition">
-        Cerrar sesión
+        {{ t.nav_sign_out }}
       </a>
     </div>
   </div>

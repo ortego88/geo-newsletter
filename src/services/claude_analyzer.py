@@ -31,70 +31,69 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 # Para Claude 4.X necesitas configurar inference profiles en AWS
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-haiku-20241022-v1:0")
 
-# ── System prompt mejorado para Claude ────────────────────────────────────────
-SYSTEM_PROMPT = """Eres un analista cuantitativo experto en mercados financieros españoles (IBEX 35), ETFs y criptomonedas.
+# ── System prompt mejorado para Claude — CRYPTO ONLY ─────────────────────────
+SYSTEM_PROMPT = """Eres un trader cuantitativo experto en criptomonedas con un track record verificable.
 
-CAPACIDAD ÚNICA: Tienes acceso a eventos históricos similares y sus outcomes reales. Usa este contexto para calibrar tus predicciones.
+TU OBJETIVO: Generar predicciones de ALTA PRECISIÓN (>65% aciertos). Calidad sobre cantidad.
 
-IMPORTANTE: El campo "reasoning" DEBE escribirse siempre en español castellano. Todos los demás campos JSON mantienen su formato especificado.
+REGLA FUNDAMENTAL: Solo predice cuando tengas ALTA CONVICCIÓN de que el precio se moverá.
+Si la noticia no va a mover el precio de forma medible (>0.5%), responde con confidence < 40.
 
-ALCANCE: Solo analiza noticias sobre empresas IBEX 35, ETFs y criptomonedas.
+CAPACIDAD ÚNICA: Tienes acceso a eventos históricos similares y sus outcomes reales.
 
-REGLAS DE ASIGNACIÓN DE ACTIVOS (orden de prioridad estricto):
-1. Noticia sobre una EMPRESA ESPECÍFICA del IBEX 35 → usar el ticker de esa empresa PRIMERO
-   - Inditex/Zara → ["ITX", "IBEX35"]
-   - Santander → ["SAN", "IBEX35"]
-   - BBVA → ["BBVA", "IBEX35"]
-   - Iberdrola → ["IBE", "IBEX35"]
-   - Telefónica/Movistar → ["TEF", "IBEX35"]
-   - Repsol → ["REP", "IBEX35"]
-   - CaixaBank → ["CABK", "IBEX35"]
-   - Banco Sabadell → ["SAB", "IBEX35"]
-   - Ferrovial → ["FER", "IBEX35"]
-   - Cellnex → ["CLNX", "IBEX35"]
-   [... resto de empresas IBEX 35 ...]
+IMPORTANTE: El campo "reasoning" DEBE escribirse siempre en español castellano.
 
-2. Noticia sobre IBEX 35 en general (sin empresa específica) → ["IBEX35"]
-3. ETFs específicos → usar el ticker del ETF
-4. Criptomonedas → BTC/ETH como primarios
+ALCANCE: SOLO criptomonedas. Ignora noticias que no afecten directamente al precio de una crypto.
 
-REGLAS DE DIRECCIÓN — CRÍTICO:
-- Usa "up" o "down" en casi todos los casos
-- Reserva "neutral" SOLO para:
-  * Noticias puramente procedimentales sin impacto de mercado
-  * Eventos donde efectos opuestos se cancelan perfectamente Y puedes explicar por qué
+NOTICIAS QUE MUEVEN PRECIOS (predice con confidence >= 70):
+- ETF aprobado/rechazado por SEC → impacto directo confirmado
+- Hack/exploit de protocolo con pérdida > $10M → caída inmediata
+- Regulación concreta (ban, aprobación) por gobierno importante → impacto claro
+- Adopción institucional confirmada (BlackRock, Fidelity, etc.) → alcista
+- Halving, hard fork programado → impacto conocido
+- Liquidaciones masivas en cadena (>$100M) → señal de dirección
+- Listado/deslisting en exchange principal → movimiento rápido
 
-CALIBRACIÓN DE CONFIDENCE — USA EL RANGO COMPLETO 25–95:
-- 80-95: Evento directo, confirmado, inequívoco (resultados publicados, decisión regulatoria tomada)
-- 65-79: Vínculo causal fuerte, múltiples fuentes corroboradas
-- 50-64: Vínculo moderado — evento real pero reacción de mercado incierta
-- 35-49: Opinión de analista, previsión, retórica política, rumor de una sola fuente
-- 25-34: Especulativo, señales contradictorias, conexión muy indirecta
+NOTICIAS QUE NO MUEVEN PRECIOS (confidence < 40, no predecir):
+- Opiniones de analistas sobre precio futuro
+- Artículos de "análisis técnico" genérico
+- Rumores sin confirmación
+- Noticias sobre desarrollo "en progreso" sin fecha
+- Métricas on-chain menores sin contexto de acción
+- Noticias ya conocidas por el mercado (>24h antiguas)
 
-APRENDIZAJE DE HISTORIA: Cuando recibas eventos similares pasados con sus outcomes:
-- Si eventos similares tuvieron alta tasa de acierto → aumenta confidence +5-10 puntos
-- Si eventos similares fallaron frecuentemente → reduce confidence -10-15 puntos
-- Si no hay patrón claro → mantén calibración base
+REGLAS DE DIRECCIÓN:
+- Usa "up" o "down" SOLO cuando tengas certeza de la dirección
+- Si hay duda real sobre la dirección → NO predecir (confidence < 40)
 
-FILTROS DE CALIDAD — REDUCE CONFIDENCE CUANDO:
-- El título usa verbos de atribución: "Dice", "Según", "Advierte", "Afirma" → cap en 55
-- La fuente es opinion o editorial → cap en 50
-- El evento ya está ampliamente descontado (ej: decisión de tasas esperada) → cap en 60
-- Noticia sobre tendencia macro general sin catalizador específico → cap en 55
+CALIBRACIÓN DE CONFIDENCE — ESTRICTA:
+- 80-95: Evento confirmado con impacto histórico demostrado (ETF aprobado, hack confirmado, ban oficial)
+- 70-79: Evento real con vínculo causal directo y fuerte (adopción institucional, regulación publicada)
+- 60-69: Evento significativo pero reacción de mercado tiene incertidumbre
+- 40-59: Señal moderada — NO generar alerta con estos niveles
+- 25-39: Ruido informativo — DESCARTAR
+
+VENTANA DE VERIFICACIÓN (verification_window_hours) — CRÍTICO:
+Estima EXACTAMENTE cuántas horas después de la noticia el precio reflejará el impacto:
+- Hack/exploit/liquidación masiva: 1-2 horas (reacción inmediata)
+- Aprobación/rechazo regulatorio: 2-4 horas (mercado digiere rápido)
+- Adopción institucional, listados: 4-8 horas (efecto se propaga)
+- Eventos macro (Fed, inflación): 6-12 horas (correlación con risk assets)
+- Cambios fundamentales (halving, upgrade): 12-24 horas (posicionamiento gradual)
+
+IMPORTANTE: El precio se comparará en el momento exacto de verification_window_hours.
+Piensa: "¿Cuándo habrá alcanzado el precio su movimiento principal por esta noticia?"
 
 SÍMBOLOS PERMITIDOS:
-- IBEX 35: IBEX35, ACS, ACX, AENA, ALM, AMS, ANA, BBVA, BKT, CABK, CLNX, COL, ELE, ENG,
-           FDR, FER, GRF, IAG, IBE, IDR, ITX, LOG, MAP, MEL, MRL, MTS, NTGY, PHM,
-           RED, REP, ROVI, SAB, SAN, SGRE, TEF
-- ETFs: SPY, QQQ, GLD, SLV, IWM, EWZ, EEM, VIX, ARKK, TLT, XLF, XLE, DIA
-- Crypto: BTC, ETH, XRP, SOL, BNB, ADA, DOGE, DOT, AVAX, MATIC, LINK, UNI,
-          LTC, ATOM, XLM, ALGO, FIL, NEAR, ARB, OP
+BTC, ETH, XRP, SOL, BNB, ADA, DOGE, DOT, AVAX, MATIC, LINK, UNI, LTC, ATOM,
+XLM, ALGO, FIL, NEAR, ARB, OP, SUI, APT, SEI, TIA, INJ, RENDER, FET,
+PEPE, WIF, SHIB, TON, TRX, HBAR, ICP, AAVE
 
 Responde SOLO con JSON válido, sin explicaciones."""
 
-ANALYSIS_PROMPT_TEMPLATE = """Analiza este evento de mercado y determina su impacto financiero en IBEX 35, ETFs o criptomonedas:
+ANALYSIS_PROMPT_TEMPLATE = """Analiza esta noticia crypto y determina si provocará un movimiento MEDIBLE en el precio:
 
-EVENTO ACTUAL:
+NOTICIA:
 Título: {title}
 Descripción: {description}
 Categoría: {category}
@@ -104,34 +103,51 @@ Score de severidad: {score}/100
 
 {market_context}
 
-ANÁLISIS PASO A PASO (piensa cada punto antes de responder):
-1. ¿QUIÉN es el sujeto de esta noticia? (empresa específica / índice / crypto / macro)
-2. ¿QUÉ ocurrió? (hecho confirmado / opinión de analista / rumor / previsión)
-3. ¿CUÁL es la reacción de mercado más probable a corto plazo? (up / down / neutral — evita neutral salvo justificación)
-4. ¿QUÉ TAN SEGURO estás? (25-95, usa rango completo, consulta reglas de calibración)
-5. ¿CUÁNDO verificar? Estima cuántas HORAS después de esta alerta debería ocurrir el movimiento esperado:
-   - Eventos de impacto INMEDIATO (datos económicos, decisiones de tasas, earnings): 2-4 horas
-   - Noticias de impacto A CORTO PLAZO (sanciones, acuerdos geopolíticos): 4-8 horas
-   - Eventos de tendencia A LARGO PLAZO (cambios regulatorios, restructuraciones): 12-24 horas
-6. ¿HAY EVENTOS SIMILARES EN LA HISTORIA? Si sí, ¿qué enseñan sobre la dirección y confidence correctas?
+ANÁLISIS OBLIGATORIO (responde mentalmente antes del JSON):
 
-VERIFICACIÓN DE CALIDAD antes de finalizar:
-- ¿La noticia se basa en un hecho confirmado o solo en opinión de alguien? (opinión → confidence ≤55)
-- ¿El título usa "Dice", "Advierte", "Según"? (→ confidence ≤55)
-- ¿Esta noticia ya es ampliamente conocida o está descontada? (→ confidence ≤60)
-- ¿Un trader profesional actuaría con esta noticia? (no → confidence ≤45)
-- ¿Los eventos históricos similares tuvieron buen accuracy? (sí → +5-10 confidence; no → -10-15 confidence)
+1. ¿ES UN HECHO CONFIRMADO o una opinión/rumor/previsión?
+   - Hecho confirmado → continúa
+   - Opinión/rumor → confidence < 40, NO generar alerta
+
+2. ¿QUÉ CRIPTO específica se ve afectada directamente?
+   - Si no hay cripto específica clara → usar BTC como proxy solo si es macro relevante
+
+3. ¿EL PRECIO SE MOVERÁ >0.5% por esta noticia?
+   - Piensa: ¿un trader con $100K abriría una posición basándose en esta noticia?
+   - Si NO → confidence < 40
+   - Si SÍ → continúa con confidence >= 65
+
+4. ¿EN QUÉ DIRECCIÓN? (up/down)
+   - ¿Hay precedente histórico claro de la reacción del mercado?
+   - ¿La noticia es unívoca o podría interpretarse en ambos sentidos?
+   - Si hay ambigüedad → confidence < 50
+
+5. ¿CUÁNDO se reflejará el movimiento en el precio?
+   - Hack/exploit: 1-2h (pánico inmediato)
+   - Regulación/ETF: 2-4h (digestión rápida)
+   - Adopción/partnership: 4-8h (propagación)
+   - Macro/Fed: 6-12h (correlación risk assets)
+   - Fundamental/upgrade: 12-24h (posicionamiento)
+
+6. LECCIONES HISTÓRICAS: ¿eventos similares pasados acertaron o fallaron?
+   - Si accuracy histórica > 70% → puedes subir confidence +5
+   - Si accuracy histórica < 40% → BAJA confidence -15
+
+FILTRO FINAL (responde NO a cualquiera → confidence < 40):
+- ¿Un trader profesional de crypto actuaría con esta noticia?
+- ¿La noticia tiene menos de 6 horas de antigüedad?
+- ¿El impacto es cuantificable y no especulativo?
 
 Responde con este JSON exacto:
 {{
   "direction": "up|down|neutral",
   "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
-  "confidence": <entero 25-95, calibrado por reglas anteriores>,
+  "confidence": <entero 25-95 — SOLO >= 65 si estás seguro del movimiento>,
   "signal_strength": "high|medium|low",
-  "most_affected_assets": [<2-3 símbolos de ALLOWED SYMBOLS, sujeto principal primero>],
-  "reasoning": "<UNA frase máx 150 chars EN ESPAÑOL explicando activo principal, dirección y por qué>",
-  "historical_learning": "<Si usaste eventos históricos, explica brevemente qué aprendiste de ellos>",
-  "verification_window_hours": <entero 2-24 estimando HORAS después de esta alerta para verificar>
+  "most_affected_assets": [<1-3 tickers crypto específicos, el más afectado primero>],
+  "reasoning": "<UNA frase máx 150 chars EN ESPAÑOL: qué crypto, qué dirección, por qué>",
+  "historical_learning": "<Qué aprendiste de eventos similares pasados, o 'sin datos históricos'>",
+  "verification_window_hours": <entero 1-24: CUÁNDO EXACTAMENTE verificar el precio>
 }}"""
 
 
@@ -363,12 +379,12 @@ def _validate_analysis(data: dict) -> dict:
     reasoning = str(data.get("reasoning", ""))[:300]
     historical_learning = str(data.get("historical_learning", ""))[:200]
 
-    # Validar verification_window_hours
+    # Validar verification_window_hours (mínimo 1h para eventos de impacto inmediato)
     try:
-        verification_window_hours = int(data.get("verification_window_hours", 6))
-        verification_window_hours = max(2, min(24, verification_window_hours))
+        verification_window_hours = int(data.get("verification_window_hours", 4))
+        verification_window_hours = max(1, min(24, verification_window_hours))
     except (ValueError, TypeError):
-        verification_window_hours = 6
+        verification_window_hours = 4
 
     return {
         "market_impact_percent": 0,

@@ -24,10 +24,10 @@
 
     <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
       <div class="flex items-center gap-3">
-        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="Abrir menú">
+        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="{{ t.open_menu }}">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
-        <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.settings">Configuración</h1>
+        <h1 class="text-white font-bold text-lg md:text-xl" data-i18n="dash.settings">{{ t.settings_title }}</h1>
       </div>
     </div>
 
@@ -47,9 +47,9 @@
 
       {% if is_new_user %}
       <div class="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
-        <p class="text-emerald-400 font-semibold mb-1">¡Bienvenido! 🎉</p>
+        <p class="text-emerald-400 font-semibold mb-1">{{ t.welcome_banner }} 🎉</p>
         <p class="text-slate-300 text-sm">
-          Selecciona los activos que deseas monitorear para empezar a recibir alertas. Después podrás completar tu suscripción.
+          {{ t.welcome_msg }}
         </p>
       </div>
       {% endif %}
@@ -59,33 +59,33 @@
         <!-- Asset selector -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="font-bold text-white" data-i18n="settings.assets_title">Activos a monitorizar</h2>
+            <h2 class="font-bold text-white" data-i18n="settings.assets_title">{{ t.assets_title }}</h2>
             <span class="text-slate-400 text-sm">
-              <span data-i18n="settings.maximum">Máximo</span>:
+              <span data-i18n="settings.maximum">{{ t.maximum }}</span>:
               {% if plan_config.max_assets == -1 %}
-                <span class="text-emerald-400 font-semibold" data-i18n="settings.unlimited">Ilimitado</span>
+                <span class="text-emerald-400 font-semibold" data-i18n="settings.unlimited">{{ t.unlimited }}</span>
               {% else %}
                 <span class="text-emerald-400 font-semibold">{{ plan_config.max_assets }}</span>
               {% endif %}
             </span>
           </div>
-          <p class="text-slate-400 text-sm mb-5">Selecciona los activos para los que deseas recibir alertas de Telegram.</p>
+          <p class="text-slate-400 text-sm mb-5">{{ t.assets_desc_short }}</p>
 
           <!-- Search box -->
           <div class="mb-4">
-            <input type="text" id="asset-search" placeholder="Buscar activo por nombre o símbolo..."
+            <input type="text" id="asset-search" placeholder="{{ t.search_asset_placeholder }}"
               class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
           </div>
           {% if plan_config and plan_config.max_assets != -1 %}
           <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
-            <p class="text-amber-400 text-sm font-semibold">Cambios en activos</p>
-            <p class="text-slate-300 text-sm">Puedes seleccionar y cambiar libremente antes de guardar. Una vez guardes, deberás esperar 24 horas antes de poder modificar tu selección nuevamente.</p>
+            <p class="text-amber-400 text-sm font-semibold">{{ t.asset_changes_warning }}</p>
+            <p class="text-slate-300 text-sm">{{ t.asset_changes_warning_msg }}</p>
           </div>
           {% endif %}
           {% if is_locked_for_changes %}
           <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-            <p class="text-red-400 text-sm font-semibold">Cambios bloqueados temporalmente</p>
-            <p class="text-slate-300 text-sm">Guardaste tu última configuración hace menos de 24 horas. Podrás cambiar tus activos nuevamente el {{ next_change_allowed }}.</p>
+            <p class="text-red-400 text-sm font-semibold">{{ t.changes_locked_title }}</p>
+            <p class="text-slate-300 text-sm">{{ t.changes_locked_msg_part1 }} {{ next_change_allowed }}.</p>
           </div>
           {% endif %}
           {% if plan_config and plan_config.max_assets == -1 %}
@@ -119,12 +119,12 @@
             {% endfor %}
           </div>
           <div id="no-results" class="hidden text-center py-8">
-            <p class="text-slate-400 text-sm">No se encontraron activos que coincidan con tu búsqueda</p>
+            <p class="text-slate-400 text-sm">{{ t.no_search_results }}</p>
           </div>
           {% if plan_config.max_assets != -1 %}
             <p class="mt-4 text-xs text-slate-500">
-              <span data-i18n="settings.upgrade_msg">¿Necesitas más activos?</span>
-              <a href="/dashboard/subscription" class="text-emerald-400 hover:text-emerald-300" data-i18n="settings.upgrade_plan">Actualizar plan →</a>
+              <span data-i18n="settings.upgrade_msg">{{ t.upgrade_msg }}</span>
+              <a href="/dashboard/subscription" class="text-emerald-400 hover:text-emerald-300" data-i18n="settings.upgrade_plan">{{ t.upgrade_plan }}</a>
             </p>
           {% endif %}
         </div>
@@ -155,40 +155,40 @@
 
         <!-- Telegram Chat ID -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-2">Telegram Chat ID</h2>
+          <h2 class="font-bold text-white mb-2">{{ t.telegram_title }}</h2>
           <p class="text-slate-400 text-sm mb-4">
-            Para recibir alertas en Telegram, necesitas tu Chat ID personal.
-            Habla con <a href="https://t.me/userinfobot" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">@userinfobot</a> en Telegram y te lo enviará.
+            {{ t.telegram_desc }}
+            <a href="https://t.me/userinfobot" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">@userinfobot</a> {{ t.telegram_desc_part2 }}
           </p>
           <input type="text" name="telegram_chat_id"
             value="{{ current_user.telegram_chat_id or '' }}"
-            placeholder="Ej: 123456789"
+            placeholder="{{ t.telegram_placeholder }}"
             class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500 transition max-w-xs">
         </div>
 
         <!-- Subscription management -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <h2 class="font-bold text-white mb-4" data-i18n="settings.subscription_title">Gestión de suscripción</h2>
+          <h2 class="font-bold text-white mb-4" data-i18n="settings.subscription_title">{{ t.subscription_management }}</h2>
           <div class="flex flex-wrap gap-4">
             <div class="flex-1 min-w-48">
-              <p class="text-slate-400 text-sm mb-1" data-i18n="settings.current_plan">Plan actual</p>
+              <p class="text-slate-400 text-sm mb-1" data-i18n="settings.current_plan">{{ t.current_plan }}</p>
               <p class="text-white font-semibold">
-                {% if sub %}{{ plans[sub.plan].name }}{% else %}<span data-i18n="settings.no_subscription">Sin suscripción</span>{% endif %}
+                {% if sub %}{{ plans[sub.plan].name }}{% else %}<span data-i18n="settings.no_subscription">{{ t.no_subscription }}</span>{% endif %}
               </p>
               <p class="text-slate-500 text-xs mt-0.5">
                 {% if sub %}
-                  Estado: <span class="{% if sub.status == 'active' %}text-emerald-400{% elif sub.status == 'trial' %}text-amber-400{% else %}text-red-400{% endif %}">{{ sub.status }}</span>
+                  {{ t.status }}: <span class="{% if sub.status == 'active' %}text-emerald-400{% elif sub.status == 'trial' %}text-amber-400{% else %}text-red-400{% endif %}">{{ sub.status }}</span>
                 {% endif %}
               </p>
             </div>
             <div class="flex flex-col gap-2">
               <a href="/dashboard/subscription" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="settings.change_plan">
-                Cambiar plan
+                {{ t.change_plan_btn }}
               </a>
               {% if sub and sub.status in ('active', 'trial') %}
                 <button type="button" onclick="openCancelModal()"
                   class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition" data-i18n="settings.cancel_subscription">
-                  Cancelar suscripción
+                  {{ t.cancel_subscription_btn }}
                 </button>
               {% endif %}
             </div>
@@ -197,7 +197,7 @@
 
         <button type="submit" id="save-btn"
           class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition" data-i18n="settings.save_btn">
-          Guardar configuración
+          {{ t.save_settings }}
         </button>
 
       </form>
@@ -210,34 +210,34 @@
   <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-8">
     <div class="text-center mb-6">
       <div class="text-5xl mb-3">⚠️</div>
-      <h2 class="text-white font-bold text-xl mb-2">¿Seguro que quieres cancelar?</h2>
-      <p class="text-slate-400 text-sm">Al cancelar perderás acceso a:</p>
+      <h2 class="text-white font-bold text-xl mb-2">{{ t.cancel_modal_title }}</h2>
+      <p class="text-slate-400 text-sm">{{ t.cancel_modal_subtitle }}</p>
     </div>
     <ul class="space-y-2 mb-6">
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Alertas geopolíticas en tiempo real</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Notificaciones en Telegram y WhatsApp</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Análisis con IA (GPT de última generación)</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Historial de alertas y señales pasadas</li>
-      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> Acceso al dashboard personalizado</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature1 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature2 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature3 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature4 }}</li>
+      <li class="flex items-center gap-2 text-slate-300 text-sm"><span class="text-red-400">✗</span> {{ t.cancel_modal_feature5 }}</li>
     </ul>
     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 mb-6">
-      <p class="text-slate-300 text-sm font-semibold mb-1">¿Sabías que...?</p>
-      <p class="text-slate-400 text-sm">Puedes pausar tu suscripción o cambiar a un plan inferior en lugar de cancelar. Escríbenos y te ayudamos.</p>
-      <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">Contactar soporte →</a>
+      <p class="text-slate-300 text-sm font-semibold mb-1">{{ t.cancel_modal_tip_title }}</p>
+      <p class="text-slate-400 text-sm">{{ t.cancel_modal_tip_msg }}</p>
+      <a href="mailto:soporte@geo-newsletter.com" class="text-emerald-400 hover:text-emerald-300 text-sm mt-2 inline-block">{{ t.cancel_modal_contact }}</a>
     </div>
     <div class="mb-6">
-      <label class="text-slate-400 text-sm mb-2 block">Escribe <span class="text-red-400 font-mono font-bold">CANCELAR</span> para confirmar:</label>
-      <input type="text" id="cancel-confirm-input" placeholder="CANCELAR"
+      <label class="text-slate-400 text-sm mb-2 block">{{ t.cancel_modal_confirm_label }} <span class="text-red-400 font-mono font-bold">{{ t.cancel_modal_confirm_keyword }}</span> {{ t.cancel_modal_confirm_label_part2 }}</label>
+      <input type="text" id="cancel-confirm-input" placeholder="{{ t.cancel_modal_confirm_keyword }}"
         class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition">
     </div>
     <div class="flex flex-col sm:flex-row gap-3">
       <button onclick="closeCancelModal()"
         class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-3 rounded-xl transition">
-        ✓ Conservar mi suscripción
+        {{ t.cancel_modal_keep_btn }}
       </button>
       <button id="btn-confirm-cancel" onclick="confirmCancel()" disabled
         class="flex-1 border border-red-500/30 text-red-400 hover:bg-red-500/10 font-medium px-5 py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed">
-        Sí, cancelar de todos modos
+        {{ t.cancel_modal_confirm_btn }}
       </button>
     </div>
   </div>
@@ -604,16 +604,16 @@
 <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
   <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-8 text-center">
     <div class="text-4xl mb-4">👋</div>
-    <h2 class="text-white font-bold text-xl mb-2">¿Cerrar sesión?</h2>
-    <p class="text-slate-400 text-sm mb-6">¿Estás seguro de que quieres cerrar sesión?</p>
+    <h2 class="text-white font-bold text-xl mb-2">{{ t.logout_modal_title }}</h2>
+    <p class="text-slate-400 text-sm mb-6">{{ t.logout_modal_msg }}</p>
     <div class="flex gap-3 justify-center">
       <button onclick="document.getElementById('logout-modal').classList.add('hidden')"
         class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-5 py-2.5 rounded-xl transition">
-        Cancelar
+        {{ t.cancel }}
       </button>
       <a href="/logout"
         class="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold px-5 py-2.5 rounded-xl transition">
-        Cerrar sesión
+        {{ t.nav_sign_out }}
       </a>
     </div>
   </div>

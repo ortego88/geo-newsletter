@@ -29,11 +29,11 @@ logger = logging.getLogger("prediction_tracker")
 # Si el precio se mueve menos de este % en cualquier dirección, la predicción
 # se marca como NEUTRAL y no penaliza la tasa de aciertos.
 # Antes era 0.15%, lo que marcaba como incorrectas subidas reales del 0.09%.
-_MIN_SIGNIFICANT_MOVE = 0.05  # 0.05% — umbral mínimo para considerar movimiento real
+_MIN_SIGNIFICANT_MOVE = 0.30  # 0.30% — umbral mínimo para crypto (más volátil que acciones)
 
-# Si el precio se mueve MENOS de este umbral en la dirección CONTRARIA a la predicha,
-# también se considera neutral (el mercado no contradijo la predicción, solo no se movió).
-_NEUTRAL_BAND = 0.10  # ±0.10% — banda neutral donde no hay señal clara
+# Si el precio se mueve MENOS de este umbral en cualquier dirección,
+# se considera neutral (el mercado no reaccionó a la noticia).
+_NEUTRAL_BAND = 0.50  # ±0.50% — banda neutral para crypto
 
 
 class PredictionTracker:
@@ -166,9 +166,8 @@ class PredictionTracker:
         category = event.get("category", "")
         asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
 
-        # Comprobar si ya existe predicción reciente para este activo (ventana 30 min)
-        # Reducido de 2h a 30min para permitir más alertas con eventos rápidos
-        if self._has_recent_prediction(asset, hours=0.5):
+        # Cooldown de 2h entre predicciones del mismo activo para evitar señales contradictorias
+        if self._has_recent_prediction(asset, hours=2):
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
             return None
 

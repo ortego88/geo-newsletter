@@ -40,6 +40,22 @@ CRYPTO_IDS = {
     "NEAR": "near",
     "ARB": "arbitrum",
     "OP": "optimism",
+    "SUI": "sui",
+    "APT": "aptos",
+    "SEI": "sei-network",
+    "TIA": "celestia",
+    "INJ": "injective-protocol",
+    "RENDER": "render-token",
+    "FET": "fetch-ai",
+    "PEPE": "pepe",
+    "WIF": "dogwifcoin",
+    "SHIB": "shiba-inu",
+    "TON": "the-open-network",
+    "TRX": "tron",
+    "HBAR": "hedera-hashgraph",
+    "ICP": "internet-computer",
+    "AAVE": "aave",
+    "CRYPTO_MARKET": "bitcoin",
 }
 
 # Todos los activos accesibles via yfinance (acciones, índices y futuros de commodities)

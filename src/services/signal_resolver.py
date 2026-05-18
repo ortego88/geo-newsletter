@@ -17,7 +17,7 @@ from collections import defaultdict
 
 logger = logging.getLogger("signal_resolver")
 
-MIN_CONFIDENCE_THRESHOLD = 45  # Subido de 40 a 45
+MIN_CONFIDENCE_THRESHOLD = 65  # Solo señales de alta convicción
 CONFLICT_DISCARD_MARGIN = 0.30  # 30% — ganador claro vs perdedor
 MIN_FINAL_CONFIDENCE = 35  # Umbral mínimo para guardar una predicción
 
@@ -25,24 +25,17 @@ MIN_FINAL_CONFIDENCE = 35  # Umbral mínimo para guardar una predicción
 # Pesos por fuente (calidad periodística)
 # ---------------------------------------------------------------------------
 SOURCE_WEIGHTS: dict[str, float] = {
-    # Crypto — fuentes especializadas de alta calidad
+    # Crypto — fuentes de alta calidad (tier 1)
     "coindesk": 1.5,
+    "the block": 1.5,
     "cointelegraph": 1.4,
-    "decrypt": 1.3,
     "bitcoin magazine": 1.4,
-    # Mercados españoles — fuentes de referencia
-    "expansión": 1.5,
-    "expansión mercados": 1.5,
-    "el economista": 1.4,
-    "cincodías": 1.4,
-    "cinco días": 1.4,
-    "bolsamanía": 1.3,
-    "el confidencial": 1.3,
-    "investing.com": 1.2,
-    # Fuentes de menor peso
-    "criptoblog": 0.8,
+    "decrypt": 1.3,
+    "dl news": 1.3,
+    # Crypto español — calidad media-alta
+    "cointelegraph es": 1.3,
+    "criptonoticias": 1.0,
     "beincrypto": 0.9,
-    "criptonoticias": 0.9,
 }
 
 # Pesos por signal_strength reportada por la IA
@@ -52,23 +45,26 @@ SIGNAL_STRENGTH_WEIGHTS: dict[str, float] = {
     "low": 0.7,
 }
 
-# Palabras clave de alto impacto confirmado
+# Palabras clave de alto impacto confirmado (crypto-specific)
 _HIGH_IMPACT_KEYWORDS = [
-    "resultados", "beneficios", "pérdidas", "earnings", "quiebra", "bankruptcy",
-    "fusión", "adquisición", "merger", "acquisition", "opa", "takeover",
-    "regulación", "regulation", "sec", "cnmv", "ban", "prohibición",
-    "fed", "bce", "tipos de interés", "interest rate", "inflación", "inflation",
-    "etf aprobado", "etf approved", "halving", "hard fork",
-    "multa", "sanción", "fine", "sanction",
-    "profit warning", "revisión al alza", "revisión a la baja",
+    "hack", "exploit", "hacked", "stolen", "robado",
+    "sec", "etf approved", "etf aprobado", "etf rejected", "etf rechazado",
+    "ban", "prohibición", "regulation", "regulación",
+    "halving", "hard fork", "upgrade",
+    "blackrock", "fidelity", "institutional", "institucional",
+    "liquidation", "liquidación", "liquidated",
+    "listing", "listado", "deslisting",
+    "bankruptcy", "quiebra", "insolvent",
+    "fed", "interest rate", "tipos de interés",
 ]
 
 # Palabras clave de bajo impacto (opiniones, análisis)
 _LOW_IMPACT_KEYWORDS = [
     "según", "according to", "dice que", "says that", "opina", "cree que",
     "podría", "could", "might", "may", "posiblemente", "possibly",
-    "analista", "analyst", "predicción", "prediction", "objetivo de precio",
+    "analista", "analyst", "predicción", "prediction", "precio objetivo",
     "price target", "rumor", "fuentes", "sources say",
+    "technical analysis", "análisis técnico", "pattern", "patrón",
 ]
 
 

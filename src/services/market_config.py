@@ -41,6 +41,9 @@ CRYPTO_TICKERS = {
     "BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "DOT",
     "AVAX", "MATIC", "LINK", "UNI", "LTC", "ATOM", "XLM",
     "ALGO", "FIL", "NEAR", "ARB", "OP",
+    "SUI", "APT", "SEI", "TIA", "INJ", "RENDER", "FET",
+    "PEPE", "WIF", "SHIB", "TON", "TRX", "HBAR", "ICP", "AAVE",
+    "CRYPTO_MARKET",
 }
 
 IBEX35_TICKERS = {
