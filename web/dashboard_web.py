@@ -478,3 +478,56 @@ def set_language():
     resp = make_response(jsonify({"ok": True, "language": lang}))
     resp.set_cookie("geo_lang", lang, max_age=365*24*3600, samesite="Lax")
     return resp
+
+
+# TradingView symbol mapping for crypto tickers
+_TV_SYMBOLS = {
+    "BTC": "BINANCE:BTCUSDT", "ETH": "BINANCE:ETHUSDT", "XRP": "BINANCE:XRPUSDT",
+    "SOL": "BINANCE:SOLUSDT", "BNB": "BINANCE:BNBUSDT", "ADA": "BINANCE:ADAUSDT",
+    "DOGE": "BINANCE:DOGEUSDT", "DOT": "BINANCE:DOTUSDT", "AVAX": "BINANCE:AVAXUSDT",
+    "MATIC": "BINANCE:MATICUSDT", "LINK": "BINANCE:LINKUSDT", "UNI": "BINANCE:UNIUSDT",
+    "LTC": "BINANCE:LTCUSDT", "ATOM": "BINANCE:ATOMUSDT", "XLM": "BINANCE:XLMUSDT",
+    "ALGO": "BINANCE:ALGOUSDT", "FIL": "BINANCE:FILUSDT", "NEAR": "BINANCE:NEARUSDT",
+    "ARB": "BINANCE:ARBUSDT", "OP": "BINANCE:OPUSDT", "SUI": "BINANCE:SUIUSDT",
+    "APT": "BINANCE:APTUSDT", "SEI": "BINANCE:SEIUSDT", "TIA": "BINANCE:TIAUSDT",
+    "INJ": "BINANCE:INJUSDT", "RENDER": "BINANCE:RENDERUSDT", "FET": "BINANCE:FETUSDT",
+    "PEPE": "BINANCE:PEPEUSDT", "WIF": "BINANCE:WIFUSDT", "SHIB": "BINANCE:SHIBUSDT",
+    "TON": "OKX:TONUSDT", "TRX": "BINANCE:TRXUSDT", "HBAR": "BINANCE:HBARUSDT",
+    "ICP": "BINANCE:ICPUSDT", "AAVE": "BINANCE:AAVEUSDT",
+}
+
+
+@dashboard_bp.route("/dashboard/assets")
+@login_required
+def my_assets():
+    redirect_resp = _require_active_subscription()
+    if redirect_resp:
+        return redirect_resp
+
+    sub = current_user.get_subscription()
+    plan_config = PLANS.get(sub["plan"], PLANS["basic"]) if sub else None
+    user_selected_assets = [a for a in (sub.get("selected_assets") or []) if a]
+
+    selected_asset = request.args.get("asset", "").strip()
+    if selected_asset not in _TV_SYMBOLS:
+        selected_asset = user_selected_assets[0] if user_selected_assets else "BTC"
+
+    tv_symbol = _TV_SYMBOLS.get(selected_asset, f"BINANCE:{selected_asset}USDT")
+
+    assets_for_selector = [
+        {"symbol": a, "name": ASSET_NAMES.get(a, a), "tv_symbol": _TV_SYMBOLS.get(a, f"BINANCE:{a}USDT")}
+        for a in user_selected_assets
+        if a in _TV_SYMBOLS
+    ]
+    if not assets_for_selector:
+        assets_for_selector = [{"symbol": "BTC", "name": "Bitcoin", "tv_symbol": "BINANCE:BTCUSDT"}]
+
+    return render_template(
+        "dashboard/assets.html",
+        sub=sub,
+        plan_config=plan_config,
+        plans=PLANS,
+        selected_asset=selected_asset,
+        tv_symbol=tv_symbol,
+        assets_for_selector=assets_for_selector,
+    )

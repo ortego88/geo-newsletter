@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ t.nav_assets }} — GEO-NEWSLETTER</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  {% include 'partials/nav.html' %}
+
+<div class="flex min-h-screen pt-20">
+
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
+
+  {% include 'dashboard/_sidebar.html' %}
+
+  <main class="flex-1 overflow-auto">
+
+    <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden p-1 text-slate-400 hover:text-white transition" onclick="toggleMobileSidebar()" aria-label="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="text-white font-bold text-lg md:text-xl">{{ t.nav_assets }}</h1>
+      </div>
+    </div>
+
+    <div class="px-4 md:px-8 py-4 md:py-6">
+
+      <!-- Asset selector pills -->
+      <div class="mb-4 flex flex-wrap gap-2">
+        {% for asset in assets_for_selector %}
+          <a href="/dashboard/assets?asset={{ asset.symbol }}"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition
+              {% if asset.symbol == selected_asset %}bg-emerald-500/20 border border-emerald-500/50 text-emerald-400
+              {% else %}bg-slate-800 border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white{% endif %}">
+            {{ asset.symbol }}
+          </a>
+        {% endfor %}
+      </div>
+
+      <!-- TradingView Advanced Chart -->
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden mb-4">
+        <div id="tv-chart" style="height: 500px;"></div>
+      </div>
+
+      <!-- Bottom row: Technical Analysis + Symbol Overview -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Technical Analysis -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+          <div class="tradingview-widget-container" style="height: 425px;">
+            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
+            {
+              "interval": "1h",
+              "width": "100%",
+              "height": "100%",
+              "isTransparent": true,
+              "symbol": "{{ tv_symbol }}",
+              "showIntervalTabs": true,
+              "locale": "es",
+              "colorTheme": "dark"
+            }
+            </script>
+          </div>
+        </div>
+
+        <!-- Symbol Overview -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+          <div class="tradingview-widget-container" style="height: 425px;">
+            <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+            {
+              "symbols": [["{{ selected_asset }}", "{{ tv_symbol }}|1M"]],
+              "chartOnly": false,
+              "width": "100%",
+              "height": "100%",
+              "locale": "es",
+              "colorTheme": "dark",
+              "autosize": true,
+              "showVolume": true,
+              "showMA": true,
+              "hideDateRanges": false,
+              "hideMarketStatus": false,
+              "hideSymbolLogo": false,
+              "scalePosition": "right",
+              "scaleMode": "Normal",
+              "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+              "noTimeScale": false,
+              "valuesTracking": "1",
+              "changeMode": "price-and-percent",
+              "chartType": "area",
+              "isTransparent": true
+            }
+            </script>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- TradingView Advanced Chart (main) -->
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script type="text/javascript">
+  new TradingView.widget({
+    "container_id": "tv-chart",
+    "autosize": true,
+    "symbol": "{{ tv_symbol }}",
+    "interval": "60",
+    "timezone": "Europe/Madrid",
+    "theme": "dark",
+    "style": "1",
+    "locale": "es",
+    "toolbar_bg": "#1e293b",
+    "enable_publishing": false,
+    "hide_top_toolbar": false,
+    "hide_legend": false,
+    "save_image": false,
+    "studies": ["RSI@tv-basicstudies", "MACD@tv-basicstudies"],
+    "show_popup_button": true,
+    "popup_width": "1000",
+    "popup_height": "650"
+  });
+</script>
+
+<script>
+  function toggleMobileSidebar() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+  }
+  function closeMobileSidebar() {
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.add('hidden');
+  }
+</script>
+
+{% include 'partials/cookie_banner.html' %}
+</body>
+</html>
