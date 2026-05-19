@@ -389,6 +389,49 @@ def create_app():
             "percentage": f"{percentage:+.2f}",
         })
 
+    @main_bp.route("/api/newsletter-signup", methods=["POST"])
+    def newsletter_signup():
+        data = request.get_json(silent=True) or {}
+        first_name = data.get("first_name", "").strip()
+        last_name = data.get("last_name", "").strip()
+        email = data.get("email", "").strip().lower()
+        terms = data.get("terms")
+
+        if not first_name or not last_name or not email:
+            return jsonify({"error": "Todos los campos son obligatorios"}), 400
+        if not terms:
+            return jsonify({"error": "Debes aceptar los términos y condiciones"}), 400
+        if "@" not in email or "." not in email.split("@")[-1]:
+            return jsonify({"error": "Email no válido"}), 400
+
+        try:
+            with get_conn() as conn:
+                existing = conn.execute(
+                    text("SELECT id FROM newsletter_subscribers WHERE email = :email"),
+                    {"email": email},
+                ).fetchone()
+                if existing:
+                    return jsonify({"ok": True, "message": "Ya estabas suscrito"}), 200
+
+                conn.execute(
+                    text("""
+                        INSERT INTO newsletter_subscribers (first_name, last_name, email, subscribed_at)
+                        VALUES (:first_name, :last_name, :email, :now)
+                    """),
+                    {
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "email": email,
+                        "now": datetime.utcnow().isoformat(),
+                    },
+                )
+                conn.commit()
+        except Exception as exc:
+            _logger.error("Error en newsletter signup: %s", exc)
+            return jsonify({"error": "Error al registrar. Inténtalo de nuevo."}), 500
+
+        return jsonify({"ok": True}), 201
+
     app.register_blueprint(main_bp)
 
     @app.context_processor

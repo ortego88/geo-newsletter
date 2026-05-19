@@ -466,6 +466,55 @@
     </div>
   </section>
 
+  <!-- NEWSLETTER SIGNUP -->
+  <section id="newsletter" class="py-20 px-6">
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-slate-800 border border-slate-700 rounded-3xl p-10">
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-white mb-3" data-i18n="newsletter.title">Recibe nuestro resumen semanal gratis</h2>
+          <p class="text-slate-400 text-sm" data-i18n="newsletter.subtitle">Análisis de mercado, tendencias crypto y las mejores señales de la semana. Sin spam, solo valor.</p>
+        </div>
+        <form id="newsletter-form" class="space-y-4" onsubmit="submitNewsletter(event)">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="newsletter.name">Nombre</label>
+              <input type="text" name="first_name" required placeholder="Ej: Carlos"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="newsletter.lastname">Apellidos</label>
+              <input type="text" name="last_name" required placeholder="Ej: García"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="newsletter.email">Correo electrónico</label>
+            <input type="email" name="email" required placeholder="tu@email.com"
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+          </div>
+          <div class="flex items-start gap-3">
+            <input type="checkbox" name="terms" id="nl-terms" required
+              class="mt-1 w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
+            <label for="nl-terms" class="text-slate-400 text-sm">
+              <span data-i18n="newsletter.terms_prefix">Acepto los</span>
+              <a href="/terms" class="text-emerald-400 hover:text-emerald-300 underline" data-i18n="newsletter.terms_link">términos y condiciones</a>
+              <span data-i18n="newsletter.terms_suffix">y la política de privacidad.</span>
+            </label>
+          </div>
+          <button type="submit" id="nl-submit-btn"
+            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="newsletter.submit">
+            Suscribirme gratis
+          </button>
+        </form>
+        <div id="newsletter-success" class="hidden text-center py-6">
+          <div class="text-4xl mb-3">✓</div>
+          <p class="text-emerald-400 font-semibold text-lg" data-i18n="newsletter.success_title">¡Te has suscrito correctamente!</p>
+          <p class="text-slate-400 text-sm mt-2" data-i18n="newsletter.success_msg">Revisa tu bandeja de entrada para confirmar tu email.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- FOOTER -->
   <footer class="py-10 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
     <p class="mb-3">
@@ -634,6 +683,17 @@
         "logout.message": "¿Estás seguro de que quieres cerrar sesión?",
         "logout.cancel": "Cancelar",
         "logout.confirm": "Cerrar sesión",
+        "newsletter.title": "Recibe nuestro resumen semanal gratis",
+        "newsletter.subtitle": "Análisis de mercado, tendencias crypto y las mejores señales de la semana. Sin spam, solo valor.",
+        "newsletter.name": "Nombre",
+        "newsletter.lastname": "Apellidos",
+        "newsletter.email": "Correo electrónico",
+        "newsletter.terms_prefix": "Acepto los",
+        "newsletter.terms_link": "términos y condiciones",
+        "newsletter.terms_suffix": "y la política de privacidad.",
+        "newsletter.submit": "Suscribirme gratis",
+        "newsletter.success_title": "¡Te has suscrito correctamente!",
+        "newsletter.success_msg": "Revisa tu bandeja de entrada para confirmar tu email.",
         "cookies.title": "Usamos cookies",
         "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
         "cookies.policy_link": "Política de cookies",
@@ -745,6 +805,17 @@
         "logout.message": "Are you sure you want to sign out?",
         "logout.cancel": "Cancel",
         "logout.confirm": "Sign out",
+        "newsletter.title": "Get our free weekly digest",
+        "newsletter.subtitle": "Market analysis, crypto trends and the best signals of the week. No spam, just value.",
+        "newsletter.name": "First name",
+        "newsletter.lastname": "Last name",
+        "newsletter.email": "Email address",
+        "newsletter.terms_prefix": "I accept the",
+        "newsletter.terms_link": "terms and conditions",
+        "newsletter.terms_suffix": "and privacy policy.",
+        "newsletter.submit": "Subscribe for free",
+        "newsletter.success_title": "You've been subscribed!",
+        "newsletter.success_msg": "Check your inbox to confirm your email.",
         "cookies.title": "We use cookies",
         "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
         "cookies.policy_link": "Cookie policy",
@@ -885,6 +956,37 @@
       }
     }
 
+  </script>
+
+  <!-- Newsletter submission -->
+  <script>
+    async function submitNewsletter(e) {
+      e.preventDefault();
+      var form = document.getElementById('newsletter-form');
+      var btn = document.getElementById('nl-submit-btn');
+      var data = Object.fromEntries(new FormData(form));
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        var resp = await fetch('/api/newsletter-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!resp.ok) {
+          var err = await resp.json().catch(function() { return {}; });
+          throw new Error(err.error || 'Error');
+        }
+        form.classList.add('hidden');
+        document.getElementById('newsletter-success').classList.remove('hidden');
+      } catch (error) {
+        alert(error.message || 'Error al registrarte. Inténtalo de nuevo.');
+        btn.disabled = false;
+        btn.textContent = 'Suscribirme gratis';
+      }
+    }
   </script>
 
   <!-- Botón sticky al simulador (siempre visible) -->
