@@ -48,7 +48,37 @@
       <!-- Current subscription card -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-6">
         <h2 class="font-bold text-white text-lg mb-4">{{ t.current_plan_title }}</h2>
-        {% if sub and sub.status in ('active', 'trial', 'cancelled_pending') %}
+        {% if trial_expired %}
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-3 mb-2">
+                <p class="text-white font-bold text-2xl">{{ plans[sub.plan].name }}</p>
+                <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-2.5 py-1 rounded-full">{{ t.expired_badge or "Expirado" }}</span>
+              </div>
+              <p class="text-slate-400 text-sm">{{ t.trial_expired_msg or "Tu período de prueba ha finalizado. Activa tu suscripción para seguir disfrutando del servicio." }}</p>
+              {% if plan_config %}
+                <div class="mt-3 space-y-1 text-sm text-slate-400">
+                  <p>{{ t.assets_label }}: <span class="text-white">{% if plan_config.max_assets == -1 %}{{ t.unlimited_lowercase }}{% else %}{{ t.assets_up_to }} {{ plan_config.max_assets }}{% endif %}</span></p>
+                  <p>{{ t.alerts_day }}: <span class="text-white">{% if plan_config.max_daily_alerts == -1 %}{{ t.unlimited_alerts }}{% else %}{{ t.assets_up_to }} {{ plan_config.max_daily_alerts }}{% endif %}</span></p>
+                  <p>{{ t.history_days }}: <span class="text-white">{{ plan_config.history_days }} {{ t.day if plan_config.history_days == 1 else t.days }}</span></p>
+                </div>
+              {% endif %}
+            </div>
+            <div class="flex flex-col gap-2">
+              {% if has_payment_method %}
+                <form method="POST" action="/subscribe/activate">
+                  <button type="submit" class="w-full inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                    {{ t.activate_with_saved_card }}
+                  </button>
+                </form>
+              {% else %}
+                <a href="/subscribe/{{ sub.plan }}" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                  {{ t.activate_subscription_btn }}
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% elif sub and sub.status in ('active', 'trial', 'cancelled_pending') %}
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex items-center gap-3 mb-2">

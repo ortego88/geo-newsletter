@@ -185,7 +185,7 @@
               <a href="/dashboard/subscription" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="settings.change_plan">
                 {{ t.change_plan_btn }}
               </a>
-              {% if sub and sub.status in ('active', 'trial') %}
+              {% if sub and sub.status in ('active', 'trial') and not (sub.status == 'trial' and trial_expired) %}
                 <button type="button" onclick="openCancelModal()"
                   class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition" data-i18n="settings.cancel_subscription">
                   {{ t.cancel_subscription_btn }}

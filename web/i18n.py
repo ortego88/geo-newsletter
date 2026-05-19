@@ -206,6 +206,10 @@ ES = {
     "cancel_modal_keep_btn": "✓ Conservar mi suscripción",
     "cancel_modal_confirm_btn": "Sí, cancelar de todos modos",
 
+    # Expired trial
+    "expired_badge": "Expirado",
+    "trial_expired_msg": "Tu período de prueba ha finalizado. Activa tu suscripción para seguir disfrutando del servicio.",
+
     # History page
     "receive_alerts_btn": "Recibir alertas →",
     "start_free_btn": "Empezar gratis →",
@@ -412,6 +416,10 @@ EN = {
     "cancel_modal_confirm_label_part2": "to confirm:",
     "cancel_modal_keep_btn": "✓ Keep my subscription",
     "cancel_modal_confirm_btn": "Yes, cancel anyway",
+
+    # Expired trial
+    "expired_badge": "Expired",
+    "trial_expired_msg": "Your trial period has ended. Activate your subscription to continue using the service.",
 
     # History page
     "receive_alerts_btn": "Receive alerts →",

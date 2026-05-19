@@ -59,6 +59,24 @@ def _user_has_payment_method(user_id: int) -> bool:
     return bool(row)
 
 
+def _is_trial_expired(sub: dict | None) -> bool:
+    """Comprueba si el trial del usuario ha expirado."""
+    if not sub:
+        return True
+    if sub["status"] not in ("active", "trial", "cancelled_pending"):
+        return True
+    if sub["status"] == "trial":
+        trial_end = sub.get("trial_ends_at")
+        if trial_end:
+            try:
+                trial_end_dt = datetime.fromisoformat(trial_end.replace("Z", "+00:00"))
+                if datetime.now(pytz.utc) > trial_end_dt:
+                    return True
+            except (ValueError, TypeError):
+                pass
+    return False
+
+
 def _require_active_subscription():
     """
     Valida que el usuario tenga suscripción activa Y que haya completado el flujo completo:
@@ -72,6 +90,11 @@ def _require_active_subscription():
     if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
+
+    # Paso 1b: Verificar que el trial no haya expirado
+    if _is_trial_expired(sub):
+        flash("Tu período de prueba ha finalizado. Activa tu suscripción para continuar.", "warning")
+        return redirect(url_for("dashboard_web.subscription"))
 
     # Paso 2: Verificar método de pago
     if not _user_has_payment_method(current_user.id):
@@ -316,6 +339,11 @@ def settings():
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
 
+    # Si el trial expiró, redirigir a suscripción
+    if _is_trial_expired(sub):
+        flash("Tu período de prueba ha finalizado. Activa tu suscripción para continuar.", "warning")
+        return redirect(url_for("dashboard_web.subscription"))
+
     # Si no tiene método de pago, redirigir a checkout
     if not _user_has_payment_method(current_user.id):
         flash("Añade tu método de pago antes de seleccionar activos", "warning")
@@ -437,17 +465,20 @@ def settings():
         next_change_allowed=next_change_allowed,
         is_new_user=is_new_user,
         next_step=next_step,
+        trial_expired=False,
     )
 
 
 @dashboard_bp.route("/dashboard/subscription")
 @login_required
 def subscription():
-    # Para subscription, solo validamos suscripción activa (pueden no tener pago aún)
     sub = current_user.get_subscription()
-    if not sub or sub["status"] not in ("active", "trial", "cancelled_pending"):
+    # Si no tiene suscripción en absoluto, redirigir a pricing
+    if not sub:
         flash("Necesitas una suscripción activa para acceder a esta sección", "warning")
         return redirect(url_for("billing.pricing"))
+
+    trial_expired = _is_trial_expired(sub)
 
     plan_config = PLANS.get(sub["plan"], PLANS["basic"]) if sub else None
     has_payment_method = _user_has_payment_method(current_user.id)
@@ -457,6 +488,7 @@ def subscription():
         plan_config=plan_config,
         plans=PLANS,
         has_payment_method=has_payment_method,
+        trial_expired=trial_expired,
     )
 
 

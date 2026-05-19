@@ -71,8 +71,8 @@
         {% endfor %}
       {% endwith %}
 
-      <!-- Trial banner - solo durante el período de prueba -->
-      {% if sub and sub.status == 'trial' %}
+      <!-- Trial banner - solo durante el período de prueba activo (no expirado) -->
+      {% if sub and sub.status == 'trial' and not trial_expired %}
         <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 md:p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p class="text-amber-400 font-semibold">{{ t.trial_active }}</p>
