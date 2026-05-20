@@ -1,0 +1,15 @@
+node_modules/
+android/
+.git/
+.github/
+*.apk
+*.aab
+dist/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.log
+data/
+.vscode/
+.idea/
