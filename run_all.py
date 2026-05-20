@@ -321,7 +321,7 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", os.getenv("DASHBOARD_PORT", "8080")))
 
     logger.info("=" * 60)
-    logger.info("  🌍 GEO-NEWSLETTER — PRODUCCIÓN (Railway)")
+    logger.info("  🌍 Trianio — PRODUCCIÓN (Railway)")
     logger.info("=" * 60)
     logger.info(f"  Dashboard: http://0.0.0.0:{port}")
     logger.info(f"  OpenAI: {'✅ configurado' if os.getenv('OPENAI_API_KEY') else '⚠️  NO configurado (usando Ollama)'}")

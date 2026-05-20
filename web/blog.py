@@ -47,7 +47,7 @@ def _init_blog_table():
             Column("title", Text, nullable=False),
             Column("excerpt", Text),
             Column("content", Text, nullable=False),
-            Column("author", Text, default="Equipo GEO-NEWSLETTER"),
+            Column("author", Text, default="Equipo Trianio"),
             Column("published_at", Text),
             Column("updated_at", Text),
             Column("is_published", Boolean, default=True),

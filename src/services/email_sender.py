@@ -6,7 +6,7 @@ Variables de entorno:
   SMTP_PORT       — Puerto SMTP (default: 587)
   SMTP_USER       — Usuario SMTP
   SMTP_PASSWORD   — Contraseña SMTP o App Password
-  SMTP_FROM_NAME  — Nombre del remitente (default: GEO-NEWSLETTER)
+  SMTP_FROM_NAME  — Nombre del remitente (default: Trianio)
   SMTP_FROM_EMAIL — Email del remitente
 """
 import logging
@@ -21,7 +21,7 @@ SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "GEO-NEWSLETTER")
+SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Trianio")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "")
 
 

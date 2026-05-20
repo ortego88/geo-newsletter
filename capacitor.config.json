@@ -1,6 +1,6 @@
 {
-  "appId": "com.geonewsletter.app",
-  "appName": "GeoNewsletter",
+  "appId": "com.trianio.app",
+  "appName": "Trianio",
   "webDir": "dist",
   "server": {
     "url": "https://geo-newsletter-production.up.railway.app",

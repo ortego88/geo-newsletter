@@ -3,7 +3,7 @@
 <script src="/static/js/i18n.js"></script>
 <nav class="fixed top-0 inset-x-0 z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
   <div class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-    <a href="/" class="text-emerald-400 font-bold text-lg md:text-xl tracking-tight hover:text-emerald-300 transition">GEO-NEWSLETTER</a>
+    {% include 'partials/logo.html' %}
     <!-- Desktop nav links -->
     <div class="hidden md:flex items-center gap-4">
       <a href="/blog" class="text-sm text-slate-400 hover:text-white transition">{{ t.nav_blog }}</a>
@@ -15,7 +15,7 @@
         <!-- User dropdown -->
         <div class="relative" id="user-menu-wrapper">
           <button onclick="toggleUserMenu()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-800 transition" id="user-menu-btn">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 flex items-center justify-center text-white font-bold text-sm">
               {{ current_user.name[0].upper() if current_user.name else 'U' }}
             </div>
             <span class="text-sm text-slate-300 font-medium">{{ current_user.name or current_user.email.split('@')[0] }}</span>

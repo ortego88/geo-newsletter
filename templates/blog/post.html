@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ post.title }} — GEO-NEWSLETTER</title>
+  <title>{{ post.title }} — Trianio</title>
   <meta name="description" content="{{ post.meta_description or post.excerpt }}">
   {% if post.keywords %}<meta name="keywords" content="{{ post.keywords }}">{% endif %}
   <link rel="canonical" href="{{ post.canonical_url }}">
@@ -40,7 +40,7 @@
     {% if post.featured_image %}"image": "{{ post.featured_image }}",{% endif %}
     "publisher": {
       "@type": "Organization",
-      "name": "GEO-NEWSLETTER",
+      "name": "Trianio",
       "logo": {
         "@type": "ImageObject",
         "url": "{{ url_for('static', filename='logo.png', _external=True) }}"
@@ -53,7 +53,7 @@
   }
   </script>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  {% include "partials/brand_head.html" %}
   <style>
     .prose {
       max-width: 680px;
@@ -175,7 +175,7 @@
       <!-- CTA al final del artículo -->
       <div class="mt-12 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 rounded-2xl p-8 text-center">
         <h3 class="text-2xl font-bold text-white mb-3">¿Quieres recibir alertas como estas?</h3>
-        <p class="text-slate-400 mb-6">Únete a GEO-NEWSLETTER y recibe análisis geopolíticos en tiempo real</p>
+        <p class="text-slate-400 mb-6">Únete a Trianio y recibe análisis geopolíticos en tiempo real</p>
         <a href="/#precios" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition">
           Empezar gratis — 7 días →
         </a>

@@ -566,7 +566,7 @@ def format_cycle_summary(events: list) -> str:
     timestamp = _now_madrid().strftime("%d/%m/%Y %H:%M")
 
     lines = []
-    lines.append(f"🌍 GEO-NEWSLETTER — {count} eventos detectados")
+    lines.append(f"🌍 Trianio — {count} eventos detectados")
     lines.append("")
 
     for i, event in enumerate(events[:5], start=1):

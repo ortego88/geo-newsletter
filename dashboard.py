@@ -1,5 +1,5 @@
 """
-Dashboard web para geo-newsletter.
+Dashboard web para Trianio.
 Ejecutar con: python dashboard.py
 Abrir en: http://localhost:5000
 """
@@ -181,7 +181,7 @@ def stream_logs():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  GEO-NEWSLETTER DASHBOARD")
+    print("  Trianio DASHBOARD")
     print("=" * 60)
     print("  Abre en tu navegador: http://localhost:5000")
     print(f"  Base de datos:        {DB_PATH}")
