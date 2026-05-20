@@ -43,6 +43,7 @@ def _to_madrid_str(dt_str) -> str:
 def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    app.config["GTM_ID"] = os.getenv("GTM_ID", "")
 
     debug_mode = (
         os.getenv("FLASK_ENV", "production") == "development"
