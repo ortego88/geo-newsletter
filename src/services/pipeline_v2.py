@@ -16,6 +16,7 @@ import feedparser
 
 from src.services.content_filter import is_entertainment_noise
 from src.services.deduplicator import Deduplicator
+from src.services.fast_signals import fetch_fast_signals
 from src.services.gpt_analyzer import EventAnalyzer
 from src.services.prediction_tracker import PredictionTracker
 from src.services.real_price_fetcher import RealPriceFetcher, CRYPTO_IDS, YAHOO_TICKERS
@@ -262,7 +263,16 @@ def _score_event(article: dict) -> tuple[int, str]:
 
     This means a single-keyword match produces a noticeably lower score
     than multiple matches, and the base_severity alone no longer dominates.
+
+    Fast signals (volume spikes) get a direct score based on the spike magnitude.
     """
+    # Fast signals (volume spikes from Binance) bypass keyword scoring
+    if article.get("_fast_signal") and article.get("_volume_ratio"):
+        ratio = article["_volume_ratio"]
+        # 3x → 70, 5x → 80, 8x+ → 90
+        score = min(95, int(60 + ratio * 4))
+        return score, "CRYPTO"
+
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
 
@@ -337,10 +347,21 @@ class AnalysisPipeline:
         """
         logger.info("🚀 INICIANDO PIPELINE DE ANÁLISIS")
 
-        # Paso 1: Fetch
+        # Paso 1: Fetch (RSS + fast signals)
         logger.info("📰 PASO 1: Recolectando noticias...")
         articles = _fetch_rss(minutes=minutes)
-        logger.info(f"   ✅ {len(articles)} noticias encontradas")
+        logger.info(f"   ✅ {len(articles)} noticias RSS")
+
+        # Paso 1b: Fuentes rápidas (Binance volume spikes + CryptoPanic)
+        try:
+            fast = fetch_fast_signals()
+            if fast:
+                articles.extend(fast)
+                logger.info(f"   ⚡ {len(fast)} señales rápidas añadidas")
+        except Exception as e:
+            logger.warning(f"   ⚠️ Error en fast signals: {e}")
+
+        logger.info(f"   ✅ {len(articles)} noticias totales")
 
         # Paso 2: Deduplicar
         logger.info("🔄 PASO 2: Deduplicando noticias...")

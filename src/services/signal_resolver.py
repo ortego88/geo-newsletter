@@ -25,6 +25,8 @@ MIN_FINAL_CONFIDENCE = 35  # Umbral mínimo para guardar una predicción
 # Pesos por fuente (calidad periodística)
 # ---------------------------------------------------------------------------
 SOURCE_WEIGHTS: dict[str, float] = {
+    # Fast signals — máxima confianza (datos de mercado directos)
+    "binance volume": 1.8,
     # Crypto — fuentes de alta calidad (tier 1)
     "coindesk": 1.5,
     "the block": 1.5,
@@ -32,6 +34,10 @@ SOURCE_WEIGHTS: dict[str, float] = {
     "bitcoin magazine": 1.4,
     "decrypt": 1.3,
     "dl news": 1.3,
+    "cryptoslate": 1.2,
+    "u.today": 1.1,
+    "newsbtc": 1.0,
+    "bitcoinist": 1.0,
     # Crypto español — calidad media-alta
     "cointelegraph es": 1.3,
     "criptonoticias": 1.0,
