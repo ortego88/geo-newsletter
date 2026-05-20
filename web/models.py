@@ -165,6 +165,14 @@ def init_db():
         Column("sent_at", Text),
     )
 
+    Table("newsletter_subscribers", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("first_name", String(100), nullable=False),
+        Column("last_name", String(100), nullable=False),
+        Column("email", String(255), unique=True, nullable=False),
+        Column("subscribed_at", Text, nullable=False),
+    )
+
     # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
     meta.create_all(engine, checkfirst=True)
 

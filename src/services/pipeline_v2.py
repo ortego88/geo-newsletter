@@ -41,14 +41,22 @@ CATEGORY_FALLBACK = {
 }
 
 # --- Fuentes RSS: SOLO Crypto ---
+# Priorizadas por velocidad de publicación (las más rápidas primero).
+# Las fuentes "wire" y exchanges publican con menor latencia que los medios editoriales.
 RSS_SOURCES = [
-    # --- Crypto (inglés — alta calidad) ---
+    # --- Fuentes rápidas (baja latencia, wire-style) ---
     {"name": "CoinDesk", "url": "https://www.coindesk.com/arc/outboundfeeds/rss/"},
-    {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss"},
-    {"name": "Decrypt", "url": "https://decrypt.co/feed"},
-    {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/.rss/full/"},
     {"name": "The Block", "url": "https://www.theblock.co/rss.xml"},
     {"name": "DL News", "url": "https://www.dlnews.com/arc/outboundfeeds/rss/"},
+    {"name": "Decrypt", "url": "https://decrypt.co/feed"},
+    {"name": "CryptoSlate", "url": "https://cryptoslate.com/feed/"},
+    {"name": "U.Today", "url": "https://u.today/rss"},
+    {"name": "NewsBTC", "url": "https://www.newsbtc.com/feed/"},
+    {"name": "Bitcoinist", "url": "https://bitcoinist.com/feed/"},
+
+    # --- Medios crypto editoriales (buena calidad, algo más lentos) ---
+    {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss"},
+    {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/.rss/full/"},
 
     # --- Crypto (español) ---
     {"name": "Cointelegraph ES", "url": "https://es.cointelegraph.com/rss"},
@@ -410,9 +418,21 @@ class AnalysisPipeline:
         logger.info(f"   ✅ {len(analyzed)} eventos analizados")
 
         # Paso 5: Guardar predicciones con precios reales
-        logger.info("💾 PASO 5: Guardando predicciones...")
+        # Solo guardar predicciones que pasen el umbral de alerta (score >= 60, confidence >= 65)
+        # No tiene sentido almacenar predicciones de baja convicción que nunca se alertarán.
+        logger.info("💾 PASO 5: Guardando predicciones (solo alta convicción)...")
         for event in analyzed:
             analysis = event.get("analysis", {})
+
+            event_score = event.get("score", 0)
+            event_confidence = analysis.get("confidence", 0)
+            if event_score < 60 or event_confidence < 65:
+                logger.info(
+                    f"   ⏭️ No guardada (score={event_score}, conf={event_confidence}): "
+                    f"{event.get('title', '')[:55]}"
+                )
+                continue
+
             assets = analysis.get("most_affected_assets", ["UNKNOWN"])
             primary_asset = assets[0] if assets else "UNKNOWN"
 
