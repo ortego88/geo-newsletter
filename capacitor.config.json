@@ -1,0 +1,24 @@
+{
+  "appId": "com.geonewsletter.app",
+  "appName": "GeoNewsletter",
+  "webDir": "dist",
+  "server": {
+    "url": "https://geo-newsletter-production.up.railway.app",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0f172a",
+      "showSpinner": true,
+      "spinnerColor": "#10b981"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f172a"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
