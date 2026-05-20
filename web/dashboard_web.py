@@ -542,7 +542,8 @@ def my_assets():
 
     selected_asset = request.args.get("asset", "").strip()
     if selected_asset not in _TV_SYMBOLS:
-        selected_asset = user_selected_assets[0] if user_selected_assets else "BTC"
+        default_asset = user_selected_assets[0] if user_selected_assets else "BTC"
+        return redirect(url_for("dashboard_web.my_assets", asset=default_asset))
 
     tv_symbol = _TV_SYMBOLS.get(selected_asset, f"BINANCE:{selected_asset}USDT")
 
