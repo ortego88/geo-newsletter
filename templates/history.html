@@ -45,16 +45,16 @@
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">{{ t.accuracy }}</p>
-          <p class="font-bold text-xl {% if accuracy_stats.accuracy_pct >= 60 %}text-emerald-400{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-red-400{% endif %}">
+          <p class="font-bold text-xl {% if accuracy_stats.accuracy_pct >= 60 %}text-up-green{% elif accuracy_stats.accuracy_pct >= 50 %}text-amber-400{% else %}text-down-red{% endif %}">
             {% if accuracy_stats.total > 0 %}{{ accuracy_stats.accuracy_pct }}%{% else %}—{% endif %}
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">{{ t.correct_incorrect }}</p>
           <p class="font-bold text-lg">
-            <span class="text-emerald-400 cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas correctas" onclick="filterByOutcome('correct')">{{ accuracy_stats.correct }}</span>
+            <span class="text-up-green cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas correctas" onclick="filterByOutcome('correct')">{{ accuracy_stats.correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-red-400 cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas incorrectas" onclick="filterByOutcome('incorrect')">{{ accuracy_stats.incorrect }}</span>
+            <span class="text-down-red cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas incorrectas" onclick="filterByOutcome('incorrect')">{{ accuracy_stats.incorrect }}</span>
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -162,7 +162,7 @@
                     </td>
                     <td class="px-3 py-3 text-right font-mono">
                       {% if pred.price_change_pct is not none %}
-                        <span class="{% if pred.price_change_pct > 0 %}text-emerald-400{% elif pred.price_change_pct < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+                        <span class="{% if pred.price_change_pct > 0 %}text-up-green{% elif pred.price_change_pct < 0 %}text-down-red{% else %}text-slate-400{% endif %}">
                           {{ "%+.2f"|format(pred.price_change_pct) }}%
                         </span>
                       {% else %}
@@ -171,9 +171,9 @@
                     </td>
                     <td class="px-3 py-3 text-center">
                       {% if outcome == 'correct' %}
-                        <span class="bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
+                        <span class="badge-correct font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✓ Correcto</span>
                       {% elif outcome == 'incorrect' %}
-                        <span class="bg-red-500/20 text-red-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
+                        <span class="badge-incorrect font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">✗ Incorrecto</span>
                       {% elif outcome == 'neutral' %}
                         <span class="bg-slate-700 text-slate-400 font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">⚪ Neutral</span>
                       {% else %}
