@@ -11,13 +11,13 @@
 
   {% include 'partials/nav.html' %}
 
-<div class="flex min-h-screen pt-20">
+<div class="flex min-h-screen pt-20 overflow-x-hidden">
 
   <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden" onclick="closeMobileSidebar()"></div>
 
   {% include 'dashboard/_sidebar.html' %}
 
-  <main class="flex-1 overflow-auto">
+  <main class="flex-1 min-w-0 overflow-y-auto">
 
     <div class="bg-slate-950 border-b border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
       <div class="flex items-center gap-3">
@@ -49,7 +49,7 @@
 
       <!-- TradingView Advanced Chart -->
       <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden mb-4">
-        <div id="tv-chart" style="height: 480px;"></div>
+        <div id="tv-chart"></div>
       </div>
 
       <!-- Bottom row: Technical Analysis + Mini Chart -->
@@ -57,7 +57,7 @@
         <!-- Technical Analysis -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
           <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget" style="height:450px;width:100%"></div>
+            <div id="tv-ta-widget" class="tradingview-widget-container__widget"></div>
             <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" async>
             {
               "interval": "1h",
@@ -76,7 +76,7 @@
         <!-- Mini Chart (price + area chart for selected crypto) -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
           <div class="tradingview-widget-container">
-            <div class="tradingview-widget-container__widget" style="height:450px;width:100%"></div>
+            <div id="tv-mini-widget" class="tradingview-widget-container__widget"></div>
             <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
             {
               "symbol": "{{ tv_symbol }}",
@@ -102,25 +102,39 @@
 <!-- TradingView Advanced Chart (main) -->
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script type="text/javascript">
-  new TradingView.widget({
-    "container_id": "tv-chart",
-    "autosize": true,
-    "symbol": "{{ tv_symbol }}",
-    "interval": "60",
-    "timezone": "Europe/Madrid",
-    "theme": "dark",
-    "style": "1",
-    "locale": "es",
-    "toolbar_bg": "#1e293b",
-    "enable_publishing": false,
-    "hide_top_toolbar": false,
-    "hide_legend": false,
-    "save_image": false,
-    "studies": ["RSI@tv-basicstudies", "MACD@tv-basicstudies"],
-    "show_popup_button": true,
-    "popup_width": "1000",
-    "popup_height": "650"
-  });
+  (function() {
+    var isMobile = window.innerWidth < 768;
+    var chartHeight = isMobile ? 350 : 480;
+    var widgetHeight = isMobile ? 380 : 450;
+
+    // Set heights
+    document.getElementById('tv-chart').style.height = chartHeight + 'px';
+    var taWidget = document.getElementById('tv-ta-widget');
+    var miniWidget = document.getElementById('tv-mini-widget');
+    if (taWidget) taWidget.style.height = widgetHeight + 'px';
+    if (miniWidget) miniWidget.style.height = widgetHeight + 'px';
+
+    new TradingView.widget({
+      "container_id": "tv-chart",
+      "width": "100%",
+      "height": chartHeight,
+      "symbol": "{{ tv_symbol }}",
+      "interval": "60",
+      "timezone": "Europe/Madrid",
+      "theme": "dark",
+      "style": "1",
+      "locale": "es",
+      "toolbar_bg": "#1e293b",
+      "enable_publishing": false,
+      "hide_top_toolbar": isMobile,
+      "hide_legend": isMobile,
+      "save_image": false,
+      "studies": isMobile ? [] : ["RSI@tv-basicstudies", "MACD@tv-basicstudies"],
+      "show_popup_button": !isMobile,
+      "popup_width": "1000",
+      "popup_height": "650"
+    });
+  })();
 </script>
 
 <script>
