@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportHeight="108"
+    android:viewportWidth="108">
+    <!-- Outer triangle -->
+    <path
+        android:pathData="M54,22 L80,76 L28,76 Z"
+        android:strokeColor="#C8922A"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000" />
+    <!-- Inner triangle -->
+    <path
+        android:pathData="M54,34 L70,64 L38,64 Z"
+        android:strokeColor="#E8B84B"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:alpha="0.6" />
+    <!-- Center dot -->
+    <path
+        android:pathData="M54,52 m-3,0 a3,3 0,1 1,6 0 a3,3 0,1 1,-6 0"
+        android:fillColor="#E8B84B" />
+    <!-- Vertical line -->
+    <path
+        android:pathData="M54,34 L54,49"
+        android:strokeColor="#E8B84B"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:alpha="0.8" />
+</vector>
