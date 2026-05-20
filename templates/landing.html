@@ -241,8 +241,8 @@
             Mensual
           </button>
           <button id="btn-annual" onclick="setPricing('annual')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white" data-i18n="pricing.annual_btn">
-            Anual <span class="ml-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">-50%</span>
+            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white">
+            <span data-i18n="pricing.annual_btn">Anual</span> <span class="ml-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">-50%</span>
           </button>
         </div>
       </div>
@@ -260,7 +260,7 @@
               <span class="line-through text-slate-500 text-sm">24,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-40%</span>
             </div>
-            <p id="price-basic-monthly-sub" class="text-slate-500 text-sm mt-1"><span data-i18n="pricing.or">o</span> 149,99€/<span data-i18n="pricing.per_year_short">año</span></p>
+            <p id="price-basic-monthly-sub" class="text-slate-500 text-sm mt-1" data-i18n="pricing.no_commitment">Sin permanencia, cancela cuando quieras</p>
             <!-- Precio anual -->
             <div id="price-basic-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">12,49€</span>
@@ -297,7 +297,7 @@
               <span class="line-through text-slate-500 text-sm">59,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-50%</span>
             </div>
-            <p id="price-premium-monthly-sub" class="text-slate-500 text-sm mt-1"><span data-i18n="pricing.or">o</span> 299,99€/<span data-i18n="pricing.per_year_short">año</span></p>
+            <p id="price-premium-monthly-sub" class="text-slate-500 text-sm mt-1" data-i18n="pricing.no_commitment">Sin permanencia, cancela cuando quieras</p>
             <!-- Precio anual -->
             <div id="price-premium-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">24,99€</span>
@@ -332,7 +332,7 @@
               <span class="line-through text-slate-500 text-sm">99,99€</span>
               <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full">-40%</span>
             </div>
-            <p id="price-pro-monthly-sub" class="text-slate-500 text-sm mt-1"><span data-i18n="pricing.or">o</span> 599,99€/<span data-i18n="pricing.per_year_short">año</span></p>
+            <p id="price-pro-monthly-sub" class="text-slate-500 text-sm mt-1" data-i18n="pricing.no_commitment">Sin permanencia, cancela cuando quieras</p>
             <!-- Precio anual -->
             <div id="price-pro-annual" class="hidden flex items-baseline gap-2 mt-3">
               <span class="text-3xl font-extrabold text-white">49,99€</span>
@@ -616,6 +616,7 @@
         "pricing.per_year": "/año",
         "pricing.per_year_short": "año",
         "pricing.or": "o",
+        "pricing.no_commitment": "Sin permanencia, cancela cuando quieras",
         "pricing.billed_annually": "facturado anualmente",
         "pricing.start_trial": "Empezar prueba",
         "pricing.most_popular": "⭐ MÁS POPULAR",
@@ -738,6 +739,7 @@
         "pricing.per_year": "/yr",
         "pricing.per_year_short": "yr",
         "pricing.or": "or",
+        "pricing.no_commitment": "No commitment, cancel anytime",
         "pricing.billed_annually": "billed annually",
         "pricing.start_trial": "Start trial",
         "pricing.most_popular": "⭐ MOST POPULAR",
