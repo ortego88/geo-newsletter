@@ -195,9 +195,9 @@
                     <td class="px-3 py-3 text-center">
                       {% set dir = pred.direction or 'neutral' %}
                       {% if dir in ('up', 'bullish', 'positive', 'alza') %}
-                        <span class="text-emerald-400 font-bold text-base">↑</span>
+                        <span class="text-up-green font-bold text-base">↑</span>
                       {% elif dir in ('down', 'bearish', 'negative', 'baja') %}
-                        <span class="text-red-400 font-bold text-base">↓</span>
+                        <span class="text-down-red font-bold text-base">↓</span>
                       {% else %}
                         <span class="text-slate-400">→</span>
                       {% endif %}

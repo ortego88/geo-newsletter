@@ -33,9 +33,11 @@ RECENT_HOURS = 48       # Ventana para deduplicación semántica (Nivel 2)
 MAX_DESCRIPTION_LENGTH = 500
 
 # Umbral de similitud coseno para TF-IDF — fácilmente ajustable
-DEDUP_SIMILARITY_THRESHOLD = 0.75
+DEDUP_SIMILARITY_THRESHOLD = 0.65
 # Umbral de ratio para el fallback difflib (escala ligeramente diferente a coseno)
-DEDUP_DIFFLIB_THRESHOLD = 0.80
+DEDUP_DIFFLIB_THRESHOLD = 0.70
+# Umbral para dedup por entidades compartidas (proper nouns, nombres propios)
+DEDUP_ENTITY_THRESHOLD = 0.5
 
 
 # ---------------------------------------------------------------------------
@@ -62,6 +64,59 @@ def _article_url_hash(article: dict) -> str:
     url = (article.get("url") or article.get("link") or "").strip()
     raw = f"{title}|{url}"
     return hashlib.md5(raw.encode()).hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# Deduplicación por entidades — cross-language
+# ---------------------------------------------------------------------------
+
+def _extract_entities(text: str) -> set[str]:
+    """Extrae tokens que parecen entidades (capitalizados, números, siglas)."""
+    tokens = re.findall(r'\b[A-Z][A-Za-z]{2,}\b|\b[A-Z]{2,}\b|\b\d+[%$€]?\b', text)
+    return {t.lower() for t in tokens if len(t) >= 3}
+
+
+def _extract_key_nouns(text: str) -> set[str]:
+    """Extrae sustantivos clave: palabras capitalizadas de 4+ letras que aparecen en el texto original."""
+    tokens = re.findall(r'\b[A-Z][a-z]{3,}\b', text)
+    return {t.lower() for t in tokens}
+
+
+def is_entity_duplicate(
+    new_title: str,
+    existing_titles: list[str],
+    threshold: float = DEDUP_ENTITY_THRESHOLD,
+) -> tuple[bool, float]:
+    """
+    Cross-language dedup: compara entidades (nombres propios, siglas, números)
+    entre el título nuevo y los existentes. Útil cuando la misma noticia aparece
+    en español e inglés (TF-IDF no las detecta).
+
+    Uses Jaccard similarity on entities. If entities are few, also checks
+    if the leading proper noun (usually the subject) is shared.
+    """
+    new_entities = _extract_entities(new_title)
+    new_nouns = _extract_key_nouns(new_title)
+    all_new = new_entities | new_nouns
+    if len(all_new) < 2:
+        return False, 0.0
+
+    max_overlap = 0.0
+    for existing_title in existing_titles:
+        existing_entities = _extract_entities(existing_title)
+        existing_nouns = _extract_key_nouns(existing_title)
+        all_existing = existing_entities | existing_nouns
+        if not all_existing:
+            continue
+        intersection = all_new & all_existing
+        if len(intersection) < 2:
+            continue
+        smaller_set = min(len(all_new), len(all_existing))
+        overlap = len(intersection) / smaller_set if smaller_set else 0.0
+        if overlap > max_overlap:
+            max_overlap = overlap
+
+    return max_overlap >= threshold, max_overlap
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +403,16 @@ class Deduplicator:
             return True
 
         recent = self._recent_store.get_recent(ticker)
+
+        # Cross-language entity check (catches ES/EN duplicates)
+        existing_titles = [t for t, _ in recent]
+        is_ent_dup, ent_overlap = is_entity_duplicate(title, existing_titles)
+        if is_ent_dup:
+            logger.info(
+                f"[DEDUP] Descartada por entidades compartidas ({ent_overlap:.2f}) [{ticker}]: {title[:60]}"
+            )
+            return True
+
         is_dup, max_sim = is_duplicate_news(title, description, recent)
 
         if is_dup:
