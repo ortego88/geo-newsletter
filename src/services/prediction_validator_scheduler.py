@@ -1,15 +1,13 @@
 """
 Validador de predicciones con APScheduler.
-Valida predicciones pendientes cada hora usando precios reales.
+Verifica predicciones pendientes cada hora usando precios reales.
 
-✅ IMPORTANTE: 
-  - Este módulo es responsable de VERIFICAR si una predicción fue correcta.
-  - Respeta los horarios de mercado usando is_market_open():
-    * IBEX35: Solo verifica predicciones 9:00-17:30 (L-V)
-    * Crypto: Verifica 24/7 sin restricción
-    * ETFs: Solo verifica 9:30-16:00 NY (L-V)
-  
-  - El envío de ALERTAS es independiente y ocurre 24/7 sin restricción (ver run_all.py)
+Lógica de evaluación (crypto 24/7):
+  - Cada hora comprueba si el precio se movió >= ±1% desde la predicción
+  - Si sube >=1% y se predijo alza → CORRECT (validación inmediata)
+  - Si baja >=1% y se predijo baja → CORRECT (validación inmediata)
+  - Si se mueve >=1% en dirección opuesta → INCORRECT (validación inmediata)
+  - Si tras 24h no se alcanza ±1% → NEUTRAL (no penaliza accuracy)
 """
 
 import logging
@@ -17,7 +15,6 @@ from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from src.services.market_config import is_market_open
 from src.services.prediction_tracker import PredictionTracker
 from src.services.real_price_fetcher import RealPriceFetcher
 
@@ -106,9 +103,7 @@ class PredictionValidatorScheduler:
         for pred in pending:
             prediction_id = pred.get("id")
             predicted_at_str = pred.get("predicted_at", "")
-            timeframe_minutes = pred.get("timeframe_minutes", 480)
             asset = pred.get("asset", "UNKNOWN")
-            verify_at_str = pred.get("verify_at")
 
             try:
                 predicted_at = datetime.fromisoformat(predicted_at_str)
@@ -116,70 +111,40 @@ class PredictionValidatorScheduler:
                 logger.warning(f"Fecha inválida en predicción #{prediction_id}: {predicted_at_str}")
                 continue
 
-            # Usar verify_at calculado cuando está disponible (respeta horario de mercado)
-            if verify_at_str:
-                try:
-                    verify_at = datetime.fromisoformat(verify_at_str.replace("Z", "+00:00"))
-                    # Strip timezone for comparison with naive datetime.utcnow()
-                    if verify_at.tzinfo is not None:
-                        import pytz as _pytz
-                        verify_at = verify_at.astimezone(_pytz.utc).replace(tzinfo=None)
-                    if now < verify_at:
-                        logger.debug(
-                            f"Predicción #{prediction_id} ({asset}): "
-                            f"verify_at={verify_at_str} — aún no"
-                        )
-                        continue
-                except (ValueError, TypeError):
-                    # Fallback al método antiguo si verify_at es inválido
-                    elapsed_minutes = (now - predicted_at).total_seconds() / 60
-                    if elapsed_minutes < timeframe_minutes:
-                        logger.debug(
-                            f"Predicción #{prediction_id} ({asset}): "
-                            f"{elapsed_minutes:.0f}/{timeframe_minutes} min — aún no"
-                        )
-                        continue
-            else:
-                # Predicciones antiguas sin verify_at: usar timeframe_minutes
-                elapsed_minutes = (now - predicted_at).total_seconds() / 60
-                if elapsed_minutes < timeframe_minutes:
-                    logger.debug(
-                        f"Predicción #{prediction_id} ({asset}): "
-                        f"{elapsed_minutes:.0f}/{timeframe_minutes} min transcurridos — aún no"
-                    )
-                    continue
-
-            # ✅ VERIFICACIÓN RESPETANDO HORARIOS DE MERCADO
-            # Solo validar si el mercado está abierto para este activo (now)
-            if not is_market_open(asset, now):
+            # Skip very fresh predictions (less than 1 hour old) to avoid noise
+            elapsed_minutes = (now - predicted_at).total_seconds() / 60
+            if elapsed_minutes < 60:
                 logger.debug(
                     f"Predicción #{prediction_id} ({asset}): "
-                    f"Mercado cerrado para este activo — esperando apertura"
+                    f"menos de 1h desde creación — esperando"
                 )
                 continue
 
-            # Ya pasó el plazo y el mercado está abierto → validar con precio actual
+            # Get current price and attempt validation (threshold-based)
             current_price = self.price_fetcher.get_price(asset)
             if current_price is None:
                 logger.warning(f"No se pudo obtener precio para {asset}, omitiendo validación")
                 continue
 
             result = self.tracker.validate_prediction(prediction_id, current_price)
-            if result:
-                validated_count += 1
-                outcome_es = "✅ CORRECTA" if result["outcome"] == "correct" else "❌ INCORRECTA"
-                logger.info(
-                    f"Predicción #{prediction_id} validada: {outcome_es} | "
-                    f"{asset} cambio real: {result['actual_change']:+.2f}% | "
-                    f"predicho: {result['predicted_change']:+.1f}%"
+            if result is None:
+                # Threshold not reached yet and window still active — will retry next cycle
+                logger.debug(
+                    f"Predicción #{prediction_id} ({asset}): "
+                    f"umbral ±1% no alcanzado, reintentando próximo ciclo"
                 )
-                # Solo enviar resultado a Telegram si la predicción fue alertada
-                # (mismos criterios que en run_all._send_pipeline_alerts)
-                pred_score = pred.get("score", 0)
-                pred_confidence = pred.get("confidence", 0)
-                if pred_score >= 60 and pred_confidence >= 65:
-                    stats = self.tracker.get_accuracy_stats()
-                    _send_validation_telegram(result, stats)
+                continue
+            validated_count += 1
+            outcome_es = {"correct": "✅ CORRECTA", "incorrect": "❌ INCORRECTA", "neutral": "⚪ NEUTRAL"}.get(result["outcome"], result["outcome"])
+            logger.info(
+                f"Predicción #{prediction_id} validada: {outcome_es} | "
+                f"{asset} cambio real: {result['actual_change']:+.2f}%"
+            )
+            pred_score = pred.get("score", 0)
+            pred_confidence = pred.get("confidence", 0)
+            if pred_score >= 60 and pred_confidence >= 65 and result["outcome"] != "neutral":
+                stats = self.tracker.get_accuracy_stats()
+                _send_validation_telegram(result, stats)
 
         if validated_count:
             stats = self.tracker.get_accuracy_stats()

@@ -4,8 +4,8 @@ web/app.py — Aplicación Flask principal con todos los blueprints.
 import logging
 import os
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify
-from flask_login import LoginManager
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_login import LoginManager, current_user
 from sqlalchemy import text
 from src.services.alert_formatter import ASSET_NAMES
 from src.services.market_config import get_assets_by_type, get_asset_type
@@ -44,6 +44,7 @@ def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["GTM_ID"] = os.getenv("GTM_ID", "")
+    app.config["DL_DEBUG"] = os.getenv("DL_DEBUG", "").lower() in ("1", "true")
 
     debug_mode = (
         os.getenv("FLASK_ENV", "production") == "development"
@@ -81,6 +82,12 @@ def create_app():
     @main_bp.route("/")
     def landing():
         return render_template("landing.html", plans=PLANS)
+
+    @main_bp.route("/app")
+    def app_home():
+        if current_user.is_authenticated:
+            return redirect(url_for("dashboard_web.dashboard"))
+        return render_template("app_home.html")
 
     @main_bp.route("/privacy")
     def privacy():

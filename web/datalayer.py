@@ -10,6 +10,12 @@ PAGE_DATALAYER_CONFIG = {
         "serviceType": "home",
         "webArea": "public",
     },
+    "main.app_home": {
+        "pageName": "appHome",
+        "sectionName": "app",
+        "serviceType": "home",
+        "webArea": "public",
+    },
     "billing.pricing": {
         "pageName": "pricing",
         "sectionName": "pricing",
@@ -81,7 +87,7 @@ PAGE_DATALAYER_CONFIG = {
     },
     "dashboard_web.index": {
         "pageName": "dashboard",
-        "sectionName": "Dashboard",
+        "sectionName": "dashboard",
         "serviceType": "productInformation",
         "webArea": "private",
     },

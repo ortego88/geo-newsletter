@@ -218,24 +218,118 @@ def publish_post(title, content, keywords, excerpt=None, featured_image=None):
         return False
 
 
+def _generate_daily_topic():
+    """Genera un tema basado en la fecha actual para garantizar unicidad."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    day_of_week = datetime.utcnow().weekday()
+
+    themes = [
+        {
+            "angle": "análisis semanal",
+            "prompt": "Escribe un análisis semanal de los mercados crypto. Cubre los movimientos más importantes de Bitcoin, Ethereum y altcoins. Incluye datos de precios y volúmenes reales recientes, y qué esperar la próxima semana.",
+            "keywords": "crypto semanal, análisis bitcoin, mercado criptomonedas",
+            "image": "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=1200&h=630&fit=crop",
+        },
+        {
+            "angle": "educación trading",
+            "prompt": "Escribe un artículo educativo sobre una estrategia o concepto de trading crypto (puede ser RSI, MACD, análisis on-chain, DCA, o gestión de riesgo). Incluye ejemplos prácticos.",
+            "keywords": "trading crypto, estrategia inversión, educación financiera",
+            "image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=630&fit=crop",
+        },
+        {
+            "angle": "IA y mercados",
+            "prompt": "Escribe sobre cómo la inteligencia artificial está cambiando el trading de criptomonedas. Habla de predicciones algorítmicas, análisis de sentimiento, y ventajas de sistemas automatizados.",
+            "keywords": "inteligencia artificial, trading automatizado, predicciones crypto",
+            "image": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop",
+        },
+        {
+            "angle": "regulación y noticias",
+            "prompt": "Escribe sobre los últimos desarrollos regulatorios en crypto a nivel global (EEUU, Europa, Asia). Cómo afectan a los inversores minoristas y qué oportunidades o riesgos presentan.",
+            "keywords": "regulación crypto, legislación blockchain, mercados globales",
+            "image": "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1200&h=630&fit=crop",
+        },
+        {
+            "angle": "altcoins emergentes",
+            "prompt": "Análisis de altcoins que están ganando tracción: nuevos proyectos DeFi, Layer 2, o tokens con fundamentos sólidos. Explica por qué podrían ser relevantes para inversores.",
+            "keywords": "altcoins, DeFi, inversión crypto, tokens emergentes",
+            "image": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1200&h=630&fit=crop",
+        },
+        {
+            "angle": "gestión de riesgo",
+            "prompt": "Artículo sobre gestión de riesgo en crypto: position sizing, stop-losses, diversificación, y cómo proteger el capital en mercados volátiles.",
+            "keywords": "gestión riesgo, stop loss crypto, proteger inversión",
+            "image": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&h=630&fit=crop",
+        },
+        {
+            "angle": "análisis on-chain",
+            "prompt": "Explica métricas on-chain importantes para evaluar Bitcoin y Ethereum: MVRV, NUPL, exchange flows, whale activity. Cómo interpretarlas para tomar decisiones de inversión.",
+            "keywords": "on-chain, métricas blockchain, análisis fundamental crypto",
+            "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop",
+        },
+    ]
+
+    theme = themes[day_of_week]
+
+    title_prompt = f"""
+Genera SOLO un título corto (máximo 10 palabras) para un artículo de blog sobre crypto.
+Ángulo: {theme['angle']}
+Fecha: {today}
+El título debe ser específico, actual y atractivo. NO uses comillas. Responde SOLO con el título.
+"""
+    title = None
+    try:
+        import anthropic
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if api_key:
+            client = anthropic.Anthropic(api_key=api_key)
+            resp = client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=50,
+                messages=[{"role": "user", "content": title_prompt}]
+            )
+            title = resp.content[0].text.strip().strip('"').strip("'")
+    except Exception:
+        pass
+
+    if not title:
+        try:
+            import openai
+            api_key = os.getenv("OPENAI_API_KEY")
+            if api_key:
+                client = openai.OpenAI(api_key=api_key)
+                resp = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": title_prompt}],
+                    max_tokens=50
+                )
+                title = resp.choices[0].message.content.strip().strip('"').strip("'")
+        except Exception:
+            pass
+
+    if not title:
+        title = f"Mercados crypto: resumen del {today}"
+
+    return {
+        "title": title,
+        "keywords": theme["keywords"],
+        "image": theme["image"],
+        "prompt": theme["prompt"] + f"\n\nFecha de publicación: {today}. Incluye datos actuales y relevantes.",
+    }
+
+
 def main():
     """Genera y publica un artículo diario."""
-    import random
-
     print("=" * 60)
     print("📝 GENERANDO ARTÍCULO DIARIO DEL BLOG")
     print("=" * 60)
 
-    # Escoger tema aleatorio
-    topic = random.choice(TOPICS)
+    topic = _generate_daily_topic()
     print(f"\n📌 Tema seleccionado: {topic['title']}")
 
-    # Generar contenido
     print("\n🤖 Generando contenido con IA...")
     content = generate_content_with_ai(topic)
 
-    # Publicar
-    print("\n Publicando articulo...")
+    print("\n📤 Publicando articulo...")
     success = publish_post(
         title=topic['title'],
         content=content,

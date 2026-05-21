@@ -2,15 +2,10 @@
 Rastreador de predicciones.
 Guarda predicciones en PostgreSQL y las valida comparando precios.
 
-CAMBIOS v2:
-- Umbral de movimiento mínimo reducido a 0.05% (era 0.15%) para no marcar
-  como incorrectas subidas reales pero pequeñas.
-- Sistema de validación por niveles: si la dirección es correcta Y el movimiento
-  supera el umbral mínimo → CORRECTO. Si el movimiento es menor al umbral
-  → NEUTRAL (no cuenta ni como correcto ni como incorrecto en las stats).
-- Mejora en la precisión de stats: se excluyen los outcomes 'neutral' del cálculo
-  de accuracy para no penalizar predicciones que técnicamente fueron correctas
-  pero con movimiento insignificante.
+Validación basada en umbral ±1% en ventana de 24h:
+- Si el precio se mueve >=1% en la dirección predicha → CORRECT
+- Si se mueve >=1% en la dirección opuesta → INCORRECT
+- Si tras 24h no alcanza ±1% → NEUTRAL (no penaliza accuracy)
 """
 
 import logging
@@ -25,15 +20,14 @@ from src.services.market_config import calculate_verification_time
 
 logger = logging.getLogger("prediction_tracker")
 
-# Movimiento mínimo para considerar una predicción CORRECTA o INCORRECTA.
-# Si el precio se mueve menos de este % en cualquier dirección, la predicción
-# se marca como NEUTRAL y no penaliza la tasa de aciertos.
-# Antes era 0.15%, lo que marcaba como incorrectas subidas reales del 0.09%.
-_MIN_SIGNIFICANT_MOVE = 0.30  # 0.30% — umbral mínimo para crypto (más volátil que acciones)
+# Umbral de movimiento significativo para validar predicciones.
+# Si en las 24h siguientes el precio se mueve >= 1% en la dirección predicha → CORRECT
+# Si se mueve >= 1% en la dirección opuesta → INCORRECT
+# Si no alcanza 1% en ninguna dirección al finalizar las 24h → NEUTRAL
+_THRESHOLD_PCT = 1.0  # 1% — umbral para considerar la predicción acertada/fallida
 
-# Si el precio se mueve MENOS de este umbral en cualquier dirección,
-# se considera neutral (el mercado no reaccionó a la noticia).
-_NEUTRAL_BAND = 0.50  # ±0.50% — banda neutral para crypto
+# Ventana de evaluación en horas
+_EVALUATION_WINDOW_HOURS = 24
 
 
 class PredictionTracker:
@@ -238,14 +232,13 @@ class PredictionTracker:
         """
         Valida una predicción comparando el precio actual con el precio inicial.
 
-        Sistema de validación por niveles:
-        - Si la dirección es correcta Y el movimiento supera _MIN_SIGNIFICANT_MOVE → CORRECT
-        - Si el movimiento está dentro de la banda neutral (±_NEUTRAL_BAND) → NEUTRAL
-          (no penaliza la tasa de aciertos)
-        - Si la dirección es incorrecta Y el movimiento supera _MIN_SIGNIFICANT_MOVE → INCORRECT
+        Lógica basada en umbral de ±1% dentro de una ventana de 24h:
+        - Si el precio se mueve >= 1% en la dirección predicha → CORRECT (validación inmediata)
+        - Si el precio se mueve >= 1% en la dirección opuesta → INCORRECT (validación inmediata)
+        - Si han pasado 24h y no se alcanzó el 1% en ninguna dirección → NEUTRAL
 
-        Esto evita marcar como incorrectas predicciones "up" cuando el precio subió
-        un 0.09% (movimiento real pero menor al umbral anterior de 0.15%).
+        Esto permite validar predicciones antes de las 24h si el movimiento es claro,
+        y solo marca NEUTRAL cuando el mercado no reacciona tras la ventana completa.
         """
         with self._get_conn() as conn:
             row = conn.execute(
@@ -265,39 +258,43 @@ class PredictionTracker:
         predicted_change = pred.get("impact_percent", 0)
         direction = pred.get("direction", "neutral")
 
-        # ── Sistema de validación por niveles ────────────────────────────────
-        # Primero comprobamos si el movimiento es suficientemente significativo.
-        # Si el mercado prácticamente no se movió, la predicción es NEUTRAL.
+        # Check if the 24h window has expired
+        predicted_at_str = pred.get("predicted_at", "")
+        try:
+            predicted_at = datetime.fromisoformat(predicted_at_str)
+        except (ValueError, TypeError):
+            predicted_at = datetime.utcnow() - timedelta(hours=_EVALUATION_WINDOW_HOURS + 1)
+
+        window_expired = (datetime.utcnow() - predicted_at).total_seconds() >= _EVALUATION_WINDOW_HOURS * 3600
         abs_change = abs(actual_change_pct)
 
         if direction in ("up", "bullish", "positive", "alza"):
-            if actual_change_pct >= _MIN_SIGNIFICANT_MOVE:
-                outcome = "correct"   # Subió al menos el umbral mínimo → correcto
-            elif actual_change_pct <= -_MIN_SIGNIFICANT_MOVE:
-                outcome = "incorrect" # Bajó al menos el umbral mínimo → incorrecto
+            if actual_change_pct >= _THRESHOLD_PCT:
+                outcome = "correct"
+            elif actual_change_pct <= -_THRESHOLD_PCT:
+                outcome = "incorrect"
+            elif window_expired:
+                outcome = "neutral"
             else:
-                outcome = "neutral"   # Movimiento insignificante → neutral (sin penalización)
+                return None  # Still within window, threshold not reached — check later
 
         elif direction in ("down", "bearish", "negative", "baja"):
-            if actual_change_pct <= -_MIN_SIGNIFICANT_MOVE:
-                outcome = "correct"   # Bajó al menos el umbral mínimo → correcto
-            elif actual_change_pct >= _MIN_SIGNIFICANT_MOVE:
-                outcome = "incorrect" # Subió al menos el umbral mínimo → incorrecto
+            if actual_change_pct <= -_THRESHOLD_PCT:
+                outcome = "correct"
+            elif actual_change_pct >= _THRESHOLD_PCT:
+                outcome = "incorrect"
+            elif window_expired:
+                outcome = "neutral"
             else:
-                outcome = "neutral"   # Movimiento insignificante → neutral
+                return None
 
-        else:  # neutral
-            # Para predicciones neutrales, es correcto si el movimiento es pequeño
-            if abs_change < _NEUTRAL_BAND:
+        else:  # neutral direction
+            if abs_change >= _THRESHOLD_PCT:
+                outcome = "incorrect"
+            elif window_expired:
                 outcome = "correct"
             else:
-                outcome = "incorrect"
-
-        # Calcular precisión del porcentaje de impacto (solo informativo)
-        if predicted_change != 0:
-            pct_accuracy = max(0, 100 - abs(actual_change_pct - abs(predicted_change)) / abs(predicted_change) * 100)
-        else:
-            pct_accuracy = 100.0 if abs_change < 0.5 else 0.0
+                return None
 
         validated_at = datetime.utcnow().isoformat()
 
@@ -319,7 +316,6 @@ class PredictionTracker:
             "price_at_prediction": price_at,
             "price_at_validation": current_price,
             "outcome": outcome,
-            "pct_accuracy": round(pct_accuracy, 1),
             "validated_at": validated_at,
         }
 
@@ -327,7 +323,8 @@ class PredictionTracker:
         logger.info(
             f"Predicción validada: ID={prediction_id} | {outcome_icon} {outcome.upper()} | "
             f"Dirección predicha: {direction} | "
-            f"Cambio real: {actual_change_pct:+.3f}% | Umbral mínimo: {_MIN_SIGNIFICANT_MOVE}%"
+            f"Cambio real: {actual_change_pct:+.3f}% | Umbral: ±{_THRESHOLD_PCT}% | "
+            f"Ventana {'expirada' if window_expired else 'activa'}"
         )
         return result
 

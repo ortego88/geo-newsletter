@@ -3,14 +3,18 @@
 
   function pushInteraction(el) {
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
+    var payload = {
       'event': el.getAttribute('data-dl-event') || 'click',
       'eventName': el.getAttribute('data-dl-event') || 'click',
       'action': el.getAttribute('data-dl-action') || 'click',
       'format': el.getAttribute('data-dl-format') || '',
       'component': el.getAttribute('data-dl-component') || '',
       'element': el.getAttribute('data-dl-element') || ''
-    });
+    };
+    window.dataLayer.push(payload);
+    if (window.__DL_DEBUG) {
+      console.log('[dataLayer]', payload.event, payload);
+    }
   }
 
   document.addEventListener('click', function(e) {

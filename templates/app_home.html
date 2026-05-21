@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trianio</title>
+  {% include "partials/brand_head.html" %}
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col items-center justify-center px-6">
+
+  <div class="w-full max-w-sm text-center">
+    {% include "partials/logo.html" %}
+
+    <p class="text-slate-400 mt-4 mb-2 text-sm">Intelligence before the market moves</p>
+    <p class="text-slate-500 text-xs mb-12">Predicciones crypto con IA — alertas en tiempo real</p>
+
+    <div class="space-y-4">
+      <a href="/register"
+        class="block w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition text-center"
+        data-dl-action="click" data-dl-format="button" data-dl-component="appHome" data-dl-element="startFree">
+        Empezar gratis
+      </a>
+      <a href="/login"
+        class="block w-full border border-slate-600 hover:border-slate-400 text-white font-semibold py-3.5 rounded-xl transition text-center"
+        data-dl-action="click" data-dl-format="button" data-dl-component="appHome" data-dl-element="login">
+        Iniciar sesión
+      </a>
+    </div>
+  </div>
+
+</body>
+</html>
