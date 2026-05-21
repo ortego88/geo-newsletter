@@ -821,8 +821,8 @@
         var key = el.getAttribute('data-i18n');
         if (t[key]) el.textContent = t[key];
       });
-      document.getElementById('lang-flag').textContent = LANG_META[lang].flag;
-      document.getElementById('lang-code').textContent = lang.toUpperCase();
+      var __e=document.getElementById('lang-flag');if(__e)__e.textContent = LANG_META[lang].flag;
+      var __e=document.getElementById('lang-code');if(__e)__e.textContent = lang.toUpperCase();
       document.documentElement.lang = lang;
       document.documentElement.dir = 'ltr';
       localStorage.setItem('geo_lang', lang);
