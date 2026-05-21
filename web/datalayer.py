@@ -119,6 +119,7 @@ def get_datalayer_pageview(endpoint, view_args=None, request_args=None):
         return None
 
     dl = {
+        "event": "pageview",
         "eventName": "pageview",
         "pageName": config.get("pageName", ""),
         "sectionName": config.get("sectionName", ""),
