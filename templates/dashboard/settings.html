@@ -293,8 +293,8 @@
 
   function setDashLang(lang) {
     if (!DASH_LANG_META[lang]) lang = 'es';
-    document.getElementById('dash-lang-flag').textContent = DASH_LANG_META[lang].flag;
-    document.getElementById('dash-lang-code').textContent = lang.toUpperCase();
+    var __e=document.getElementById('dash-lang-flag');if(__e)__e.textContent = DASH_LANG_META[lang].flag;
+    var __e=document.getElementById('dash-lang-code');if(__e)__e.textContent = lang.toUpperCase();
     localStorage.setItem('geo_lang', lang);
     dashCurrentLang = lang;
     applyDashLang(lang);
@@ -492,8 +492,8 @@
   document.addEventListener('DOMContentLoaded', function() {
     var storedLang = localStorage.getItem('geo_lang') || dashCurrentLang;
     if (DASH_LANG_META[storedLang]) {
-      document.getElementById('dash-lang-flag').textContent = DASH_LANG_META[storedLang].flag;
-      document.getElementById('dash-lang-code').textContent = storedLang.toUpperCase();
+      var __e=document.getElementById('dash-lang-flag');if(__e)__e.textContent = DASH_LANG_META[storedLang].flag;
+      var __e=document.getElementById('dash-lang-code');if(__e)__e.textContent = storedLang.toUpperCase();
       dashCurrentLang = storedLang;
     }
     applyDashLang(dashCurrentLang);
@@ -654,8 +654,8 @@
         item.innerHTML = '<span>' + LANG_META[code].flag + '</span><span class="uppercase font-semibold">' + code.toUpperCase() + '</span><span class="text-slate-500">' + LANG_META[code].label + '</span>';
         item.onclick = function() {
           localStorage.setItem('geo_lang', code);
-          document.getElementById('lang-flag').textContent = LANG_META[code].flag;
-          document.getElementById('lang-code').textContent = code.toUpperCase();
+          var __e=document.getElementById('lang-flag');if(__e)__e.textContent = LANG_META[code].flag;
+          var __e=document.getElementById('lang-code');if(__e)__e.textContent = code.toUpperCase();
           dd.classList.add('hidden');
         };
         dd.appendChild(item);
