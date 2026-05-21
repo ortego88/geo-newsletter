@@ -387,6 +387,9 @@ def create_app():
         if position > 0 and last_price:
             cash = position * last_price
 
+        if not rows:
+            return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
+
         profit_loss = cash - amount
         percentage = (profit_loss / amount) * 100 if amount > 0 else 0.0
 
@@ -395,6 +398,7 @@ def create_app():
             "final_amount": f"{cash:.2f}",
             "profit_loss": f"{profit_loss:+.2f}",
             "percentage": f"{percentage:+.2f}",
+            "num_signals": len(rows),
         })
 
     @main_bp.route("/api/newsletter-signup", methods=["POST"])

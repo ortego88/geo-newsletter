@@ -926,21 +926,23 @@
           body: JSON.stringify({ asset, amount, period })
         });
 
-        if (!response.ok) throw new Error('Error en la simulación');
-
         const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.error || 'Error en la simulación');
+          return;
+        }
 
         document.getElementById('initial-amount').textContent = data.initial_amount + ' €';
         document.getElementById('final-amount').textContent = data.final_amount + ' €';
         document.getElementById('profit-loss').textContent = data.profit_loss + ' €';
-        document.getElementById('profit-loss').className = data.profit_loss >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+        document.getElementById('profit-loss').className = parseFloat(data.profit_loss) >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
         document.getElementById('percentage').textContent = data.percentage + '%';
-        document.getElementById('percentage').className = data.percentage >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+        document.getElementById('percentage').className = parseFloat(data.percentage) >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
 
         results.classList.remove('hidden');
       } catch (error) {
         alert('Error al calcular la simulación. Inténtalo de nuevo.');
-        console.error(error);
       } finally {
         btn.disabled = false;
         btn.textContent = 'Calcular simulación';
