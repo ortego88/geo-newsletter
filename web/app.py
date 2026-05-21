@@ -86,7 +86,7 @@ def create_app():
     @main_bp.route("/app")
     def app_home():
         if current_user.is_authenticated:
-            return redirect(url_for("dashboard_web.dashboard"))
+            return redirect("/dashboard")
         return render_template("app_home.html")
 
     @main_bp.route("/privacy")
@@ -352,7 +352,7 @@ def create_app():
                     WHERE asset = :asset
                       AND predicted_at >= :start
                       AND predicted_at <= :end
-                      AND outcome != 'pending'
+                      AND direction IN ('up', 'bullish', 'positive', 'alza', 'down', 'bearish', 'negative', 'baja')
                     ORDER BY predicted_at ASC
                 """), {
                     "asset": asset,
@@ -363,32 +363,37 @@ def create_app():
             _logger.error("Error en simulación: %s", exc)
             return jsonify({"error": "Error de base de datos"}), 500
 
+        if not rows:
+            return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
+
         cash = amount
         position = 0.0
         last_price = None
 
         for direction, price in rows:
             if price and price > 0:
-                # Señal alcista: si tenemos efectivo, compramos; si ya tenemos posición, mantenemos
                 if direction in ("up", "bullish", "positive", "alza"):
                     if cash > 0:
-                        # Compramos con todo el efectivo disponible
                         position = cash / price
                         cash = 0.0
-                # Señal bajista: si tenemos posición, vendemos; si ya estamos en efectivo, mantenemos
                 elif direction in ("down", "bearish", "negative", "baja"):
                     if position > 0:
-                        # Vendemos toda la posición y convertimos a efectivo
                         cash = position * price
                         position = 0.0
                 last_price = price
 
-        # Al final, si quedamos con posición abierta, la cerramos al último precio
-        if position > 0 and last_price:
-            cash = position * last_price
-
-        if not rows:
-            return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
+        # Close open position with current price
+        if position > 0:
+            try:
+                from src.services.real_price_fetcher import RealPriceFetcher
+                current_price = RealPriceFetcher().get_price(asset)
+                if current_price:
+                    cash = position * current_price
+                elif last_price:
+                    cash = position * last_price
+            except Exception:
+                if last_price:
+                    cash = position * last_price
 
         profit_loss = cash - amount
         percentage = (profit_loss / amount) * 100 if amount > 0 else 0.0

@@ -9,10 +9,18 @@
 <body class="bg-slate-900 text-slate-200 min-h-screen flex flex-col items-center justify-center px-6">
 
   <div class="w-full max-w-sm text-center">
-    {% include "partials/logo.html" %}
+    <!-- Large triangle logo (no text) -->
+    <div class="flex justify-center mb-6">
+      <svg class="w-20 h-20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="32,6 58,54 6,54" fill="none" stroke="#C8922A" stroke-width="2.5" stroke-linejoin="round"/>
+        <polygon points="32,18 48,46 16,46" fill="none" stroke="#E8B84B" stroke-width="1.5" stroke-linejoin="round" opacity="0.6"/>
+        <circle cx="32" cy="36" r="3" fill="#E8B84B"/>
+        <line x1="32" y1="18" x2="32" y2="33" stroke="#E8B84B" stroke-width="1.5" opacity="0.8"/>
+      </svg>
+    </div>
 
-    <p class="text-slate-400 mt-4 mb-2 text-sm">Intelligence before the market moves</p>
-    <p class="text-slate-500 text-xs mb-12">Predicciones crypto con IA — alertas en tiempo real</p>
+    <p class="text-white font-medium text-sm">Intelligence before the market moves</p>
+    <p class="text-slate-500 text-xs mt-1 mb-16">Predicciones crypto con IA — alertas en tiempo real</p>
 
     <div class="space-y-4">
       <a href="/register"
