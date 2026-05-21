@@ -54,7 +54,7 @@ DB_PATH = "data/predictions.db"
 
 pipeline = AnalysisPipeline(db_path=DB_PATH)
 tracker = PredictionTracker(db_path=DB_PATH)
-validator = PredictionValidatorScheduler(tracker=tracker, interval_minutes=60)
+validator = PredictionValidatorScheduler(tracker=tracker, interval_minutes=5)
 
 
 def _get_event_assets(event: dict) -> set:

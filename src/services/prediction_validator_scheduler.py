@@ -111,12 +111,12 @@ class PredictionValidatorScheduler:
                 logger.warning(f"Fecha inválida en predicción #{prediction_id}: {predicted_at_str}")
                 continue
 
-            # Skip very fresh predictions (less than 1 hour old) to avoid noise
+            # Skip very fresh predictions (less than 5 min old) to avoid noise
             elapsed_minutes = (now - predicted_at).total_seconds() / 60
-            if elapsed_minutes < 60:
+            if elapsed_minutes < 5:
                 logger.debug(
                     f"Predicción #{prediction_id} ({asset}): "
-                    f"menos de 1h desde creación — esperando"
+                    f"menos de 5min desde creación — esperando"
                 )
                 continue
 
