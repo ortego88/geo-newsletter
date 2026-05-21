@@ -44,7 +44,6 @@ def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["GTM_ID"] = os.getenv("GTM_ID", "")
-    app.config["DL_DEBUG"] = os.getenv("DL_DEBUG", "").lower() in ("1", "true")
 
     debug_mode = (
         os.getenv("FLASK_ENV", "production") == "development"

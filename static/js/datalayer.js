@@ -3,6 +3,29 @@
 
   var debugPanel = null;
   var STORAGE_KEY = 'dl_debug_log';
+  var DEBUG_FLAG_KEY = 'dl_debug_enabled';
+
+  // Expose global toggle: type debug=true or debug=false in console
+  Object.defineProperty(window, 'debug', {
+    set: function(val) {
+      if (val) {
+        localStorage.setItem(DEBUG_FLAG_KEY, '1');
+        window.__DL_DEBUG = true;
+        initDebugPanel();
+        if (debugPanel) debugPanel.style.display = '';
+      } else {
+        localStorage.removeItem(DEBUG_FLAG_KEY);
+        window.__DL_DEBUG = false;
+        if (debugPanel) debugPanel.style.display = 'none';
+      }
+    },
+    get: function() { return !!window.__DL_DEBUG; }
+  });
+
+  // Restore from localStorage
+  if (localStorage.getItem(DEBUG_FLAG_KEY) === '1') {
+    window.__DL_DEBUG = true;
+  }
 
   function getStoredLogs() {
     try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || []; }
