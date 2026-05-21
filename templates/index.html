@@ -64,7 +64,7 @@ tr:hover td { background: #1c2128; }
     <h1>Trianio — Sistema de Alertas Geopolíticas</h1>
     <div class="subtitle">Análisis de eventos globales e impacto en mercados financieros</div>
   </div>
-  <div id="scheduler-badge" class="badge badge-gray">⏳ Cargando...</div>
+  <div id="scheduler-badge" class="badge badge-gray">Cargando...</div>
 </div>
 <div id="notification"></div>
 <div class="container">
@@ -74,11 +74,11 @@ tr:hover td { background: #1c2128; }
       <div class="card-value blue" id="stat-total">—</div>
     </div>
     <div class="card">
-      <div class="card-label">✅ Correctas</div>
+      <div class="card-label">Correctas</div>
       <div class="card-value green" id="stat-correct">—</div>
     </div>
     <div class="card">
-      <div class="card-label">❌ Incorrectas</div>
+      <div class="card-label">Incorrectas</div>
       <div class="card-value red" id="stat-incorrect">—</div>
     </div>
     <div class="card">
@@ -98,28 +98,28 @@ tr:hover td { background: #1c2128; }
     </div>
     <div class="status-grid">
       <div class="status-item">
-        <div style="font-size:18px">⚙️</div>
+        <div style="font-size:18px"></div>
         <div>
           <div class="status-label">Pipeline</div>
           <div class="status-value" id="status-pipeline">—</div>
         </div>
       </div>
       <div class="status-item">
-        <div style="font-size:18px">🗞️</div>
+        <div style="font-size:18px"></div>
         <div>
           <div class="status-label">Noticias en deduplicador</div>
           <div class="status-value" id="status-dedup">—</div>
         </div>
       </div>
       <div class="status-item">
-        <div style="font-size:18px">⏰</div>
+        <div style="font-size:18px"></div>
         <div>
           <div class="status-label">Última ejecución</div>
           <div class="status-value" id="status-last-run">—</div>
         </div>
       </div>
       <div class="status-item">
-        <div style="font-size:18px">📊</div>
+        <div style="font-size:18px"></div>
         <div>
           <div class="status-label">Último ciclo: eventos</div>
           <div class="status-value" id="status-last-count">—</div>
@@ -201,8 +201,8 @@ function dirBadge(d) {
   return '<span class="text-muted">→</span>';
 }
 function outcomeBadge(o) {
-  if(o==='correct') return '<span class="badge badge-green">✅ Correcto</span>';
-  if(o==='incorrect') return '<span class="badge badge-red">❌ Incorrecto</span>';
+  if(o==='correct') return '<span class="badge badge-green">Correcto</span>';
+  if(o==='incorrect') return '<span class="badge badge-red">Incorrecto</span>';
   return '<span class="badge badge-gray">⏳ Pendiente</span>';
 }
 function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

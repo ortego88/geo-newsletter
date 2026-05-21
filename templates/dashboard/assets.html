@@ -36,7 +36,8 @@
           <a href="/dashboard/assets?asset={{ asset.symbol }}" title="{{ asset.name }}"
             class="px-4 py-2 rounded-lg text-sm font-medium transition
               {% if asset.symbol == selected_asset %}bg-emerald-500/20 border border-emerald-500/50 text-emerald-400
-              {% else %}bg-slate-800 border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white{% endif %}">
+              {% else %}bg-slate-800 border border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white{% endif %}"
+            data-dl-action="click" data-dl-format="button" data-dl-component="assets" data-dl-element="{{ asset.symbol }}">
             {{ asset.symbol }}
           </a>
         {% endfor %}

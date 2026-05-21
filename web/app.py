@@ -439,6 +439,7 @@ def create_app():
     def inject_globals():
         from flask_login import current_user
         from web.i18n import get_translations
+        from web.datalayer import get_datalayer_pageview
 
         # Detectar idioma: usuario autenticado > cookie > default
         if hasattr(current_user, 'language') and current_user.is_authenticated:
@@ -446,10 +447,35 @@ def create_app():
         else:
             lang = request.cookies.get("geo_lang", "es")
 
+        # Build dataLayer pageview
+        dl_pageview = get_datalayer_pageview(
+            request.endpoint,
+            view_args=request.view_args,
+            request_args=request.args,
+        )
+        if dl_pageview:
+            dl_pageview["language"] = lang
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                dl_pageview["userID"] = str(current_user.id)
+                dl_pageview["userStatus"] = "loggedIn"
+                sub = current_user.get_subscription() if hasattr(current_user, 'get_subscription') else None
+                if sub and sub.get("status") in ("active", "trial", "cancelled_pending"):
+                    dl_pageview["userPlan"] = sub["plan"]
+                    dl_pageview["userType"] = "client"
+                else:
+                    dl_pageview["userPlan"] = ""
+                    dl_pageview["userType"] = "prospect"
+            else:
+                dl_pageview["userID"] = ""
+                dl_pageview["userStatus"] = "loggedOut"
+                dl_pageview["userPlan"] = ""
+                dl_pageview["userType"] = "prospect"
+
         return dict(
             cookiebot_id=os.environ.get("COOKIEBOT_ID", ""),
             t=get_translations(lang),
             lang=lang,
+            dl_pageview=dl_pageview,
         )
 
     return app

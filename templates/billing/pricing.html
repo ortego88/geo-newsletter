@@ -20,11 +20,11 @@
         <!-- Monthly / Annual toggle -->
         <div class="inline-flex items-center gap-2 mt-6 bg-slate-800 border border-slate-700 rounded-full p-1">
           <button id="btn-monthly" onclick="setPricingMode('monthly')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white" data-i18n="pricing.monthly_btn">
+            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white" data-i18n="pricing.monthly_btn" data-dl-action="click" data-dl-format="tab" data-dl-component="productSelector" data-dl-element="monthly">
             Mensual
           </button>
           <button id="btn-annual" onclick="setPricingMode('annual')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white">
+            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white" data-dl-action="click" data-dl-format="tab" data-dl-component="productSelector" data-dl-element="annually">
             <span data-i18n="pricing.annual_btn">Anual</span> <span class="ml-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full" data-i18n="pricing.save_badge">ahorra 2 meses</span>
           </button>
         </div>
@@ -80,7 +80,7 @@
             <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_dashboard">Dashboard en tiempo real</span></li>
             <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_api">API key personal</span></li>
           </ul>
-          <a href="/register?plan=basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
+          <a href="/register?plan=basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="basic">
             Empezar prueba gratis
           </a>
         </div>
@@ -125,7 +125,7 @@
             <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_dashboard">Dashboard en tiempo real</span></li>
             <li class="flex gap-2 text-slate-500"><span>✗</span> <span data-i18n="plan.no_api">API key personal</span></li>
           </ul>
-          <a href="/register?plan=premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
+          <a href="/register?plan=premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="premium">
             Empezar prueba gratis
           </a>
         </div>
@@ -167,7 +167,7 @@
             <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.support">Soporte prioritario Telegram</span></li>
             <li class="flex gap-2"><span class="text-emerald-400 font-bold">✓</span> <span data-i18n="plan.pro.pdf">Informes PDF semanales</span></li>
           </ul>
-          <a href="/register?plan=pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
+          <a href="/register?plan=pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="professional">
             Empezar prueba gratis
           </a>
         </div>

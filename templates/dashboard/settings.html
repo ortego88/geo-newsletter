@@ -74,7 +74,8 @@
           <!-- Search box -->
           <div class="mb-4">
             <input type="text" id="asset-search" placeholder="{{ t.search_asset_placeholder }}"
-              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+              data-dl-action="click" data-dl-format="textBox" data-dl-component="settings" data-dl-element="searchAsset">
           </div>
           {% if plan_config and plan_config.max_assets != -1 %}
           <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
@@ -91,11 +92,13 @@
           {% if plan_config and plan_config.max_assets == -1 %}
           <div class="flex gap-3 mb-4">
             <button type="button" onclick="selectAllAssets()"
-              class="text-sm text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition" data-i18n="settings.select_all">
+              class="text-sm text-emerald-400 hover:text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition" data-i18n="settings.select_all"
+              data-dl-action="click" data-dl-format="button" data-dl-component="settings" data-dl-element="selectAll">
               ✓ Seleccionar todos
             </button>
             <button type="button" onclick="deselectAllAssets()"
-              class="text-sm text-slate-400 hover:text-white border border-slate-600 px-3 py-1.5 rounded-lg transition" data-i18n="settings.deselect_all">
+              class="text-sm text-slate-400 hover:text-white border border-slate-600 px-3 py-1.5 rounded-lg transition" data-i18n="settings.deselect_all"
+              data-dl-action="click" data-dl-format="button" data-dl-component="settings" data-dl-element="deselectAll">
               ✗ Quitar todos
             </button>
           </div>
@@ -110,7 +113,8 @@
                 <input type="checkbox" name="assets" value="{{ asset.symbol }}"
                   {% if is_selected %}checked{% endif %}
                   {% if is_locked_for_changes %}disabled data-originally-disabled="true"{% endif %}
-                  class="asset-checkbox w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500">
+                  class="asset-checkbox w-4 h-4 rounded border-slate-600 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                  data-dl-action="click" data-dl-format="checkbox" data-dl-component="settings" data-dl-element="{{ asset.symbol }}">
                 <div>
                   <p class="text-sm font-medium text-white">{{ asset.name }}</p>
                   <p class="text-xs text-slate-500">{{ asset.symbol }}</p>
@@ -146,7 +150,8 @@
                   {% if current_user.language == lang_code %}checked{% endif %}
                   {% if not is_available %}disabled{% endif %}
                   class="text-emerald-500 focus:ring-emerald-500"
-                  onchange="updateLangVisual(this)">
+                  onchange="updateLangVisual(this)"
+                  data-dl-action="click" data-dl-format="radioButton" data-dl-component="settings" data-dl-element="language{{ lang_code|capitalize }}">
                 <span class="text-sm {% if not is_available %}text-slate-500{% else %}text-white{% endif %}">{{ lang_name }}</span>
               </label>
             {% endfor %}
@@ -163,7 +168,8 @@
           <input type="text" name="telegram_chat_id"
             value="{{ current_user.telegram_chat_id or '' }}"
             placeholder="{{ t.telegram_placeholder }}"
-            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500 transition max-w-xs">
+            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-500 transition max-w-xs"
+            data-dl-action="click" data-dl-format="textBox" data-dl-component="settings" data-dl-element="telegramChatId">
         </div>
 
         <!-- Subscription management -->
@@ -182,12 +188,13 @@
               </p>
             </div>
             <div class="flex flex-col gap-2">
-              <a href="/dashboard/subscription" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="settings.change_plan">
+              <a href="/dashboard/subscription" class="inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition" data-i18n="settings.change_plan" data-dl-action="click" data-dl-format="button" data-dl-component="settings" data-dl-element="changePlan">
                 {{ t.change_plan_btn }}
               </a>
               {% if sub and sub.status in ('active', 'trial') and not (sub.status == 'trial' and trial_expired) %}
                 <button type="button" onclick="openCancelModal()"
-                  class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition" data-i18n="settings.cancel_subscription">
+                  class="border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm font-medium px-5 py-2.5 rounded-xl transition" data-i18n="settings.cancel_subscription"
+                  data-dl-action="click" data-dl-format="button" data-dl-component="settings" data-dl-element="cancelSubscription">
                   {{ t.cancel_subscription_btn }}
                 </button>
               {% endif %}
@@ -196,7 +203,8 @@
         </div>
 
         <button type="submit" id="save-btn"
-          class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition" data-i18n="settings.save_btn">
+          class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition" data-i18n="settings.save_btn"
+          data-dl-action="click" data-dl-format="button" data-dl-component="settings" data-dl-element="saveSettings">
           {{ t.save_settings }}
         </button>
 
@@ -232,11 +240,13 @@
     </div>
     <div class="flex flex-col sm:flex-row gap-3">
       <button onclick="closeCancelModal()"
-        class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-3 rounded-xl transition">
+        class="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-3 rounded-xl transition"
+        data-dl-action="click" data-dl-format="button" data-dl-component="modal" data-dl-element="keepSubscription">
         {{ t.cancel_modal_keep_btn }}
       </button>
       <button id="btn-confirm-cancel" onclick="confirmCancel()" disabled
-        class="flex-1 border border-red-500/30 text-red-400 hover:bg-red-500/10 font-medium px-5 py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed">
+        class="flex-1 border border-red-500/30 text-red-400 hover:bg-red-500/10 font-medium px-5 py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+        data-dl-action="click" data-dl-format="button" data-dl-component="modal" data-dl-element="confirmCancel">
         {{ t.cancel_modal_confirm_btn }}
       </button>
     </div>

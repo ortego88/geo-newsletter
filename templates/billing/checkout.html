@@ -80,9 +80,9 @@
         {% endif %}
 
         <div class="mt-6 pt-4 border-t border-slate-700 space-y-2 text-xs text-slate-500">
-          <p>✅ Cancela en cualquier momento</p>
-          <p id="renewal-text">✅ Renovación automática mensual</p>
-          <p>✅ Soporte incluido</p>
+          <p>Cancela en cualquier momento</p>
+          <p id="renewal-text">Renovación automática mensual</p>
+          <p>Soporte incluido</p>
         </div>
       </div>
 
@@ -108,7 +108,7 @@
         {% endif %}
         {% if has_payment_method %}
           <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-5 text-slate-300 text-sm">
-            <p class="font-semibold text-emerald-400">✅ Ya tienes un método de pago guardado.</p>
+            <p class="font-semibold text-emerald-400">Ya tienes un método de pago guardado.</p>
             <p class="mt-1">Puedes dejar los datos en blanco y se usará la tarjeta guardada para activar o renovar tu suscripción.</p>
           </div>
         {% endif %}
@@ -214,7 +214,7 @@
         if (priceDisplay) priceDisplay.textContent = PRICE_YEARLY + '€/año';
         if (cycleLabel) cycleLabel.textContent = 'Facturación anual';
         if (totalPrice) totalPrice.textContent = PRICE_YEARLY + '€';
-        if (renewalText) renewalText.textContent = '✅ Renovación automática anual';
+        if (renewalText) renewalText.textContent = 'Renovación automática anual';
         if (submitBtnText) submitBtnText.textContent = 'Confirmar pago — ' + PRICE_YEARLY + '€';
       } else {
         if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
@@ -222,7 +222,7 @@
         if (priceDisplay) priceDisplay.textContent = PRICE_MONTHLY + '€/mes';
         if (cycleLabel) cycleLabel.textContent = 'Facturación mensual';
         if (totalPrice) totalPrice.textContent = PRICE_MONTHLY + '€';
-        if (renewalText) renewalText.textContent = '✅ Renovación automática mensual';
+        if (renewalText) renewalText.textContent = 'Renovación automática mensual';
         if (submitBtnText) submitBtnText.textContent = 'Confirmar pago — ' + PRICE_MONTHLY + '€';
       }
     }

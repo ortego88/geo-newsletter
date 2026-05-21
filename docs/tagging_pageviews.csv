@@ -1,0 +1,16 @@
+Variable;Landing;Pricing;Historial;Blog (listado);Blog (post);Privacy;Terms;Login;Register;Checkout;Checkout Success;Dashboard Home;Dashboard Assets;Dashboard Settings;Dashboard Subscription
+eventName;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview;pageview
+pageName;home;pricing;history;blog;blog/{path};privacy;terms;login;register/step01/personalDetails;register/step02/paymentDetails;register/success;dashboard;assets;settings;subscription
+sectionName;home;pricing;history;blog;blog;privacy;terms;login;register;register;register;Dashboard;assets;settings;subscription
+processType;;;;;;;;login;register;register;register;;;;
+processStep;;;;;;;;;step01;step02;success;;;;
+processDetail;;;;;;;;;personalDetails;paymentDetails;;;;;
+interactionType;view;view;view;view;view;view;view;view;view;view;view;view;view;view;view
+serviceType;home;productInformation;productInformation;news;news;serviceInformation;serviceInformation;userLogin;userRegister;userRegister;userRegister;productInformation;productInformation;userSettings;userSettings
+productName;;;;;;;;;;;;;{crypto name};;
+language;{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en};{es | en}
+userPlan;{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional};{basic | premium | professional}
+userID;{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID};{userID}
+userStatus;{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut};{loggedIn | loggedOut}
+userType;{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect};{client | prospect}
+webArea;public;public;public;public;public;public;public;public;public;public;public;private;private;private;private

@@ -50,7 +50,7 @@
             </span>
           {% elif sub.status == 'active' %}
             <span class="hidden sm:inline bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
-              ✅ Plan {{ plans[sub.plan].name }}
+              Plan {{ plans[sub.plan].name }}
             </span>
           {% endif %}
         {% endif %}
@@ -83,7 +83,7 @@
               {{ t.add_payment_msg }}
             </p>
           </div>
-          <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0 w-full sm:w-auto text-center">
+          <a href="/checkout/trial?plan={{ sub.plan }}" class="bg-amber-500 hover:bg-amber-400 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shrink-0 w-full sm:w-auto text-center" data-dl-action="click" data-dl-format="button" data-dl-component="message" data-dl-element="activatePlan">
             {{ t.activate_plan_btn }}
           </a>
         </div>
@@ -104,9 +104,9 @@
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.correct_incorrect">Correctas / Incorrectas</p>
           <p class="font-bold text-lg">
-            <span class="text-up-green cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_correct }}" onclick="filterByOutcome('correct')">{{ accuracy_stats.correct }}</span>
+            <span class="text-up-green cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_correct }}" onclick="filterByOutcome('correct')" data-dl-action="click" data-dl-format="button" data-dl-component="predictions" data-dl-element="corrects">{{ accuracy_stats.correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-down-red cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_incorrect }}" onclick="filterByOutcome('incorrect')">{{ accuracy_stats.incorrect }}</span>
+            <span class="text-down-red cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_incorrect }}" onclick="filterByOutcome('incorrect')" data-dl-action="click" data-dl-format="button" data-dl-component="predictions" data-dl-element="incorrects">{{ accuracy_stats.incorrect }}</span>
           </p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
@@ -117,7 +117,7 @@
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
-          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_pending }}" onclick="filterByOutcome('pending')">{{ accuracy_stats.pending }}</p>
+          <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_pending }}" onclick="filterByOutcome('pending')" data-dl-action="click" data-dl-format="button" data-dl-component="predictions" data-dl-element="pendings">{{ accuracy_stats.pending }}</p>
         </div>
       </div>
 
@@ -125,19 +125,19 @@
       <div class="bg-slate-800 border border-slate-700 rounded-xl px-4 md:px-5 py-4 mb-4">
         <form method="GET" action="/dashboard" class="filters-form flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
           <input type="hidden" name="outcome" id="outcome-filter" value="{{ outcome_filter }}">
-          <select name="time_filter" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+          <select name="time_filter" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]" data-dl-action="select" data-dl-format="dropdown" data-dl-component="filters" data-dl-element="timeFilter">
             <option value="">{{ t.all_history }}</option>
             <option value="24h" {% if time_filter == '24h' %}selected{% endif %}>{{ t.last_24h }}</option>
             <option value="7d" {% if time_filter == '7d' %}selected{% endif %}>{{ t.last_7d }}</option>
             <option value="30d" {% if time_filter == '30d' %}selected{% endif %}>{{ t.last_30d }}</option>
           </select>
-          <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]">
+          <select name="asset" id="asset-select" onchange="this.form.submit()" class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white w-full sm:w-auto min-h-[44px]" data-dl-action="select" data-dl-format="dropdown" data-dl-component="filters" data-dl-element="assets">
             <option value="">{{ t.all_assets }}</option>
             {% for a in available_assets %}
               <option value="{{ a.symbol }}" title="{{ a.name }}" {% if asset_filter == a.symbol %}selected{% endif %}>{{ a.symbol }} — {{ a.name }}</option>
             {% endfor %}
           </select>
-          <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center">
+          <a href="/dashboard" class="text-slate-400 hover:text-white text-sm px-3 py-2.5 rounded-lg border border-slate-600 transition text-center sm:w-auto min-h-[44px] flex items-center justify-center" data-dl-action="click" data-dl-format="button" data-dl-component="filters" data-dl-element="cleanFilters">
             {{ t.clear_filters }}
           </a>
         </form>
@@ -260,7 +260,7 @@
           <div class="flex flex-wrap items-center justify-center gap-2 px-4 md:px-6 py-4 border-t border-slate-700">
             {% if page > 1 %}
               <a href="?page={{ page - 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
-                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">{{ t.previous }}</a>
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition" data-dl-action="click" data-dl-format="button" data-dl-component="paginator" data-dl-element="previous">{{ t.previous }}</a>
             {% endif %}
 
             {# Mostrar solo: 1, 2, ..., penúltima, última #}
@@ -294,7 +294,7 @@
 
             {% if page < total_pages %}
               <a href="?page={{ page + 1 }}&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort={{ sort_by }}&dir={{ sort_dir }}"
-                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition">{{ t.next }}</a>
+                 class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-white transition" data-dl-action="click" data-dl-format="button" data-dl-component="paginator" data-dl-element="next">{{ t.next }}</a>
             {% endif %}
           </div>
           {% endif %}

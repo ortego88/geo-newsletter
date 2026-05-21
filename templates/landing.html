@@ -29,10 +29,10 @@
         Nuestro sistema de IA monitoriza eventos geopolíticos globales, detecta anomalías de volumen y te envía señales de trading antes de que el mercado reaccione.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary">
+        <a href="#precios" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="hero.cta_primary" data-dl-action="click" data-dl-format="button" data-dl-component="hero" data-dl-element="startFree">
           Empezar gratis — 7 días
         </a>
-        <a href="#simulador" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition" data-i18n="hero.cta_secondary">
+        <a href="#simulador" class="border border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-xl text-lg transition" data-i18n="hero.cta_secondary" data-dl-action="click" data-dl-format="button" data-dl-component="hero" data-dl-element="seePrices">
           Ver simulador →
         </a>
       </div>
@@ -177,7 +177,7 @@
               </select>
             </div>
 
-            <button id="sim-btn" onclick="runSimulation()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="sim.calculate">
+            <button id="sim-btn" onclick="runSimulation()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-lg transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="sim.calculate" data-dl-action="click" data-dl-format="button" data-dl-component="simulator" data-dl-element="calculate">
               Calcular simulación
             </button>
           </div>
@@ -226,11 +226,11 @@
       <div class="flex justify-center mb-10">
         <div class="inline-flex items-center bg-slate-800 border border-slate-700 rounded-full p-1 gap-1">
           <button id="btn-monthly" onclick="setPricing('monthly')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white" data-i18n="pricing.monthly_btn">
+            class="px-5 py-2 rounded-full text-sm font-semibold transition bg-emerald-500 text-white" data-i18n="pricing.monthly_btn" data-dl-action="click" data-dl-format="tab" data-dl-component="productSelector" data-dl-element="monthly">
             Mensual
           </button>
           <button id="btn-annual" onclick="setPricing('annual')"
-            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white">
+            class="px-5 py-2 rounded-full text-sm font-semibold transition text-slate-400 hover:text-white" data-dl-action="click" data-dl-format="tab" data-dl-component="productSelector" data-dl-element="annually">
             <span data-i18n="pricing.annual_btn">Anual</span> <span class="ml-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">-50%</span>
           </button>
         </div>
@@ -267,7 +267,7 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f5">Alertas hasta 5/día</span></li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f6">Historial 1 día</span></li>
           </ul>
-          <a href="/register?plan=basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
+          <a href="/register?plan=basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="basic">
             Empezar prueba
           </a>
         </div>
@@ -305,7 +305,7 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f6">Historial 7 días</span></li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f7">Soporte por email</span></li>
           </ul>
-          <a href="/register?plan=premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
+          <a href="/register?plan=premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="premium">
             Empezar prueba
           </a>
         </div>
@@ -343,7 +343,7 @@
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f9">Soporte prioritario Telegram</span></li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f10">Informes PDF semanales</span></li>
           </ul>
-          <a href="/register?plan=pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial">
+          <a href="/register?plan=pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="professional">
             Empezar prueba
           </a>
         </div>
@@ -449,7 +449,7 @@
     <div class="max-w-2xl mx-auto text-center">
       <h2 class="text-3xl font-bold text-white mb-4" data-i18n="cta.title">Opera con ventaja geopolítica e inteligencia artificial</h2>
       <p class="text-slate-400 mb-8" data-i18n="cta.subtitle">7 días gratis, sin compromiso. Cancela cuando quieras. Únete a los traders que ya usan IA para anticiparse al mercado.</p>
-      <a href="#precios" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="cta.button">
+      <a href="#precios" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-10 py-4 rounded-xl text-lg transition shadow-lg shadow-emerald-500/20" data-i18n="cta.button" data-dl-action="click" data-dl-format="button" data-dl-component="hero" data-dl-element="startFree">
         Crear cuenta gratis →
       </a>
     </div>
@@ -491,7 +491,7 @@
             </label>
           </div>
           <button type="submit" id="nl-submit-btn"
-            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="newsletter.submit">
+            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="newsletter.submit" data-dl-action="click" data-dl-format="button" data-dl-component="newsletter" data-dl-element="subscribeFree">
             Suscribirme gratis
           </button>
         </form>
@@ -981,7 +981,7 @@
   </script>
 
   <!-- Botón sticky al simulador (siempre visible) -->
-  <a href="#simulador" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40" data-i18n="sticky.cta">
+  <a href="#simulador" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-full shadow-2xl shadow-emerald-500/30 transition-all z-40" data-i18n="sticky.cta" data-dl-action="click" data-dl-format="button" data-dl-component="stickySimulator" data-dl-element="simulator">
     ¿Cuánto ganarías?
   </a>
 
