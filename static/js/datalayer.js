@@ -101,16 +101,26 @@
 
   function pushInteraction(el) {
     window.dataLayer = window.dataLayer || [];
+    var eventName = el.getAttribute('data-dl-event') || 'click';
     var payload = {
-      'event': el.getAttribute('data-dl-event') || 'click',
-      'eventName': el.getAttribute('data-dl-event') || 'click',
+      'event': eventName,
+      'eventName': eventName,
       'action': el.getAttribute('data-dl-action') || 'click',
       'format': el.getAttribute('data-dl-format') || '',
       'component': el.getAttribute('data-dl-component') || '',
       'element': el.getAttribute('data-dl-element') || ''
     };
     window.dataLayer.push(payload);
-    logToPanel(payload.eventName, payload);
+    // Send directly to GA4 if gtag is available (direct mode without GTM)
+    if (typeof gtag === 'function') {
+      gtag('event', eventName, {
+        'action': payload.action,
+        'format': payload.format,
+        'component': payload.component,
+        'element': payload.element
+      });
+    }
+    logToPanel(eventName, payload);
   }
 
   // Log the initial pageview push
