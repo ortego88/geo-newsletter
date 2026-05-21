@@ -1,5 +1,5 @@
 <!-- Cookie Consent Banner -->
-<div id="cookie-banner" class="hidden fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
+<div id="cookie-banner" style="display:none" class="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
   <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4">
     <div class="flex-1 text-sm text-slate-400">
       <span id="cookie-title" class="text-white font-semibold block mb-1">Usamos cookies</span>
@@ -51,7 +51,7 @@
     saveConsent(granted);
     applyConsent(granted);
     var banner = document.getElementById('cookie-banner');
-    if (banner) banner.classList.add('hidden');
+    if (banner) banner.style.display = 'none';
   };
 
   // On load: apply stored consent or show banner
@@ -61,7 +61,7 @@
   } else {
     document.addEventListener('DOMContentLoaded', function() {
       var banner = document.getElementById('cookie-banner');
-      if (banner) banner.classList.remove('hidden');
+      if (banner) banner.style.display = '';
     });
   }
 })();
