@@ -487,7 +487,6 @@ def create_app():
                 dl_pageview["userType"] = "prospect"
 
         return dict(
-            cookiebot_id=os.environ.get("COOKIEBOT_ID", ""),
             t=get_translations(lang),
             lang=lang,
             dl_pageview=dl_pageview,
