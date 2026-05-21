@@ -1,31 +1,4 @@
-{% if config.GTM_ID %}
-<!-- 1. Consent default — must be first in dataLayer -->
-<script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('consent', 'default', {
-  'analytics_storage': '{{ "granted" if request.cookies.get("trianio_consent") == "granted" else "denied" }}',
-  'ad_storage': 'denied',
-  'ad_user_data': 'denied',
-  'ad_personalization': 'denied',
-  'wait_for_update': 2000
-});
-</script>
-<!-- 2. GTM snippet -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','{{ config.GTM_ID }}');</script>
-<!-- 3. dataLayer pageview — after consent and GTM init -->
-{% if dl_pageview %}
-<script>
-window.dataLayer.push({{ dl_pageview | tojson }});
-</script>
-{% endif %}
-<script src="/static/js/datalayer.js" defer></script>
-{% endif %}
-<!-- Trianio Brand: Favicon + Fonts + Tailwind color override -->
+<!-- Trianio Brand: Favicon + Fonts + Tailwind -->
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -52,6 +25,33 @@ tailwind.config = {
   }
 }
 </script>
+{% if config.GTM_ID %}
+<!-- 1. Consent default — must be first in dataLayer -->
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', {
+  'analytics_storage': '{{ "granted" if request.cookies.get("trianio_consent") == "granted" else "denied" }}',
+  'ad_storage': 'denied',
+  'ad_user_data': 'denied',
+  'ad_personalization': 'denied',
+  'wait_for_update': 2000
+});
+</script>
+<!-- 2. GTM snippet -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','{{ config.GTM_ID }}');</script>
+<!-- 3. dataLayer pageview -->
+{% if dl_pageview %}
+<script>
+window.dataLayer.push({{ dl_pageview | tojson }});
+</script>
+{% endif %}
+<script src="/static/js/datalayer.js" defer></script>
+{% endif %}
 <style>
   body { font-family: 'DM Sans', sans-serif; }
   .text-up-green { color: #34d399; }
