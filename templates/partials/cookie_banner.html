@@ -54,15 +54,14 @@
     if (banner) banner.style.display = 'none';
   };
 
-  // On load: apply stored consent or show banner
+  // Check consent synchronously — no DOMContentLoaded needed
+  // The script runs immediately after the banner element, so the DOM node exists
   var stored = getConsent();
   if (stored) {
     applyConsent(stored === 'granted');
   } else {
-    document.addEventListener('DOMContentLoaded', function() {
-      var banner = document.getElementById('cookie-banner');
-      if (banner) banner.style.display = '';
-    });
+    var banner = document.getElementById('cookie-banner');
+    if (banner) banner.style.display = '';
   }
 })();
 </script>
