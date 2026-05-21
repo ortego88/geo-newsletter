@@ -2,16 +2,32 @@
   'use strict';
 
   var debugPanel = null;
-  var debugLog = [];
+  var STORAGE_KEY = 'dl_debug_log';
+
+  function getStoredLogs() {
+    try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY)) || []; }
+    catch(e) { return []; }
+  }
+
+  function storeLogs(logs) {
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
+    catch(e) {}
+  }
+
+  function clearLogs() {
+    sessionStorage.removeItem(STORAGE_KEY);
+    var list = document.getElementById('dl-debug-list');
+    if (list) list.innerHTML = '';
+  }
 
   function initDebugPanel() {
     if (debugPanel || !window.__DL_DEBUG) return;
     debugPanel = document.createElement('div');
     debugPanel.id = 'dl-debug';
-    debugPanel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:35vh;overflow-y:auto;background:#0f172a;border-top:2px solid #E8B84B;font-family:monospace;font-size:11px;z-index:99999;padding:8px;color:#e2e8f0;';
+    debugPanel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow-y:auto;background:#0f172a;border-top:2px solid #E8B84B;font-family:monospace;font-size:11px;z-index:99999;padding:8px 12px;color:#e2e8f0;';
     var header = document.createElement('div');
-    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;position:sticky;top:0;background:#0f172a;padding:2px 0;';
-    header.innerHTML = '<span style="color:#E8B84B;font-weight:bold;">dataLayer Debug</span><button id="dl-debug-close" style="color:#94a3b8;background:none;border:none;cursor:pointer;font-size:14px;">✕</button>';
+    header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;position:sticky;top:0;background:#0f172a;padding:4px 0;z-index:1;';
+    header.innerHTML = '<span style="color:#E8B84B;font-weight:bold;">dataLayer Debug</span><div><button id="dl-debug-clear" style="color:#f87171;background:none;border:1px solid #f87171;border-radius:4px;cursor:pointer;font-size:10px;padding:2px 8px;margin-right:8px;">Borrar</button><button id="dl-debug-close" style="color:#94a3b8;background:none;border:none;cursor:pointer;font-size:16px;">✕</button></div>';
     debugPanel.appendChild(header);
     var list = document.createElement('div');
     list.id = 'dl-debug-list';
@@ -20,23 +36,44 @@
     document.getElementById('dl-debug-close').onclick = function() {
       debugPanel.style.display = debugPanel.style.display === 'none' ? '' : 'none';
     };
+    document.getElementById('dl-debug-clear').onclick = clearLogs;
+
+    // Render stored logs
+    var stored = getStoredLogs();
+    for (var i = 0; i < stored.length; i++) {
+      renderEntry(stored[i].type, stored[i].data, stored[i].time, stored[i].page);
+    }
+  }
+
+  function renderEntry(type, data, time, page) {
+    var list = document.getElementById('dl-debug-list');
+    if (!list) return;
+    var color = type === 'pageview' ? '#34d399' : '#60a5fa';
+    var entry = document.createElement('div');
+    entry.style.cssText = 'border-bottom:1px solid #1e293b;padding:6px 0;';
+    var lines = '<div style="margin-bottom:2px;"><span style="color:#64748b;">' + time + '</span> <span style="color:' + color + ';font-weight:bold;">[' + type + ']</span>';
+    if (page) lines += ' <span style="color:#475569;font-size:10px;">' + page + '</span>';
+    lines += '</div>';
+    for (var k in data) {
+      if (data[k]) {
+        lines += '<div style="padding-left:12px;"><span style="color:#94a3b8;">' + k + ':</span> <span style="color:#e2e8f0;">' + data[k] + '</span></div>';
+      }
+    }
+    entry.innerHTML = lines;
+    list.insertBefore(entry, list.firstChild);
   }
 
   function logToPanel(type, data) {
     if (!window.__DL_DEBUG) return;
     initDebugPanel();
-    var list = document.getElementById('dl-debug-list');
-    if (!list) return;
     var time = new Date().toLocaleTimeString();
-    var color = type === 'pageview' ? '#34d399' : '#60a5fa';
-    var entry = document.createElement('div');
-    entry.style.cssText = 'border-bottom:1px solid #1e293b;padding:3px 0;';
-    var parts = [];
-    for (var k in data) {
-      if (data[k]) parts.push('<span style="color:#94a3b8;">' + k + ':</span>' + data[k]);
-    }
-    entry.innerHTML = '<span style="color:#64748b;">' + time + '</span> <span style="color:' + color + ';font-weight:bold;">[' + type + ']</span> ' + parts.join(' · ');
-    list.insertBefore(entry, list.firstChild);
+    var page = location.pathname;
+    renderEntry(type, data, time, page);
+    // Persist
+    var logs = getStoredLogs();
+    logs.unshift({type: type, data: data, time: time, page: page});
+    if (logs.length > 200) logs = logs.slice(0, 200);
+    storeLogs(logs);
   }
 
   function pushInteraction(el) {
