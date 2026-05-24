@@ -477,12 +477,10 @@ class AnalysisPipeline:
                     )
                     primary_asset = best
                 else:
-                    category = event.get("category", "general").lower()
-                    fallback = CATEGORY_FALLBACK.get(category, "BTC")
                     logger.warning(
-                        f"   Activo desconocido '{primary_asset}' → fallback '{fallback}'"
+                        f"   ⏭️ Activo desconocido '{primary_asset}' sin match válido → omitiendo predicción"
                     )
-                    primary_asset = fallback
+                    continue
 
             current_price = self.price_fetcher.get_price(primary_asset)
             if current_price is None:
