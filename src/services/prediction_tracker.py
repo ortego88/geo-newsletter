@@ -25,6 +25,7 @@ logger = logging.getLogger("prediction_tracker")
 # Si se mueve >= 1% en la dirección opuesta → INCORRECT
 # Si no alcanza 1% en ninguna dirección al finalizar las 24h → NEUTRAL
 _THRESHOLD_PCT = 1.0  # 1% — umbral para considerar la predicción acertada/fallida
+_INCORRECT_THRESHOLD_PCT = 2.0  # 2% — umbral más alto para marcar como INCORRECTA (evita ruido)
 
 # Ventana de evaluación en horas
 _EVALUATION_WINDOW_HOURS = 24
@@ -136,7 +137,7 @@ class PredictionTracker:
         }
         return mapping.get(timeframe, 480)
 
-    def _has_recent_prediction(self, asset: str, hours: int = 2) -> bool:
+    def _has_recent_prediction(self, asset: str, hours: int = 1) -> bool:
         """Comprueba si ya existe una predicción pendiente reciente para este activo."""
         cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
         with self._get_conn() as conn:
@@ -160,8 +161,8 @@ class PredictionTracker:
         category = event.get("category", "")
         asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
 
-        # Cooldown de 2h entre predicciones del mismo activo para evitar señales contradictorias
-        if self._has_recent_prediction(asset, hours=2):
+        # Cooldown de 1h entre predicciones del mismo activo para evitar señales contradictorias
+        if self._has_recent_prediction(asset, hours=1):
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
             return None
 
@@ -271,20 +272,31 @@ class PredictionTracker:
         if direction in ("up", "bullish", "positive", "alza"):
             if actual_change_pct >= _THRESHOLD_PCT:
                 outcome = "correct"
-            elif actual_change_pct <= -_THRESHOLD_PCT:
+            elif actual_change_pct <= -_INCORRECT_THRESHOLD_PCT:
                 outcome = "incorrect"
             elif window_expired:
-                outcome = "neutral"
+                # Window expired: check final direction
+                if actual_change_pct > 0:
+                    outcome = "correct"  # moved in predicted direction even if < 1%
+                elif actual_change_pct <= -_THRESHOLD_PCT:
+                    outcome = "incorrect"
+                else:
+                    outcome = "neutral"
             else:
                 return None  # Still within window, threshold not reached — check later
 
         elif direction in ("down", "bearish", "negative", "baja"):
             if actual_change_pct <= -_THRESHOLD_PCT:
                 outcome = "correct"
-            elif actual_change_pct >= _THRESHOLD_PCT:
+            elif actual_change_pct >= _INCORRECT_THRESHOLD_PCT:
                 outcome = "incorrect"
             elif window_expired:
-                outcome = "neutral"
+                if actual_change_pct < 0:
+                    outcome = "correct"
+                elif actual_change_pct >= _THRESHOLD_PCT:
+                    outcome = "incorrect"
+                else:
+                    outcome = "neutral"
             else:
                 return None
 

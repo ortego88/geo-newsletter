@@ -439,15 +439,14 @@ class AnalysisPipeline:
         logger.info(f"   ✅ {len(analyzed)} eventos analizados")
 
         # Paso 5: Guardar predicciones con precios reales
-        # Solo guardar predicciones que pasen el umbral de alerta (score >= 55, confidence >= 60)
-        # No tiene sentido almacenar predicciones de baja convicción que nunca se alertarán.
-        logger.info("💾 PASO 5: Guardando predicciones (solo alta convicción)...")
+        # Guardar predicciones con umbral moderado para más cobertura
+        logger.info("💾 PASO 5: Guardando predicciones...")
         for event in analyzed:
             analysis = event.get("analysis", {})
 
             event_score = event.get("score", 0)
             event_confidence = analysis.get("confidence", 0)
-            if event_score < 55 or event_confidence < 60:
+            if event_score < 45 or event_confidence < 55:
                 logger.info(
                     f"   ⏭️ No guardada (score={event_score}, conf={event_confidence}): "
                     f"{event.get('title', '')[:55]}"

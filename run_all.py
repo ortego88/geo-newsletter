@@ -180,16 +180,16 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events (score >= 55, confidence >= 60)
+    # Step 1: filter alertable events (score >= 45, confidence >= 55)
     resolved = [
         e for e in events
-        if e.get("score", 0) >= 55
+        if e.get("score", 0) >= 45
         and e.get("analysis")
-        and e.get("analysis", {}).get("confidence", 0) >= 60
+        and e.get("analysis", {}).get("confidence", 0) >= 55
     ]
 
     if not resolved:
-        logger.info("Sin eventos con score >= 55 y confidence >= 60 para alertar")
+        logger.info("Sin eventos con score >= 45 y confidence >= 55 para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
