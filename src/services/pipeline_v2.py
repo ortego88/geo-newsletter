@@ -495,6 +495,37 @@ class AnalysisPipeline:
                 )
                 continue
 
+            # Momentum check: si el precio ya se movió >1.5% en la dirección
+            # predicha en las últimas 4h, la noticia probablemente describe un
+            # movimiento pasado ("sell the news") → reducir confidence o descartar
+            direction = analysis.get("direction", "neutral")
+            recent_change = self.price_fetcher.get_recent_change(primary_asset, hours=4)
+            if recent_change is not None and direction in ("up", "down"):
+                already_moved_same_dir = (
+                    (direction in ("up", "bullish", "positive", "alza") and recent_change >= 1.5)
+                    or (direction in ("down", "bearish", "negative", "baja") and recent_change <= -1.5)
+                )
+                if already_moved_same_dir:
+                    original_conf = analysis.get("confidence", 0)
+                    # Penalizar confidence proporcionalmente al movimiento
+                    penalty = min(30, int(abs(recent_change) * 8))
+                    new_conf = original_conf - penalty
+                    if new_conf < 55:
+                        logger.info(
+                            f"   ⏭️ Momentum filter: {primary_asset} ya se movió {recent_change:+.1f}% "
+                            f"en 4h (dirección: {direction}). Conf {original_conf}→{new_conf} < 55 → descartada"
+                        )
+                        continue
+                    analysis["confidence"] = new_conf
+                    analysis["reasoning"] = (
+                        f"[Precio ya movido {recent_change:+.1f}% en 4h, conf reducida] "
+                        + analysis.get("reasoning", "")
+                    )
+                    logger.info(
+                        f"   ⚠️ Momentum: {primary_asset} ya {recent_change:+.1f}% en 4h → "
+                        f"conf reducida {original_conf}→{new_conf}"
+                    )
+
             prediction_id = self.tracker.save_prediction(event, current_price)
             if prediction_id:
                 event["prediction_id"] = prediction_id

@@ -61,6 +61,13 @@ NOTICIAS QUE NO MUEVEN PRECIOS (confidence < 40, no predecir):
 - Noticias sobre desarrollo "en progreso" sin fecha
 - Métricas on-chain menores sin contexto de acción
 - Noticias ya conocidas por el mercado (>24h antiguas)
+- Noticias que DESCRIBEN un movimiento que ya ocurrió ("Bitcoin sube un 5%", "ETH alcanza máximos")
+
+REGLA CRÍTICA — "SELL THE NEWS":
+- Si la noticia describe un movimiento PASADO (ej: "BTC sube...", "X alcanza..."), el precio
+  probablemente YA se movió. Predecir la MISMA dirección suele fallar (reversión posterior).
+- Solo predice si la noticia describe un CATALIZADOR FUTURO (regulación pendiente, evento programado).
+- Si la noticia es reactiva (describe lo que ya pasó), usa confidence < 40 o predice REVERSA.
 
 REGLAS DE DIRECCIÓN:
 - Usa "up" o "down" SOLO cuando tengas certeza de la dirección
@@ -109,18 +116,24 @@ ANÁLISIS OBLIGATORIO (responde mentalmente antes del JSON):
    - Hecho confirmado → continúa
    - Opinión/rumor → confidence < 40, NO generar alerta
 
-2. ¿QUÉ CRIPTO específica se ve afectada directamente?
+2. ¿La noticia describe un MOVIMIENTO PASADO o un CATALIZADOR FUTURO?
+   - "BTC sube un 5%" → PASADO (el precio ya se movió) → confidence < 40
+   - "SEC aprueba ETF mañana" → FUTURO (el precio aún no refleja) → continúa
+   - Si es PASADO, el movimiento posterior suele ser REVERSA (sell the news)
+
+3. ¿QUÉ CRIPTO específica se ve afectada directamente?
    - Si no hay cripto específica clara → usar BTC como proxy solo si es macro relevante
 
-3. ¿EL PRECIO SE MOVERÁ >0.5% por esta noticia?
-   - Piensa: ¿un trader con $100K abriría una posición basándose en esta noticia?
-   - Si NO → confidence < 40
-   - Si SÍ → continúa con confidence >= 65
+4. ¿EL PRECIO SE MOVERÁ >0.5% ADICIONAL por esta noticia?
+   - Piensa: ¿un trader con $100K abriría una posición AHORA con esta noticia?
+   - Si el movimiento ya ocurrió → NO → confidence < 40
+   - Si es catalizador nuevo → SÍ → continúa con confidence >= 65
 
-4. ¿EN QUÉ DIRECCIÓN? (up/down)
+5. ¿EN QUÉ DIRECCIÓN? (up/down)
    - ¿Hay precedente histórico claro de la reacción del mercado?
    - ¿La noticia es unívoca o podría interpretarse en ambos sentidos?
    - Si hay ambigüedad → confidence < 50
+   - Si el precio YA se movió en esa dirección → probablemente REVERSIÓN
 
 5. ¿CUÁNDO se reflejará el movimiento en el precio?
    - Hack/exploit: 1-2h (pánico inmediato)
@@ -437,8 +450,9 @@ def analyze_event_with_claude(event: dict) -> Optional[dict]:
     market_context_section = ""
     try:
         from src.services.real_price_fetcher import RealPriceFetcher
+        fetcher = RealPriceFetcher()
         asset = event.get("suggested_asset", "BTC")
-        ctx = RealPriceFetcher().get_price_context(asset)
+        ctx = fetcher.get_price_context(asset)
 
         if ctx and ctx.get("current", 0) > 0:
             rsi = ctx["rsi_14"]
@@ -447,9 +461,19 @@ def analyze_event_with_claude(event: dict) -> Optional[dict]:
                 else ("sobrevendido <30" if rsi < 30 else "neutral")
             )
 
+            # Cambio reciente (últimas 4h) — crucial para detectar "sell the news"
+            recent_4h = fetcher.get_recent_change(asset, hours=4)
+            recent_line = ""
+            if recent_4h is not None:
+                recent_line = (
+                    f"- Cambio últimas 4h: {recent_4h:+.2f}% "
+                    f"{'⚠️ YA SE MOVIÓ — posible sell-the-news si predices misma dirección' if abs(recent_4h) >= 1.5 else ''}\n"
+                )
+
             market_context_section = (
                 f"CONTEXTO TÉCNICO DE MERCADO PARA {asset}:\n"
                 f"- Precio actual: {ctx['current']}\n"
+                f"{recent_line}"
                 f"- Cambio 7 días: {ctx['change_7d_pct']:+.1f}%\n"
                 f"- Cambio 30 días: {ctx['change_30d_pct']:+.1f}%\n"
                 f"- RSI(14): {rsi} — {rsi_label}\n"

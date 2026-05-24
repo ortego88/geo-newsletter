@@ -359,6 +359,40 @@ class RealPriceFetcher:
             logger.warning(f"get_price_context error para {asset}: {e}")
             return default
 
+    def get_recent_change(self, asset: str, hours: int = 4) -> float | None:
+        """
+        Returns the price change % over the last N hours using Binance klines.
+        Positive = price went up, Negative = price went down.
+        Returns None if data unavailable.
+        """
+        asset_upper = asset.upper()
+        if asset_upper not in CRYPTO_IDS:
+            return None
+
+        pair = f"{asset_upper}USDT"
+        try:
+            import requests
+            # 1h candles, fetch enough for the requested window
+            resp = requests.get(
+                "https://api.binance.com/api/v3/klines",
+                params={"symbol": pair, "interval": "1h", "limit": hours + 1},
+                timeout=5,
+            )
+            if resp.status_code != 200:
+                return None
+            klines = resp.json()
+            if len(klines) < 2:
+                return None
+            # First candle open vs last candle close
+            open_price = float(klines[0][1])
+            close_price = float(klines[-1][4])
+            if open_price <= 0:
+                return None
+            return round((close_price - open_price) / open_price * 100, 2)
+        except Exception as e:
+            logger.debug(f"get_recent_change error for {asset}: {e}")
+            return None
+
     @staticmethod
     def _calc_rsi(closes: list, period: int = 14) -> float:
         if len(closes) < period + 1:

@@ -50,6 +50,13 @@ NEWS THAT DOES NOT MOVE PRICES (confidence < 40):
 - Development progress without dates
 - Minor on-chain metrics
 - News already >24h old and priced in
+- News describing a PAST movement ("Bitcoin rises 5%", "ETH hits new high")
+
+CRITICAL — "SELL THE NEWS" RULE:
+- If the news describes a movement that ALREADY HAPPENED → the price already moved
+- Predicting the SAME direction will usually FAIL (reversal follows)
+- Only predict if the news describes a FUTURE catalyst (pending regulation, scheduled event)
+- If the market context shows the price already moved >1.5% in that direction → confidence < 40
 
 CONFIDENCE CALIBRATION — STRICT:
 - 80-95: Confirmed event with proven historical price impact
