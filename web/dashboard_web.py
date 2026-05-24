@@ -455,6 +455,15 @@ def settings():
     next_step = request.args.get("next_step", "")
     is_new_user = next_step == "select_assets"
 
+    # Generate Telegram linking URL
+    from web.telegram_bot import _generate_link_token
+    bot_username = os.getenv("TELEGRAM_BOT_USERNAME", "")
+    link_token = _generate_link_token(current_user.id)
+    telegram_link_url = (
+        f"https://t.me/{bot_username}?start={current_user.id}_{link_token}"
+        if bot_username else ""
+    )
+
     return render_template(
         "dashboard/settings.html",
         sub=sub,
@@ -466,6 +475,7 @@ def settings():
         is_new_user=is_new_user,
         next_step=next_step,
         trial_expired=False,
+        telegram_link_url=telegram_link_url,
     )
 
 

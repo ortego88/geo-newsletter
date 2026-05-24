@@ -69,12 +69,14 @@ def create_app():
     from web.billing import billing_bp
     from web.dashboard_web import dashboard_bp
     from web.blog import blog_bp
+    from web.telegram_bot import telegram_bp
 
     app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(blog_bp)
+    app.register_blueprint(telegram_bp)
 
     from flask import Blueprint
     main_bp = Blueprint("main", __name__)
