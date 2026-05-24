@@ -59,6 +59,12 @@ RSS_SOURCES = [
     {"name": "Cointelegraph", "url": "https://cointelegraph.com/rss"},
     {"name": "Bitcoin Magazine", "url": "https://bitcoinmagazine.com/.rss/full/"},
 
+    # --- Fuentes adicionales (cobertura amplia) ---
+    {"name": "BeInCrypto", "url": "https://beincrypto.com/feed/"},
+    {"name": "CoinGape", "url": "https://coingape.com/feed/"},
+    {"name": "Crypto News", "url": "https://crypto.news/feed/"},
+    {"name": "AMBCrypto", "url": "https://ambcrypto.com/feed/"},
+
     # --- Crypto (español) ---
     {"name": "Cointelegraph ES", "url": "https://es.cointelegraph.com/rss"},
     {"name": "CriptoNoticias", "url": "https://www.criptonoticias.com/feed/"},

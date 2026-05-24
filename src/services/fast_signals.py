@@ -33,7 +33,7 @@ _LOOKBACK_CANDLES = 12  # 12 candles of 5min = 1 hour of history
 
 # Cache to avoid re-alerting the same spike within a cooldown period
 _spike_cache: dict[str, float] = {}  # {asset: last_spike_timestamp}
-_SPIKE_COOLDOWN_SECONDS = 3600  # 1 hour between spikes for same asset
+_SPIKE_COOLDOWN_SECONDS = 1800  # 30 min between spikes for same asset
 
 
 def fetch_binance_volume_spikes() -> list[dict]:

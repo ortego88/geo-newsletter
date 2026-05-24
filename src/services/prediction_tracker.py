@@ -137,7 +137,7 @@ class PredictionTracker:
         }
         return mapping.get(timeframe, 480)
 
-    def _has_recent_prediction(self, asset: str, hours: int = 1) -> bool:
+    def _has_recent_prediction(self, asset: str, hours: float = 1) -> bool:
         """Comprueba si ya existe una predicción pendiente reciente para este activo."""
         cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
         with self._get_conn() as conn:
@@ -161,8 +161,8 @@ class PredictionTracker:
         category = event.get("category", "")
         asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
 
-        # Cooldown de 1h entre predicciones del mismo activo para evitar señales contradictorias
-        if self._has_recent_prediction(asset, hours=1):
+        # Cooldown de 30min entre predicciones del mismo activo para evitar señales contradictorias
+        if self._has_recent_prediction(asset, hours=0.5):
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
             return None
 

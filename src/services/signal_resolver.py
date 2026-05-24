@@ -17,7 +17,7 @@ from collections import defaultdict
 
 logger = logging.getLogger("signal_resolver")
 
-MIN_CONFIDENCE_THRESHOLD = 60  # Solo señales de convicción media-alta
+MIN_CONFIDENCE_THRESHOLD = 50  # Señales de convicción media o superior
 CONFLICT_DISCARD_MARGIN = 0.30  # 30% — ganador claro vs perdedor
 MIN_FINAL_CONFIDENCE = 35  # Umbral mínimo para guardar una predicción
 

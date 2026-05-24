@@ -26,18 +26,18 @@ logger = logging.getLogger("deduplicator")
 
 DEFAULT_SEEN_FILE = "data/seen_articles.txt"
 DEFAULT_RECENT_DB = "data/recent_articles.db"
-MAX_AGE_DAYS = 7        # Purgar hashes del Nivel 1 más antiguos de N días
-RECENT_HOURS = 48       # Ventana para deduplicación semántica (Nivel 2)
+MAX_AGE_DAYS = 3        # Purgar hashes del Nivel 1 más antiguos de N días
+RECENT_HOURS = 24       # Ventana para deduplicación semántica (Nivel 2)
 
 # Máximo de caracteres de descripción a incluir en el texto de comparación
 MAX_DESCRIPTION_LENGTH = 500
 
 # Umbral de similitud coseno para TF-IDF — fácilmente ajustable
-DEDUP_SIMILARITY_THRESHOLD = 0.65
+DEDUP_SIMILARITY_THRESHOLD = 0.78
 # Umbral de ratio para el fallback difflib (escala ligeramente diferente a coseno)
-DEDUP_DIFFLIB_THRESHOLD = 0.70
+DEDUP_DIFFLIB_THRESHOLD = 0.80
 # Umbral para dedup por entidades compartidas (proper nouns, nombres propios)
-DEDUP_ENTITY_THRESHOLD = 0.5
+DEDUP_ENTITY_THRESHOLD = 0.6
 
 
 # ---------------------------------------------------------------------------
