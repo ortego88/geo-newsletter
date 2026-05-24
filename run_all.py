@@ -250,6 +250,13 @@ def run_pipeline_cycle():
         # Send Telegram alerts
         _send_pipeline_alerts(events)
 
+        # Send daily channel alert (max 1/day, best signal only)
+        try:
+            from src.services.channel_alert import send_daily_channel_alert
+            send_daily_channel_alert(events)
+        except Exception as e:
+            logger.warning(f"Error en alerta de canal: {e}")
+
     except Exception as e:
         logger.error(f"Error en ciclo de pipeline: {e}", exc_info=True)
 
@@ -300,10 +307,24 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="daily_blog_post",
     )
+    # Channel membership sync: every hour, kick expired subscribers
+    def sync_channel():
+        try:
+            from src.services.channel_members import sync_channel_members
+            sync_channel_members()
+        except Exception as e:
+            logger.warning(f"Error en sync de canal: {e}")
+
+    scheduler.add_job(
+        sync_channel,
+        "interval",
+        hours=1,
+        id="channel_sync",
+    )
     scheduler.start()
-    logger.info("✅ Scheduler iniciado (pipeline cada 10 minutos, resumen semanal domingos 10:00 AM, blog diario 9:00 AM)")
-    logger.info("✅ Alertas: enviadas 24/7 sin restricción de horarios")
-    logger.info("✅ Verificación: respeta horarios de mercado (IBEX35 9-17:30 L-V, Crypto 24/7)")
+    logger.info("✅ Scheduler iniciado (pipeline cada 10 min, canal sync cada 1h, blog diario 9:00 AM)")
+    logger.info("✅ Alertas: canal privado (1/día) + bot individual (personalizadas)")
+    logger.info("✅ Verificación: respeta horarios de mercado (Crypto 24/7)")
     return scheduler
 
 
