@@ -214,9 +214,9 @@ class PredictionTracker:
             logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
             return None
 
-        # Cooldown de 30min entre predicciones del mismo activo
-        if self._has_recent_prediction(asset, hours=0.5):
-            logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
+        # Cooldown de 3h entre predicciones del mismo activo
+        if self._has_recent_prediction(asset, hours=3):
+            logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción reciente (<3h)")
             return None
 
         # Block contradictory signals (opposite direction within 4h)

@@ -454,7 +454,7 @@ class AnalysisPipeline:
 
             event_score = event.get("score", 0)
             event_confidence = analysis.get("confidence", 0)
-            if event_score < 60 or event_confidence < 65:
+            if event_score < 65 or event_confidence < 70:
                 logger.info(
                     f"   ⏭️ No guardada (score={event_score}, conf={event_confidence}): "
                     f"{event.get('title', '')[:55]}"
