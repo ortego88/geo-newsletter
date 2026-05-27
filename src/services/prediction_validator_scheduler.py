@@ -65,7 +65,7 @@ def _format_validation_message(result: dict, stats: dict | None = None) -> str:
 
 
 def _send_validation_telegram(result: dict, stats: dict | None = None):
-    """Sends validation result to global channel, private channel, and per-user bot."""
+    """Sends validation result to per-user bot and channel (only if it was the daily channel alert)."""
     import os
     try:
         from src.services.telegram_sender import send_telegram
@@ -74,17 +74,26 @@ def _send_validation_telegram(result: dict, stats: dict | None = None):
         return
 
     message = _format_validation_message(result, stats)
-
-    # 1. Send to global chat (TELEGRAM_CHAT_ID)
-    send_telegram(message)
-
-    # 2. Send to private channel
-    channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "")
-    if channel_id:
-        send_telegram(message, chat_id=channel_id)
-
-    # 3. Send to users who have this asset in their selected_assets
     asset = result.get("asset", "")
+
+    # 1. Send to private channel ONLY if this was today's channel alert (BTC alert of the day)
+    channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "")
+    if channel_id and asset:
+        try:
+            from sqlalchemy import text as _text_ch
+            from web.db_engine import get_engine as _get_engine_ch
+            from src.services.alert_formatter import _now_madrid
+            today = _now_madrid().strftime("%Y-%m-%d")
+            with _get_engine_ch("app").connect() as conn:
+                was_channel_alert = conn.execute(_text_ch(
+                    "SELECT 1 FROM channel_alert_log WHERE sent_date = :today AND asset = :asset"
+                ), {"today": today, "asset": asset.upper()}).fetchone()
+            if was_channel_alert:
+                send_telegram(message, chat_id=channel_id)
+        except Exception as e:
+            logger.warning(f"Error checking channel alert for validation: {e}")
+
+    # 2. Send to users who have this asset in their selected_assets
     if asset:
         try:
             from sqlalchemy import text as _text
