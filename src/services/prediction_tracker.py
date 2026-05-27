@@ -177,6 +177,27 @@ class PredictionTracker:
             """), {"asset": asset, "cutoff": cutoff}).fetchone()
         return row is not None
 
+    def _has_contradictory_prediction(self, asset: str, direction: str) -> bool:
+        """Blocks opposite-direction signals within 4h of a recent prediction."""
+        cutoff = (datetime.utcnow() - timedelta(hours=4)).isoformat()
+        opposite = "down" if direction in ("up", "bullish", "positive", "alza") else "up"
+        with self._get_conn() as conn:
+            row = conn.execute(text("""
+                SELECT id, direction FROM predictions
+                WHERE asset = :asset
+                AND predicted_at >= :cutoff
+                ORDER BY id DESC LIMIT 1
+            """), {"asset": asset, "cutoff": cutoff}).fetchone()
+        if not row:
+            return False
+        last_direction = row[1] or ""
+        if direction != last_direction and last_direction in ("up", "down"):
+            logger.info(
+                f"🚫 Señal contradictoria bloqueada: {asset} {direction} vs reciente {last_direction}"
+            )
+            return True
+        return False
+
     def save_prediction(self, event: dict, current_price: float) -> int | None:
         """
         Guarda una predicción. Devuelve el ID de la fila insertada, o None si ya existía
@@ -188,14 +209,18 @@ class PredictionTracker:
         category = event.get("category", "")
         asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
 
-        # Cooldown de 30min entre predicciones del mismo activo para evitar señales contradictorias
+        direction = analysis.get("direction", "neutral")
+        if direction == "neutral":
+            logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
+            return None
+
+        # Cooldown de 30min entre predicciones del mismo activo
         if self._has_recent_prediction(asset, hours=0.5):
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción pendiente reciente")
             return None
 
-        direction = analysis.get("direction", "neutral")
-        if direction == "neutral":
-            logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
+        # Block contradictory signals (opposite direction within 4h)
+        if self._has_contradictory_prediction(asset, direction):
             return None
 
         impact_percent = float(analysis.get("market_impact_percent", 0))
