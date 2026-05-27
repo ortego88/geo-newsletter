@@ -180,16 +180,16 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events (score >= 45, confidence >= 55)
+    # Step 1: filter alertable events (score >= 60, confidence >= 65)
     resolved = [
         e for e in events
-        if e.get("score", 0) >= 45
+        if e.get("score", 0) >= 60
         and e.get("analysis")
-        and e.get("analysis", {}).get("confidence", 0) >= 55
+        and e.get("analysis", {}).get("confidence", 0) >= 65
     ]
 
     if not resolved:
-        logger.info("Sin eventos con score >= 45 y confidence >= 55 para alertar")
+        logger.info("Sin eventos con score >= 60 y confidence >= 65 para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
@@ -252,6 +252,26 @@ def _send_pipeline_alerts(events: list):
     if not saved_predictions:
         logger.info("Todas las alertas filtradas por cap diario de activo")
         return
+
+    # Step 1d: Global daily cap (max ~25 alerts/day total)
+    _MAX_DAILY_TOTAL = 25
+    try:
+        from sqlalchemy import text as _text_global
+        from web.db_engine import get_engine as _get_engine_global
+        day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        with _get_engine_global("app").connect() as conn:
+            total_today = conn.execute(_text_global(
+                "SELECT COUNT(*) FROM alert_log WHERE sent_at >= :day_start"
+            ), {"day_start": day_start}).fetchone()[0]
+        remaining = max(0, _MAX_DAILY_TOTAL - total_today)
+        if remaining == 0:
+            logger.info(f"🛑 Cap global alcanzado: {total_today} alertas hoy (max {_MAX_DAILY_TOTAL})")
+            return
+        if len(saved_predictions) > remaining:
+            logger.info(f"🛑 Cap global: limitando de {len(saved_predictions)} a {remaining} alertas (ya hay {total_today} hoy)")
+            saved_predictions = saved_predictions[:remaining]
+    except Exception as e:
+        logger.warning(f"Error en cap global (enviando todas): {e}")
 
     logger.info(f"📊 {len(saved_predictions)} eventos listos para alertar")
 
