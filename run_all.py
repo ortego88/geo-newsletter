@@ -198,7 +198,27 @@ def _send_pipeline_alerts(events: list):
         logger.info("Ninguna predicción guardada en DB para alertar")
         return
 
-    logger.info(f"📊 {len(saved_predictions)} eventos guardados listos para alertar")
+    # Step 1b: Apply historical accuracy filter
+    try:
+        from src.services.prediction_filter import should_send_alert
+        filtered = []
+        for event in saved_predictions:
+            should_send, reason = should_send_alert(event)
+            if should_send:
+                filtered.append(event)
+            else:
+                logger.info(f"   🚫 Filtrada por histórico: {reason} | {event.get('title', '')[:50]}")
+        if len(filtered) < len(saved_predictions):
+            logger.info(f"📊 Filtro histórico: {len(saved_predictions)}→{len(filtered)} alertas")
+        saved_predictions = filtered
+    except Exception as e:
+        logger.warning(f"Error en filtro histórico (enviando todas): {e}")
+
+    if not saved_predictions:
+        logger.info("Todas las alertas filtradas por histórico de accuracy")
+        return
+
+    logger.info(f"📊 {len(saved_predictions)} eventos listos para alertar")
 
     # Step 2: send to global channel (filtered by TELEGRAM_ALERT_ASSETS env var)
     subscribed = get_subscribed_assets()

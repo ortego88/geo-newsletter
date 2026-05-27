@@ -29,7 +29,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 # Modelos disponibles en Bedrock (mayo 2026)
 # Claude 3.5 Haiku - modelo compatible con on-demand throughput
 # Para Claude 4.X necesitas configurar inference profiles en AWS
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-haiku-20241022-v1:0")
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6-v1")
 
 # ── System prompt mejorado para Claude — CRYPTO ONLY ─────────────────────────
 SYSTEM_PROMPT = """Eres un trader cuantitativo experto en criptomonedas con un track record verificable.
