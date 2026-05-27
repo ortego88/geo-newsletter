@@ -1,11 +1,10 @@
 """
-Canal privado de Telegram — 1 alerta diaria con la señal de mayor confianza.
+Canal privado de Telegram — alerta BTC + resumen diario.
 
 Flujo:
-- Cada ciclo del pipeline evalúa si ya se envió la alerta del día.
-- Si no se ha enviado, selecciona el evento con mayor score × confidence.
-- Solo se envía si score >= 70 y confidence >= 70 (señal fuerte).
-- Se registra en la BD para no repetir en el mismo día.
+- Cada ciclo: si hay una alerta BTC de calidad y no se ha enviado hoy, se envía
+  inmediatamente al canal (máx 1 alerta/día, siempre BTC para atraer usuarios).
+- A las 10:00 (Madrid): resumen del día anterior con resultados de predicciones.
 
 Variables de entorno:
   TELEGRAM_BOT_TOKEN      — token del bot (compartido con alertas individuales)
@@ -14,7 +13,7 @@ Variables de entorno:
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 import requests
@@ -55,7 +54,7 @@ def _init_channel_log_table():
 
 
 def _already_sent_today() -> bool:
-    """Returns True if we already sent the daily channel alert."""
+    """Returns True if we already sent the daily BTC alert."""
     today = _now_madrid().strftime("%Y-%m-%d")
     try:
         _init_channel_log_table()
@@ -94,7 +93,7 @@ def _log_sent(event: dict, analysis: dict):
 
 
 def _format_channel_message(event: dict, analysis: dict) -> str:
-    """Formats the daily channel alert — premium look, concise."""
+    """Formats the BTC channel alert — premium look, concise."""
     fetcher = AssetPriceFetcher()
 
     title = event.get("title", "Sin título")
@@ -148,6 +147,10 @@ def _format_channel_message(event: dict, analysis: dict) -> str:
         lines.append(f"💡 {reasoning}")
 
     lines.append("")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    lines.append("💎 ¿Quieres alertas de más activos?")
+    lines.append("👉 Suscríbete en trianio.com")
+    lines.append("")
     lines.append(f"⏰ {_now_madrid().strftime('%d/%m/%Y %H:%M')} (Madrid)")
 
     return "\n".join(lines)
@@ -166,7 +169,6 @@ def _send_to_channel(message: str) -> bool:
             "text": message,
         }, timeout=10)
         if resp.status_code == 200:
-            logger.info("✅ Alerta diaria enviada al canal privado")
             return True
         else:
             logger.error(f"Error enviando al canal: {resp.status_code} — {resp.text[:200]}")
@@ -178,8 +180,9 @@ def _send_to_channel(message: str) -> bool:
 
 def send_daily_channel_alert(events: list) -> bool:
     """
-    Main entry point — called from run_all after pipeline produces events.
-    Selects the best event and sends it to the private channel (max 1/day).
+    Called from run_all after each pipeline cycle.
+    Sends the FIRST BTC alert of the day that passes quality filters.
+    Immediate — no accumulation, no delay.
 
     Returns True if an alert was sent, False otherwise.
     """
@@ -187,41 +190,135 @@ def send_daily_channel_alert(events: list) -> bool:
         return False
 
     if _already_sent_today():
-        logger.debug("Alerta de canal ya enviada hoy — omitiendo")
         return False
 
-    # Filter to high-quality events only
-    from src.services.real_price_fetcher import CRYPTO_IDS, YAHOO_TICKERS
-    valid_assets = set(CRYPTO_IDS.keys()) | set(YAHOO_TICKERS.keys())
-
-    candidates = []
     for event in events:
         analysis = event.get("analysis", {})
         if not analysis:
             continue
         if not event.get("prediction_id"):
             continue
+
+        assets = analysis.get("most_affected_assets", [])
+        primary_asset = (assets[0].upper() if assets else "")
+        if primary_asset != "BTC":
+            continue
+
         event_score = event.get("score", 0)
         event_confidence = analysis.get("confidence", 0)
         if event_score < _MIN_SCORE or event_confidence < _MIN_CONFIDENCE:
             continue
-        # Validate asset is in our tracked list
-        assets = analysis.get("most_affected_assets", [])
-        if assets and assets[0].upper() not in valid_assets:
-            continue
-        candidates.append(event)
 
-    if not candidates:
-        logger.debug(f"Sin candidatos para canal (requiere score>={_MIN_SCORE}, conf>={_MIN_CONFIDENCE})")
+        msg = _format_channel_message(event, analysis)
+        if _send_to_channel(msg):
+            _log_sent(event, analysis)
+            logger.info(f"📢 Alerta BTC enviada al canal: score={event_score} conf={event_confidence}")
+            return True
+
+    return False
+
+
+def send_daily_summary() -> bool:
+    """
+    Scheduled job (10:00 Madrid) — sends yesterday's prediction results to the channel.
+    Shows: total alerts, correct/incorrect breakdown, assets covered, accuracy %.
+    Acts as social proof to attract new subscribers.
+    """
+    if not TELEGRAM_CHANNEL_ID:
         return False
 
-    # Pick the best: score × confidence
-    best = max(candidates, key=lambda e: e.get("score", 0) * e.get("analysis", {}).get("confidence", 0))
-    analysis = best["analysis"]
+    yesterday = (_now_madrid() - timedelta(days=1)).strftime("%Y-%m-%d")
+    yesterday_display = (_now_madrid() - timedelta(days=1)).strftime("%d/%m/%Y")
 
-    msg = _format_channel_message(best, analysis)
+    try:
+        engine = get_engine("predictions")
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT asset, direction, outcome, confidence, score
+                FROM predictions
+                WHERE alerted = 1
+                AND DATE(predicted_at) = :yesterday
+                ORDER BY score DESC
+            """), {"yesterday": yesterday}).fetchall()
+    except Exception as e:
+        logger.error(f"Error reading predictions for daily summary: {e}")
+        return False
+
+    if not rows:
+        logger.info("Canal resumen: sin predicciones alertadas ayer — no se envía")
+        return False
+
+    total = len(rows)
+    correct = sum(1 for r in rows if r[2] == "correct")
+    incorrect = sum(1 for r in rows if r[2] == "incorrect")
+    pending = sum(1 for r in rows if r[2] == "pending")
+    accuracy = round(correct / (correct + incorrect) * 100) if (correct + incorrect) > 0 else 0
+
+    assets_seen = {}
+    for r in rows:
+        asset = r[0] or "?"
+        if asset not in assets_seen:
+            assets_seen[asset] = {"correct": 0, "incorrect": 0, "pending": 0}
+        if r[2] == "correct":
+            assets_seen[asset]["correct"] += 1
+        elif r[2] == "incorrect":
+            assets_seen[asset]["incorrect"] += 1
+        else:
+            assets_seen[asset]["pending"] += 1
+
+    lines = []
+    lines.append("📊 RESUMEN DEL DÍA — Trianio")
+    lines.append(f"📅 {yesterday_display}")
+    lines.append("")
+
+    if correct + incorrect > 0:
+        if accuracy >= 70:
+            lines.append(f"🏆 Precisión: {accuracy}%")
+        elif accuracy >= 55:
+            lines.append(f"✅ Precisión: {accuracy}%")
+        else:
+            lines.append(f"📈 Precisión: {accuracy}%")
+    lines.append(f"📬 Alertas enviadas: {total}")
+    lines.append(f"✅ Correctas: {correct}")
+    lines.append(f"❌ Incorrectas: {incorrect}")
+    if pending:
+        lines.append(f"⏳ Pendientes: {pending}")
+
+    lines.append("")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    lines.append("📋 Detalle por activo:")
+    lines.append("")
+
+    for asset, stats in sorted(assets_seen.items(), key=lambda x: x[1]["correct"], reverse=True):
+        icon = ASSET_ICONS.get(asset, "💹")
+        name = ASSET_NAMES.get(asset, asset)
+        parts = []
+        if stats["correct"]:
+            parts.append(f"✅{stats['correct']}")
+        if stats["incorrect"]:
+            parts.append(f"❌{stats['incorrect']}")
+        if stats["pending"]:
+            parts.append(f"⏳{stats['pending']}")
+        lines.append(f"  {icon} {name}: {' '.join(parts)}")
+
+    lines.append("")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+
+    if accuracy >= 65 and total >= 5:
+        lines.append("🔥 ¡Gran día! Nuestro sistema de IA sigue mejorando.")
+    elif accuracy >= 55:
+        lines.append("💡 Análisis basado en IA con datos en tiempo real.")
+    else:
+        lines.append("📡 Seguimos optimizando nuestros modelos de predicción.")
+
+    lines.append("")
+    lines.append("💎 Recibe alertas personalizadas de +35 criptomonedas")
+    lines.append("👉 Suscríbete en trianio.com")
+
+    msg = "\n".join(lines)
+
     if _send_to_channel(msg):
-        _log_sent(best, analysis)
+        logger.info(f"📊 Resumen diario enviado al canal: {total} alertas, {accuracy}% accuracy")
         return True
 
     return False

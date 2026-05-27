@@ -123,6 +123,33 @@ class PredictionTracker:
                     logger.info("Migración: columna verification_window_hours añadida a predictions")
         except Exception as e:
             logger.debug(f"verification_window_hours migration note: {e}")
+        self._migrate_add_alerted(engine)
+
+    def _migrate_add_alerted(self, engine):
+        """Adds alerted column — marks predictions that were actually sent to Telegram."""
+        try:
+            with engine.connect() as conn:
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='alerted'"
+                )).fetchone()
+                if not exists:
+                    conn.execute(text("ALTER TABLE predictions ADD COLUMN alerted INTEGER DEFAULT 0"))
+                    conn.commit()
+                    logger.info("Migración: columna alerted añadida a predictions")
+        except Exception as e:
+            logger.debug(f"alerted migration note: {e}")
+
+    def mark_as_alerted(self, prediction_id: int):
+        """Marks a prediction as having been sent to Telegram."""
+        try:
+            with self._get_conn() as conn:
+                conn.execute(text(
+                    "UPDATE predictions SET alerted = 1 WHERE id = :pid"
+                ), {"pid": prediction_id})
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Error marking prediction {prediction_id} as alerted: {e}")
 
     def _timeframe_to_minutes(self, timeframe: str) -> int:
         # Capped at 3 days max to prevent stale predictions that can't be

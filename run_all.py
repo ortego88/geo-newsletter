@@ -262,10 +262,12 @@ def _send_pipeline_alerts(events: list):
         global_events = [e for e in saved_predictions if _get_event_assets(e) & subscribed]
 
     sent_global = 0
+    alerted_prediction_ids = set()
     for event in global_events:
         msg = format_telegram_alert(event, event["analysis"])
         if send_telegram(msg):
             sent_global += 1
+            alerted_prediction_ids.add(event.get("prediction_id"))
             conflict_tag = " [conflicto resuelto]" if event.get("_conflict_resolved") else ""
             logger.info(f"✅ Alerta global enviada{conflict_tag}: {event.get('title','')[:60]}")
 
@@ -273,6 +275,13 @@ def _send_pipeline_alerts(events: list):
 
     # Step 3: send per-user alerts based on telegram_chat_id + selected_assets
     user_sent = _send_per_user_alerts(saved_predictions, format_telegram_alert, send_telegram)
+    for event in saved_predictions:
+        alerted_prediction_ids.add(event.get("prediction_id"))
+
+    # Step 4: mark sent predictions as alerted (for historical filter accuracy)
+    for pid in alerted_prediction_ids:
+        if pid:
+            tracker.mark_as_alerted(pid)
 
     # Enviar también por WhatsApp si está configurado
     try:
@@ -305,7 +314,7 @@ def run_pipeline_cycle():
         # Send Telegram alerts
         _send_pipeline_alerts(events)
 
-        # Send daily channel alert (max 1/day, best signal only)
+        # Send first BTC alert of the day to channel (immediate, max 1/day)
         try:
             from src.services.channel_alert import send_daily_channel_alert
             send_daily_channel_alert(events)
@@ -362,6 +371,22 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="daily_blog_post",
     )
+    # Daily channel summary: 10:00 Madrid — yesterday's prediction results
+    def send_channel_summary():
+        try:
+            from src.services.channel_alert import send_daily_summary
+            send_daily_summary()
+        except Exception as e:
+            logger.warning(f"Error enviando resumen diario al canal: {e}")
+
+    scheduler.add_job(
+        send_channel_summary,
+        "cron",
+        hour=10,
+        minute=0,
+        timezone="Europe/Madrid",
+        id="daily_channel_summary",
+    )
     # Channel membership sync: every hour, kick expired subscribers
     def sync_channel():
         try:
@@ -378,7 +403,7 @@ def start_scheduler():
     )
     scheduler.start()
     logger.info("✅ Scheduler iniciado (pipeline cada 10 min, canal sync cada 1h, blog diario 9:00 AM)")
-    logger.info("✅ Alertas: canal privado (1/día) + bot individual (personalizadas)")
+    logger.info("✅ Alertas: canal (1ª BTC del día) + resumen 10:00 + bot individual (personalizadas)")
     logger.info("✅ Verificación: respeta horarios de mercado (Crypto 24/7)")
     return scheduler
 

@@ -58,6 +58,7 @@ def _compute_accuracy_rules() -> dict:
                        outcome, predicted_at
                 FROM predictions
                 WHERE outcome IN ('correct', 'incorrect')
+                AND alerted = 1
                 AND predicted_at >= :since
                 ORDER BY predicted_at DESC
             """), {"since": (datetime.utcnow() - timedelta(days=30)).isoformat()}).fetchall()
