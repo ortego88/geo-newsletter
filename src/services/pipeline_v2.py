@@ -498,20 +498,20 @@ class AnalysisPipeline:
                 )
                 continue
 
-            # Momentum check: si el precio ya se movió >1.5% en la dirección
+            # Momentum check: si el precio ya se movió >2.5% en la dirección
             # predicha en las últimas 4h, la noticia probablemente describe un
             # movimiento pasado ("sell the news") → reducir confidence o descartar
             direction = analysis.get("direction", "neutral")
             recent_change = self.price_fetcher.get_recent_change(primary_asset, hours=4)
             if recent_change is not None and direction in ("up", "down"):
                 already_moved_same_dir = (
-                    (direction in ("up", "bullish", "positive", "alza") and recent_change >= 1.5)
-                    or (direction in ("down", "bearish", "negative", "baja") and recent_change <= -1.5)
+                    (direction in ("up", "bullish", "positive", "alza") and recent_change >= 2.5)
+                    or (direction in ("down", "bearish", "negative", "baja") and recent_change <= -2.5)
                 )
                 if already_moved_same_dir:
                     original_conf = analysis.get("confidence", 0)
                     # Penalizar confidence proporcionalmente al movimiento
-                    penalty = min(30, int(abs(recent_change) * 8))
+                    penalty = min(25, int(abs(recent_change) * 5))
                     new_conf = original_conf - penalty
                     if new_conf < 55:
                         logger.info(

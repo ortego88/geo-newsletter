@@ -218,6 +218,41 @@ def _send_pipeline_alerts(events: list):
         logger.info("Todas las alertas filtradas por histórico de accuracy")
         return
 
+    # Step 1c: Per-asset daily cap to force diversity (max 3 alerts/day per asset)
+    _MAX_PER_ASSET_DAILY = 3
+    try:
+        from sqlalchemy import text as _text_cap
+        from web.db_engine import get_engine as _get_engine_cap
+        day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        with _get_engine_cap("app").connect() as conn:
+            asset_counts_today = {}
+            rows_today = conn.execute(_text_cap(
+                "SELECT asset, COUNT(*) as cnt FROM alert_log WHERE sent_at >= :day_start GROUP BY asset"
+            ), {"day_start": day_start}).fetchall()
+            for r in rows_today:
+                asset_counts_today[r[0].upper() if r[0] else ""] = r[1]
+
+        capped = []
+        for event in saved_predictions:
+            event_assets = _get_event_assets(event)
+            primary = next(iter(event_assets), "")
+            current_count = asset_counts_today.get(primary, 0)
+            if current_count >= _MAX_PER_ASSET_DAILY:
+                logger.info(f"   🔄 Cap diario: {primary} ya tiene {current_count} alertas hoy — omitida")
+                continue
+            capped.append(event)
+            asset_counts_today[primary] = current_count + 1
+
+        if len(capped) < len(saved_predictions):
+            logger.info(f"🔄 Cap por activo: {len(saved_predictions)}→{len(capped)} alertas (max {_MAX_PER_ASSET_DAILY}/activo/día)")
+        saved_predictions = capped
+    except Exception as e:
+        logger.warning(f"Error en cap por activo (enviando todas): {e}")
+
+    if not saved_predictions:
+        logger.info("Todas las alertas filtradas por cap diario de activo")
+        return
+
     logger.info(f"📊 {len(saved_predictions)} eventos listos para alertar")
 
     # Step 2: send to global channel (filtered by TELEGRAM_ALERT_ASSETS env var)
