@@ -21,14 +21,8 @@ from src.services.real_price_fetcher import RealPriceFetcher
 logger = logging.getLogger("prediction_validator")
 
 
-def _send_validation_telegram(result: dict, stats: dict | None = None):
-    """Envía a Telegram el resultado de una validación de predicción."""
-    try:
-        from src.services.telegram_sender import send_telegram
-    except Exception as e:
-        logger.error(f"Error importando telegram_sender: {e}")
-        return
-
+def _format_validation_message(result: dict, stats: dict | None = None) -> str:
+    """Formats the validation result message."""
     outcome = result.get("outcome", "unknown")
     asset = result.get("asset", "?")
     direction = result.get("direction", "neutral")
@@ -48,27 +42,72 @@ def _send_validation_telegram(result: dict, stats: dict | None = None):
     dir_label = dir_label_map.get(direction.lower(), direction.upper())
 
     lines = [
-        f"📊 *RESULTADO DE PREDICCIÓN*",
+        f"📊 RESULTADO DE PREDICCIÓN",
         f"",
         f"📌 {title}",
         f"",
-        f"• Activo: *{asset}*",
-        f"• Dirección predicha: *{dir_label}*",
-        f"• Precio en alerta: *{price_at:.4g}*",
-        f"• Precio actual: *{price_now:.4g}*",
-        f"• Cambio real: *{change_emoji} {actual_change:+.2f}%*",
+        f"• Activo: {asset}",
+        f"• Dirección predicha: {dir_label}",
+        f"• Precio en alerta: {price_at:.4g}",
+        f"• Precio actual: {price_now:.4g}",
+        f"• Cambio real: {change_emoji} {actual_change:+.2f}%",
         f"",
-        f"{outcome_emoji} Predicción: *{outcome_label}*",
+        f"{outcome_emoji} Predicción: {outcome_label}",
     ]
 
     if stats and stats.get("total", 0) > 0:
         lines += [
             f"",
-            f"🎯 Precisión acumulada: *{stats['accuracy_pct']}%* ({stats['correct']}/{stats['total']})",
+            f"🎯 Precisión acumulada: {stats['accuracy_pct']}% ({stats['correct']}/{stats['total']})",
         ]
 
-    message = "\n".join(lines)
+    return "\n".join(lines)
+
+
+def _send_validation_telegram(result: dict, stats: dict | None = None):
+    """Sends validation result to global channel, private channel, and per-user bot."""
+    import os
+    try:
+        from src.services.telegram_sender import send_telegram
+    except Exception as e:
+        logger.error(f"Error importando telegram_sender: {e}")
+        return
+
+    message = _format_validation_message(result, stats)
+
+    # 1. Send to global chat (TELEGRAM_CHAT_ID)
     send_telegram(message)
+
+    # 2. Send to private channel
+    channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "")
+    if channel_id:
+        send_telegram(message, chat_id=channel_id)
+
+    # 3. Send to users who have this asset in their selected_assets
+    asset = result.get("asset", "")
+    if asset:
+        try:
+            from sqlalchemy import text as _text
+            from web.db_engine import get_engine as _get_engine
+
+            with _get_engine("app").connect() as conn:
+                rows = conn.execute(_text("""
+                    SELECT u.telegram_chat_id, s.selected_assets
+                    FROM users u
+                    JOIN subscriptions s ON s.user_id = u.id
+                    WHERE u.telegram_chat_id IS NOT NULL
+                      AND u.telegram_chat_id != ''
+                      AND u.is_active = 1
+                      AND s.status IN ('active', 'trial')
+                """)).fetchall()
+
+            for row in rows:
+                chat_id, selected_raw = row
+                selected = {a.strip().upper() for a in (selected_raw or "").split(",") if a.strip()}
+                if asset.upper() in selected or not selected:
+                    send_telegram(message, chat_id=chat_id)
+        except Exception as e:
+            logger.warning(f"Error enviando validación per-user: {e}")
 
 
 class PredictionValidatorScheduler:

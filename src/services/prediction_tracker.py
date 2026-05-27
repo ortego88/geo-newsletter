@@ -275,13 +275,10 @@ class PredictionTracker:
             elif actual_change_pct <= -_INCORRECT_THRESHOLD_PCT:
                 outcome = "incorrect"
             elif window_expired:
-                # Window expired: check final direction
                 if actual_change_pct > 0:
-                    outcome = "correct"  # moved in predicted direction even if < 1%
-                elif actual_change_pct <= -_THRESHOLD_PCT:
-                    outcome = "incorrect"
+                    outcome = "correct"
                 else:
-                    outcome = "neutral"
+                    outcome = "incorrect"
             else:
                 return None  # Still within window, threshold not reached — check later
 
@@ -293,10 +290,8 @@ class PredictionTracker:
             elif window_expired:
                 if actual_change_pct < 0:
                     outcome = "correct"
-                elif actual_change_pct >= _THRESHOLD_PCT:
-                    outcome = "incorrect"
                 else:
-                    outcome = "neutral"
+                    outcome = "incorrect"
             else:
                 return None
 

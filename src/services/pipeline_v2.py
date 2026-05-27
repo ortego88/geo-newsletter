@@ -172,28 +172,31 @@ def _match_asset(article: dict) -> tuple[str | None, list[str]]:
 
     Prioridad de selección:
     1. Tier más alto (empresa específica > crypto específica > ETF > genérico)
-    2. Dentro del mismo tier: mayor número de keyword hits
-    3. En empate de hits dentro del mismo tier: el primero en ASSET_KEYWORDS
+    2. Dentro del mismo tier: title mentions > description-only mentions
+    3. Dentro del mismo tier y ubicación: mayor número de keyword hits
 
     Devuelve (primary_ticker, [all_matched_tickers]).
     """
     title = article.get("title") or ""
     description = article.get("description") or article.get("summary") or ""
+    title_lower = title.lower()
     text = (title + " " + description).lower()
 
     hits_per_ticker: dict[str, int] = {}
+    title_hits_per_ticker: dict[str, int] = {}
     for ticker, keywords in ASSET_KEYWORDS.items():
         count = sum(1 for kw in keywords if _kw_matches(kw, text))
         if count > 0:
             hits_per_ticker[ticker] = count
+            title_hits_per_ticker[ticker] = sum(1 for kw in keywords if _kw_matches(kw, title_lower))
 
     if not hits_per_ticker:
         return None, []
 
-    # Ordenar por: 1) tier ascendente (0=mejor), 2) hits descendente
+    # Sort by: 1) tier asc, 2) title hits desc (title mention = more relevant), 3) total hits desc
     sorted_tickers = sorted(
         hits_per_ticker.items(),
-        key=lambda x: (_get_ticker_tier(x[0]), -x[1]),
+        key=lambda x: (_get_ticker_tier(x[0]), -title_hits_per_ticker.get(x[0], 0), -x[1]),
     )
 
     all_matched = [t for t, _ in sorted_tickers]
@@ -489,9 +492,9 @@ class AnalysisPipeline:
                     continue
 
             current_price = self.price_fetcher.get_price(primary_asset)
-            if current_price is None:
+            if current_price is None or current_price <= 0:
                 logger.warning(
-                    f"   No se pudo obtener precio para {primary_asset}, omitiendo predicción"
+                    f"   No se pudo obtener precio para {primary_asset} (price={current_price}), omitiendo predicción"
                 )
                 continue
 

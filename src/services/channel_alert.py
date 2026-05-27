@@ -191,6 +191,9 @@ def send_daily_channel_alert(events: list) -> bool:
         return False
 
     # Filter to high-quality events only
+    from src.services.real_price_fetcher import CRYPTO_IDS, YAHOO_TICKERS
+    valid_assets = set(CRYPTO_IDS.keys()) | set(YAHOO_TICKERS.keys())
+
     candidates = []
     for event in events:
         analysis = event.get("analysis", {})
@@ -200,8 +203,13 @@ def send_daily_channel_alert(events: list) -> bool:
             continue
         event_score = event.get("score", 0)
         event_confidence = analysis.get("confidence", 0)
-        if event_score >= _MIN_SCORE and event_confidence >= _MIN_CONFIDENCE:
-            candidates.append(event)
+        if event_score < _MIN_SCORE or event_confidence < _MIN_CONFIDENCE:
+            continue
+        # Validate asset is in our tracked list
+        assets = analysis.get("most_affected_assets", [])
+        if assets and assets[0].upper() not in valid_assets:
+            continue
+        candidates.append(event)
 
     if not candidates:
         logger.debug(f"Sin candidatos para canal (requiere score>={_MIN_SCORE}, conf>={_MIN_CONFIDENCE})")
