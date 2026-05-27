@@ -28,7 +28,7 @@ from web.db_engine import get_engine
 logger = logging.getLogger("prediction_filter")
 
 # Minimum sample size to consider a pattern statistically meaningful
-_MIN_SAMPLES = 5
+_MIN_SAMPLES = 10
 # Minimum accuracy to consider a condition "good"
 _MIN_ACCURACY_PCT = 55
 # Cache duration
@@ -43,7 +43,6 @@ def _compute_accuracy_rules() -> dict:
     rules = {
         "min_score": 45,
         "min_confidence": 55,
-        "blocked_assets": set(),
         "blocked_sources": set(),
         "preferred_direction": None,
         "preferred_timeframes": set(),
@@ -89,8 +88,9 @@ def _compute_accuracy_rules() -> dict:
         if stats["total"] >= _MIN_SAMPLES:
             acc = stats["correct"] / stats["total"] * 100
             if acc < 35:
-                rules["blocked_assets"].add(asset)
-                logger.info(f"Filter: blocking {asset} (accuracy {acc:.0f}% over {stats['total']} predictions)")
+                # Don't hard-block; raise confidence threshold for this asset
+                rules["min_score_by_asset"][asset] = 75
+                logger.info(f"Filter: raising threshold for {asset} (accuracy {acc:.0f}% over {stats['total']} → needs conf>=75)")
 
     rules["stats"]["by_asset"] = {
         k: {**v, "accuracy": round(v["correct"] / v["total"] * 100, 1)}
@@ -187,7 +187,7 @@ def _compute_accuracy_rules() -> dict:
     logger.info(
         f"Filter rules updated: min_score={rules['min_score']}, "
         f"min_conf={rules['min_confidence']}, "
-        f"blocked_assets={rules['blocked_assets'] or 'none'}, "
+        f"raised_threshold_assets={list(rules['min_score_by_asset'].keys()) or 'none'}, "
         f"overall_accuracy={overall_accuracy:.1f}%"
     )
 
@@ -230,11 +230,12 @@ def should_send_alert(event: dict) -> tuple[bool, str]:
     if confidence < rules.get("min_confidence", 55):
         return False, f"confidence {confidence} < dynamic min {rules['min_confidence']}"
 
-    # Check blocked assets
-    if primary_asset in rules.get("blocked_assets", set()):
-        return False, f"asset {primary_asset} blocked (historically low accuracy)"
+    # Check assets with raised thresholds (not blocked, just higher bar)
+    asset_min_conf = rules.get("min_score_by_asset", {}).get(primary_asset)
+    if asset_min_conf and confidence < asset_min_conf:
+        return False, f"asset {primary_asset} needs conf>={asset_min_conf} (low historical accuracy)"
 
-    # Check blocked sources
+    # Check blocked sources (only hard-blocks sources, not assets)
     if source in rules.get("blocked_sources", set()):
         return False, f"source '{source}' blocked (historically low accuracy)"
 
