@@ -25,20 +25,19 @@ tailwind.config = {
   }
 }
 </script>
-<!-- Google Tag Manager -->
+<!-- Consent Mode v2 — must fire BEFORE GTM loads -->
 <script>
 window.dataLayer = window.dataLayer || [];
-window.dataLayer.push({
-  'gtm.start': new Date().getTime(),
-  event: 'gtm.js',
-  'consent_default': {
-    'analytics_storage': '{{ "granted" if request.cookies.get("trianio_consent") == "granted" else "denied" }}',
-    'ad_storage': 'denied',
-    'ad_user_data': 'denied',
-    'ad_personalization': 'denied'
-  }
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', {
+  'analytics_storage': '{{ "granted" if request.cookies.get("trianio_consent") == "granted" else "denied" }}',
+  'ad_storage': 'denied',
+  'ad_user_data': 'denied',
+  'ad_personalization': 'denied',
+  'wait_for_update': 500
 });
 </script>
+<!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
