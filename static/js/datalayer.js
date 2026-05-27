@@ -99,27 +99,52 @@
     storeLogs(logs);
   }
 
+  function getPageContext() {
+    var dl = window.dataLayer || [];
+    var ctx = {};
+    for (var i = dl.length - 1; i >= 0; i--) {
+      if (dl[i] && dl[i].eventName === 'pageview') {
+        ctx.pageName = dl[i].pageName || '';
+        ctx.sectionName = dl[i].sectionName || '';
+        ctx.webArea = dl[i].webArea || '';
+        ctx.serviceType = dl[i].serviceType || '';
+        ctx.processType = dl[i].processType || '';
+        ctx.processStep = dl[i].processStep || '';
+        ctx.processDetail = dl[i].processDetail || '';
+        ctx.productName = dl[i].productName || '';
+        ctx.userStatus = dl[i].userStatus || '';
+        ctx.userType = dl[i].userType || '';
+        ctx.userPlan = dl[i].userPlan || '';
+        break;
+      }
+    }
+    return ctx;
+  }
+
   function pushInteraction(el) {
     window.dataLayer = window.dataLayer || [];
     var eventName = el.getAttribute('data-dl-event') || 'click';
+    var ctx = getPageContext();
     var payload = {
       'event': eventName,
       'eventName': eventName,
       'action': el.getAttribute('data-dl-action') || 'click',
       'format': el.getAttribute('data-dl-format') || '',
       'component': el.getAttribute('data-dl-component') || '',
-      'element': el.getAttribute('data-dl-element') || ''
+      'element': el.getAttribute('data-dl-element') || '',
+      'pageName': ctx.pageName,
+      'sectionName': ctx.sectionName,
+      'webArea': ctx.webArea,
+      'serviceType': ctx.serviceType,
+      'processType': ctx.processType,
+      'processStep': ctx.processStep,
+      'processDetail': ctx.processDetail,
+      'productName': ctx.productName,
+      'userStatus': ctx.userStatus,
+      'userType': ctx.userType,
+      'userPlan': ctx.userPlan
     };
     window.dataLayer.push(payload);
-    // Send directly to GA4 if gtag is available (direct mode without GTM)
-    if (typeof gtag === 'function') {
-      gtag('event', eventName, {
-        'action': payload.action,
-        'format': payload.format,
-        'component': payload.component,
-        'element': payload.element
-      });
-    }
     logToPanel(eventName, payload);
   }
 
