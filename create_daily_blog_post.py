@@ -6,6 +6,7 @@ Usa Claude/OpenAI para generar contenido SEO-optimizado y AI-friendly.
 Ejecuta este script diariamente con cron:
   0 9 * * * cd /path/to/geo-newsletter && python3 create_daily_blog_post.py
 """
+import hashlib
 import os
 import sys
 from datetime import datetime
@@ -13,48 +14,92 @@ from sqlalchemy import text
 from web.db_engine import get_engine
 import re
 
+
+# Pool amplio de imágenes gratuitas (Unsplash + Pexels) — crypto/finanzas/trading
+_IMAGE_POOL = [
+    # Unsplash — crypto & trading
+    "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1611606063065-ee7946f0787a?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1622630998477-20aa696ecb05?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1605792657660-596af9009e82?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1634704784915-aacf363b021f?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1516245834210-c4c142787335?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1559526324-593bc073d938?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1620321023374-d1a68fbc720d?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1642543492481-44e81e3914a7?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1625806786037-2af608423424?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1643101809204-6fb869816dbe?w=1200&h=630&fit=crop",
+    "https://images.unsplash.com/photo-1609554496796-c345a5335ceb?w=1200&h=630&fit=crop",
+    # Pexels — crypto & finance (direct image URLs, free to use)
+    "https://images.pexels.com/photos/6771900/pexels-photo-6771900.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/8370752/pexels-photo-8370752.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6781273/pexels-photo-6781273.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6770609/pexels-photo-6770609.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6765369/pexels-photo-6765369.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/7567565/pexels-photo-7567565.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/8369648/pexels-photo-8369648.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6772076/pexels-photo-6772076.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6781340/pexels-photo-6781340.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/5980856/pexels-photo-5980856.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6802042/pexels-photo-6802042.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/7788009/pexels-photo-7788009.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6771607/pexels-photo-6771607.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+    "https://images.pexels.com/photos/6780789/pexels-photo-6780789.jpeg?auto=compress&cs=tinysrgb&w=1200&h=630&fit=crop",
+]
+
+
+def _get_daily_image(date_str: str = None) -> str:
+    """Picks a unique image based on day-of-year — cycles through entire pool before repeating."""
+    if not date_str:
+        date_str = datetime.utcnow().strftime("%Y-%m-%d")
+    day_of_year = datetime.strptime(date_str, "%Y-%m-%d").timetuple().tm_yday
+    idx = day_of_year % len(_IMAGE_POOL)
+    return _IMAGE_POOL[idx]
+
 # Lista de temas para rotar (se escoge uno aleatorio cada día)
 TOPICS = [
     {
         "title": "Cómo interpretar alertas geopolíticas para trading",
         "keywords": "alertas geopolíticas, trading geopolítico, inteligencia artificial trading",
-        "image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=630&fit=crop",
         "prompt": "Escribe un artículo educativo sobre cómo los traders pueden usar alertas geopolíticas para tomar mejores decisiones. Incluye ejemplos concretos de eventos (guerra, sanciones, elecciones) y su impacto en diferentes activos."
     },
     {
         "title": "IA y trading: El futuro del análisis de mercados",
         "keywords": "inteligencia artificial, trading automatizado, GPT trading",
-        "image": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop",
         "prompt": "Artículo sobre cómo la inteligencia artificial está revolucionando el trading. Habla de modelos de IA, aprendizaje automático, y ventajas sobre el análisis tradicional."
     },
     {
         "title": "5 eventos geopolíticos que movieron los mercados este mes",
         "keywords": "eventos geopolíticos, mercados financieros, volatilidad",
-        "image": "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1200&h=630&fit=crop",
         "prompt": "Repaso mensual de eventos geopolíticos relevantes y su impacto real en activos financieros. Incluye datos, gráficos conceptuales, y lecciones aprendidas."
     },
     {
         "title": "Telegram y WhatsApp: Las mejores herramientas para alertas de trading",
         "keywords": "alertas telegram, alertas whatsapp, señales trading",
-        "image": "https://images.unsplash.com/photo-1611606063065-ee7946f0787a?w=1200&h=630&fit=crop",
         "prompt": "Artículo sobre las ventajas de recibir alertas de trading en Telegram/WhatsApp vs email o apps dedicadas. Velocidad, conveniencia, ejemplos de uso."
     },
     {
         "title": "Criptomonedas y geopolítica: ¿Cómo se relacionan?",
         "keywords": "criptomonedas, bitcoin, geopolítica, trading crypto",
-        "image": "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=1200&h=630&fit=crop",
         "prompt": "Análisis de la relación entre eventos geopolíticos y el mercado crypto. Regulación, sanciones, adopción institucional, casos de uso reales."
     },
     {
         "title": "Cómo funciona el scoring de eventos en GEO-NEWSLETTER",
         "keywords": "scoring eventos, sistema de puntuación, alertas automáticas",
-        "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop",
         "prompt": "Explica cómo nuestro sistema de IA puntúa cada evento de 0 a 100 según su relevancia de mercado. Habla de factores: fuente, impacto potencial, confianza, y cómo se traduce en alertas."
     },
     {
         "title": "IBEX 35: Guía completa para inversores en el mercado español",
         "keywords": "IBEX 35, bolsa española, invertir en España, mercado continuo",
-        "image": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&h=630&fit=crop",
         "prompt": "Guía educativa sobre el IBEX 35: qué es, qué empresas lo componen, cómo invertir, y cómo los eventos geopolíticos afectan específicamente al mercado español."
     },
 ]
@@ -228,43 +273,36 @@ def _generate_daily_topic():
             "angle": "análisis semanal",
             "prompt": "Escribe un análisis semanal de los mercados crypto. Cubre los movimientos más importantes de Bitcoin, Ethereum y altcoins. Incluye datos de precios y volúmenes reales recientes, y qué esperar la próxima semana.",
             "keywords": "crypto semanal, análisis bitcoin, mercado criptomonedas",
-            "image": "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=1200&h=630&fit=crop",
         },
         {
             "angle": "educación trading",
             "prompt": "Escribe un artículo educativo sobre una estrategia o concepto de trading crypto (puede ser RSI, MACD, análisis on-chain, DCA, o gestión de riesgo). Incluye ejemplos prácticos.",
             "keywords": "trading crypto, estrategia inversión, educación financiera",
-            "image": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&h=630&fit=crop",
         },
         {
             "angle": "IA y mercados",
             "prompt": "Escribe sobre cómo la inteligencia artificial está cambiando el trading de criptomonedas. Habla de predicciones algorítmicas, análisis de sentimiento, y ventajas de sistemas automatizados.",
             "keywords": "inteligencia artificial, trading automatizado, predicciones crypto",
-            "image": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=630&fit=crop",
         },
         {
             "angle": "regulación y noticias",
             "prompt": "Escribe sobre los últimos desarrollos regulatorios en crypto a nivel global (EEUU, Europa, Asia). Cómo afectan a los inversores minoristas y qué oportunidades o riesgos presentan.",
             "keywords": "regulación crypto, legislación blockchain, mercados globales",
-            "image": "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1200&h=630&fit=crop",
         },
         {
             "angle": "altcoins emergentes",
             "prompt": "Análisis de altcoins que están ganando tracción: nuevos proyectos DeFi, Layer 2, o tokens con fundamentos sólidos. Explica por qué podrían ser relevantes para inversores.",
             "keywords": "altcoins, DeFi, inversión crypto, tokens emergentes",
-            "image": "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=1200&h=630&fit=crop",
         },
         {
             "angle": "gestión de riesgo",
             "prompt": "Artículo sobre gestión de riesgo en crypto: position sizing, stop-losses, diversificación, y cómo proteger el capital en mercados volátiles.",
             "keywords": "gestión riesgo, stop loss crypto, proteger inversión",
-            "image": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&h=630&fit=crop",
         },
         {
             "angle": "análisis on-chain",
             "prompt": "Explica métricas on-chain importantes para evaluar Bitcoin y Ethereum: MVRV, NUPL, exchange flows, whale activity. Cómo interpretarlas para tomar decisiones de inversión.",
             "keywords": "on-chain, métricas blockchain, análisis fundamental crypto",
-            "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop",
         },
     ]
 
@@ -312,7 +350,7 @@ El título debe ser específico, actual y atractivo. NO uses comillas. Responde 
     return {
         "title": title,
         "keywords": theme["keywords"],
-        "image": theme["image"],
+        "image": _get_daily_image(today),
         "prompt": theme["prompt"] + f"\n\nFecha de publicación: {today}. Incluye datos actuales y relevantes.",
     }
 
@@ -334,7 +372,7 @@ def main():
         title=topic['title'],
         content=content,
         keywords=topic['keywords'],
-        featured_image=topic.get('image', '')
+        featured_image=topic.get('image', _get_daily_image())
     )
 
     if success:
