@@ -351,8 +351,7 @@ def create_app():
                 rows = conn.execute(text("""
                     SELECT direction, price_at_prediction, price_at_validation, outcome
                     FROM predictions
-                    WHERE asset = :asset
-                      AND alerted = 1
+                    WHERE UPPER(asset) = UPPER(:asset)
                       AND outcome IN ('correct', 'incorrect')
                       AND price_at_prediction > 0
                       AND price_at_validation > 0
