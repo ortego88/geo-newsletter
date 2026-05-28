@@ -58,14 +58,14 @@
             <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
           </div>
           <h3 class="text-xl font-bold text-white mb-3" data-i18n="features.ai.title">IA que aprende cada día</h3>
-          <p class="text-slate-400" data-i18n="features.ai.desc">Nuestro modelo de inteligencia artificial analiza cada evento con GPT de última generación y se entrena continuamente con nuevos datos. Cuantos más eventos procesa, más preciso y fiable se vuelve en sus predicciones sobre activos financieros.</p>
+          <p class="text-slate-400" data-i18n="features.ai.desc">Nuestro sistema analiza cada evento con Claude Sonnet 4.6 de Anthropic y se mejora continuamente. Cuantos más eventos procesa, más preciso se vuelve en sus predicciones sobre criptomonedas.</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8">
           <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           </div>
           <h3 class="text-xl font-bold text-white mb-3" data-i18n="features.alerts.title">Alertas instantáneas</h3>
-          <p class="text-slate-400" data-i18n="features.alerts.desc">Recibe en Telegram o WhatsApp el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en español.</p>
+          <p class="text-slate-400" data-i18n="features.alerts.desc">Recibe en Telegram el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en tu idioma.</p>
         </div>
       </div>
     </div>
@@ -269,12 +269,10 @@
             <p id="price-basic-annual-sub" class="hidden text-slate-500 text-sm mt-1">149,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f1">1 activo financiero</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f1">3 criptomonedas</span></li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f2">Alertas en Telegram</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f3">Análisis con GPT-3.5-turbo</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f4">Idioma: Español / Inglés</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f5">Alertas hasta 5/día</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f6">Historial 1 día</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f3">Análisis con Claude Sonnet 4.6</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.basic.f4">Hasta 5 alertas al día</span></li>
           </ul>
           <a href="/register?plan=basic" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="basic">
             Empezar prueba
@@ -306,13 +304,12 @@
             <p id="price-premium-annual-sub" class="hidden text-slate-500 text-sm mt-1">299,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f1">Hasta 3 activos</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f2">Alertas en Telegram y WhatsApp</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f3">Análisis con GPT-4o</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f4">Idiomas: ES, EN</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f5">Alertas hasta 10/día</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f6">Historial 7 días</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f7">Soporte por email</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f1">7 criptomonedas</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f2">Alertas en Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f3">Análisis con Claude Sonnet 4.6</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f4">Hasta 10 alertas al día</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f5">Soporte por email</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.premium.f6">Acceso prioritario a la app</span></li>
           </ul>
           <a href="/register?plan=premium" class="block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="premium">
             Empezar prueba
@@ -341,16 +338,13 @@
             <p id="price-pro-annual-sub" class="hidden text-slate-500 text-sm mt-1">599,99€ <span data-i18n="pricing.billed_annually">facturado anualmente</span></p>
           </div>
           <ul class="space-y-3 text-sm text-slate-300 flex-1 mb-8">
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f1">Todos los activos (sin límite)</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f1">Todas las criptomonedas</span></li>
             <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f2">Alertas ilimitadas</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f3">Alertas en Telegram y WhatsApp</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f4">Análisis con GPT-4o</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f5">Idiomas: ES, EN</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f6">Dashboard en tiempo real</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f7">Historial 30 días</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f8">API key personal</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f9">Soporte prioritario Telegram</span></li>
-            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f10">Informes PDF semanales</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f3">Alertas en Telegram</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f4">Análisis con Claude Sonnet 4.6</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f5">Soporte prioritario por email</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f6">Resumen semanal</span></li>
+            <li class="flex gap-2"><span class="text-emerald-400">✓</span> <span data-i18n="plan.pro.f7">Acceso prioritario a la app</span></li>
           </ul>
           <a href="/register?plan=pro" class="block text-center border border-emerald-500 text-emerald-400 hover:bg-emerald-500 hover:text-white font-semibold px-6 py-3 rounded-xl transition" data-i18n="pricing.start_trial" data-dl-event="productSelection" data-dl-action="click" data-dl-format="button" data-dl-component="productSelector" data-dl-element="professional">
             Empezar prueba
@@ -416,10 +410,10 @@
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
-            <span data-i18n="faq.q2">¿Cómo recibo las alertas en Telegram o WhatsApp?</span>
+            <span data-i18n="faq.q2">¿Cómo recibo las alertas en Telegram?</span>
             <span class="text-slate-400 group-open:rotate-180 transition">▼</span>
           </summary>
-          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a2">Para Telegram, introduce tu Chat ID en el área de configuración (puedes obtenerlo con @userinfobot). Para WhatsApp, disponible en los planes Premium y Pro, te enviaremos un enlace de vinculación tras el registro.</p>
+          <p class="mt-4 text-slate-400 text-sm" data-i18n="faq.a2">Tras registrarte, vincula tu cuenta de Telegram desde el área de configuración. Recibirás alertas personalizadas según los activos que hayas seleccionado.</p>
         </details>
         <details class="bg-slate-800 border border-slate-700 rounded-xl p-6 group">
           <summary class="cursor-pointer font-semibold text-white list-none flex justify-between items-center">
@@ -523,7 +517,7 @@
       <a href="/login" class="hover:text-slate-300 transition" data-i18n="nav.login">Iniciar sesión</a>
       <a href="#precios" class="hover:text-slate-300 transition" data-i18n="nav.start_free">Registrarse</a>
     </div>
-    <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto" data-i18n="footer.ai_desc">Trianio utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.</p>
+    <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto" data-i18n="footer.ai_desc">Trianio utiliza Claude Sonnet 4.6 de Anthropic para analizar eventos geopolíticos y su impacto en los mercados de criptomonedas. El sistema se mejora de forma continua.</p>
     <p class="mt-3 text-xs text-slate-600" data-i18n="footer.disclaimer">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
     <p class="mt-3 text-xs text-slate-600"><a href="/privacy" class="hover:text-slate-400 transition" data-i18n="cookies.policy_link">Política de cookies</a></p>
   </footer>
@@ -596,9 +590,9 @@
         "features.global.title": "Cobertura global",
         "features.global.desc": "Monitorizamos más de 50 fuentes de noticias geopolíticas en tiempo real: conflictos armados, sanciones económicas, acuerdos comerciales, elecciones y crisis energéticas.",
         "features.ai.title": "IA que aprende cada día",
-        "features.ai.desc": "Nuestro modelo de inteligencia artificial analiza cada evento con GPT de última generación y se entrena continuamente con nuevos datos. Cuantos más eventos procesa, más preciso y fiable se vuelve en sus predicciones sobre activos financieros.",
+        "features.ai.desc": "Nuestro sistema analiza cada evento con Claude Sonnet 4.6 de Anthropic y se mejora continuamente. Cuantos más eventos procesa, más preciso se vuelve en sus predicciones sobre criptomonedas.",
         "features.alerts.title": "Alertas instantáneas",
-        "features.alerts.desc": "Recibe en Telegram o WhatsApp el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en español.",
+        "features.alerts.desc": "Recibe en Telegram el activo afectado, la dirección del movimiento esperado, el score de impacto (0-100) y el razonamiento completo en tu idioma.",
         "ai.label": "Inteligencia Artificial",
         "ai.title": "Un modelo que nunca deja de aprender",
         "ai.p1": "Trianio no es un simple agregador de noticias. Es un sistema de inteligencia artificial especializado en el análisis del impacto geopolítico en los mercados financieros. Nuestro modelo está entrenado con miles de eventos históricos y sus correlaciones reales con movimientos de precio en divisas, materias primas, índices y criptomonedas.",
@@ -625,8 +619,8 @@
         "faq.title": "Preguntas frecuentes",
         "faq.q1": "¿Necesito tarjeta de crédito para la prueba gratuita?",
         "faq.a1": "Sí, pedimos los datos de pago al registrarte, pero no se realizará ningún cargo hasta que finalice el período de prueba de 7 días. Puedes cancelar en cualquier momento antes de que termine.",
-        "faq.q2": "¿Cómo recibo las alertas en Telegram o WhatsApp?",
-        "faq.a2": "Para Telegram, introduce tu Chat ID en el área de configuración (puedes obtenerlo con @userinfobot). Para WhatsApp, disponible en los planes Premium y Pro, te enviaremos un enlace de vinculación tras el registro.",
+        "faq.q2": "¿Cómo recibo las alertas en Telegram?",
+        "faq.a2": "Tras registrarte, vincula tu cuenta de Telegram desde el área de configuración. Recibirás alertas personalizadas según los activos que hayas seleccionado.",
         "faq.q3": "¿Con qué frecuencia se actualizan las alertas?",
         "faq.a3": "El pipeline de análisis con IA se ejecuta cada 10 minutos. Solo recibirás alertas cuando haya eventos con score ≥ 60/100 que afecten a tus activos seleccionados, evitando el ruido innecesario.",
         "faq.q4": "¿Cómo mejora el modelo de IA con el tiempo?",
@@ -639,31 +633,25 @@
         "cta.subtitle": "7 días gratis, sin compromiso. Cancela cuando quieras. Únete a los traders que ya usan IA para anticiparse al mercado.",
         "cta.button": "Crear cuenta gratis →",
         "footer.tagline": "Intelligence before the market moves",
-        "footer.ai_desc": "Trianio utiliza modelos de inteligencia artificial GPT de última generación para analizar eventos geopolíticos y su impacto en los mercados financieros. El modelo se entrena y mejora de forma continua.",
+        "footer.ai_desc": "Trianio utiliza Claude Sonnet 4.6 de Anthropic para analizar eventos geopolíticos y su impacto en los mercados de criptomonedas. El sistema se mejora de forma continua.",
         "footer.disclaimer": "Las alertas son meramente informativas y no constituyen asesoramiento financiero.",
-        "plan.basic.f1": "1 activo financiero",
+        "plan.basic.f1": "3 criptomonedas",
         "plan.basic.f2": "Alertas en Telegram",
-        "plan.basic.f3": "Análisis con GPT-3.5-turbo",
-        "plan.basic.f4": "Idioma: Español / Inglés",
-        "plan.basic.f5": "Alertas hasta 5/día",
-        "plan.basic.f6": "Historial 1 día",
-        "plan.premium.f1": "Hasta 3 activos",
-        "plan.premium.f2": "Alertas en Telegram y WhatsApp",
-        "plan.premium.f3": "Análisis con GPT-4o",
-        "plan.premium.f4": "Idiomas: ES, EN",
-        "plan.premium.f5": "Alertas hasta 10/día",
-        "plan.premium.f6": "Historial 7 días",
-        "plan.premium.f7": "Soporte por email",
-        "plan.pro.f1": "Todos los activos (sin límite)",
+        "plan.basic.f3": "Análisis con Claude Sonnet 4.6",
+        "plan.basic.f4": "Hasta 5 alertas al día",
+        "plan.premium.f1": "7 criptomonedas",
+        "plan.premium.f2": "Alertas en Telegram",
+        "plan.premium.f3": "Análisis con Claude Sonnet 4.6",
+        "plan.premium.f4": "Hasta 10 alertas al día",
+        "plan.premium.f5": "Soporte por email",
+        "plan.premium.f6": "Acceso prioritario a la app",
+        "plan.pro.f1": "Todas las criptomonedas",
         "plan.pro.f2": "Alertas ilimitadas",
-        "plan.pro.f3": "Alertas en Telegram y WhatsApp",
-        "plan.pro.f4": "Análisis con GPT-4o",
-        "plan.pro.f5": "Idiomas: ES, EN",
-        "plan.pro.f6": "Dashboard en tiempo real",
-        "plan.pro.f7": "Historial 30 días",
-        "plan.pro.f8": "API key personal",
-        "plan.pro.f9": "Soporte prioritario Telegram",
-        "plan.pro.f10": "Informes PDF semanales",
+        "plan.pro.f3": "Alertas en Telegram",
+        "plan.pro.f4": "Análisis con Claude Sonnet 4.6",
+        "plan.pro.f5": "Soporte prioritario por email",
+        "plan.pro.f6": "Resumen semanal",
+        "plan.pro.f7": "Acceso prioritario a la app",
         "sticky.cta": "¿Cuánto ganarías?",
         "sim.label": "Simulador",
         "sim.title": "¿Cuánto hubieras ganado siguiendo nuestras alertas?",
@@ -710,7 +698,7 @@
         "hero.h1_ai": "before",
         "hero.h1_part2": "the market",
         "hero.h1_rt": "moves",
-        "hero.subtitle": "Our AI model monitors global geopolitical events, analyses them and sends you instant trading signals on Telegram or WhatsApp. A system that learns from every event.",
+        "hero.subtitle": "Our AI model monitors global geopolitical events, analyses them and sends you instant crypto trading signals on Telegram. A system that learns from every event.",
         "hero.cta_primary": "Start free — 7 days",
         "hero.cta_secondary": "See pricing →",
         "hero.disclaimer": "No commitment · Cancel anytime · Not charged until day 8",
@@ -719,9 +707,9 @@
         "features.global.title": "Global coverage",
         "features.global.desc": "We monitor over 50 geopolitical news sources in real time: armed conflicts, economic sanctions, trade agreements, elections and energy crises.",
         "features.ai.title": "AI that learns every day",
-        "features.ai.desc": "Our AI model analyses each event with the latest GPT and trains continuously with new data. The more events it processes, the more precise its predictions.",
+        "features.ai.desc": "Our system analyses each event with Claude Sonnet 4.6 by Anthropic and improves continuously. The more events it processes, the more precise its crypto predictions.",
         "features.alerts.title": "Instant alerts",
-        "features.alerts.desc": "Receive on Telegram or WhatsApp the affected asset, expected movement direction, impact score (0-100) and full reasoning in your language.",
+        "features.alerts.desc": "Receive on Telegram the affected asset, expected movement direction, impact score (0-100) and full reasoning in your language.",
         "ai.label": "Artificial Intelligence",
         "ai.title": "A model that never stops learning",
         "ai.p1": "Trianio is not a simple news aggregator. It is an AI system specialised in analysing the geopolitical impact on financial markets. Our model processes hundreds of events every day.",
@@ -748,8 +736,8 @@
         "faq.title": "Frequently asked questions",
         "faq.q1": "Do I need a credit card for the free trial?",
         "faq.a1": "Yes, we ask for payment details when you register, but no charge will be made until the 7-day trial period ends. You can cancel at any time before that.",
-        "faq.q2": "How do I receive alerts on Telegram or WhatsApp?",
-        "faq.a2": "For Telegram, enter your Chat ID in the settings area (you can get it from @userinfobot). For WhatsApp, available on Premium and Pro plans, we will send you a link to connect.",
+        "faq.q2": "How do I receive alerts on Telegram?",
+        "faq.a2": "After registering, link your Telegram account from the settings area. You'll receive personalised alerts based on the assets you've selected.",
         "faq.q3": "How often are alerts updated?",
         "faq.a3": "The AI analysis pipeline runs every 10 minutes. You will only receive alerts when there are events with score ≥ 60/100 affecting your selected assets, avoiding noise.",
         "faq.q4": "How does the AI model improve over time?",
@@ -762,31 +750,25 @@
         "cta.subtitle": "7 days free, no commitment. Cancel anytime. Join the traders already using AI to anticipate the market.",
         "cta.button": "Create free account →",
         "footer.tagline": "Intelligence before the market moves",
-        "footer.ai_desc": "Trianio uses the latest GPT AI models to analyse geopolitical events and generate trading signals. Not financial advice.",
+        "footer.ai_desc": "Trianio uses Claude Sonnet 4.6 by Anthropic to analyse geopolitical events and generate crypto trading signals. Not financial advice.",
         "footer.disclaimer": "Alerts are for informational purposes only and do not constitute financial advice.",
-        "plan.basic.f1": "1 financial asset",
+        "plan.basic.f1": "3 cryptocurrencies",
         "plan.basic.f2": "Telegram alerts",
-        "plan.basic.f3": "Analysis with GPT-3.5-turbo",
-        "plan.basic.f4": "Language: Spanish / English",
-        "plan.basic.f5": "Up to 5 alerts/day",
-        "plan.basic.f6": "1-day history",
-        "plan.premium.f1": "Up to 3 assets",
-        "plan.premium.f2": "Telegram & WhatsApp alerts",
-        "plan.premium.f3": "Analysis with GPT-4o",
-        "plan.premium.f4": "Languages: ES, EN",
-        "plan.premium.f5": "Up to 10 alerts/day",
-        "plan.premium.f6": "7-day history",
-        "plan.premium.f7": "Email support",
-        "plan.pro.f1": "All assets (unlimited)",
+        "plan.basic.f3": "Analysis with Claude Sonnet 4.6",
+        "plan.basic.f4": "Up to 5 alerts per day",
+        "plan.premium.f1": "7 cryptocurrencies",
+        "plan.premium.f2": "Telegram alerts",
+        "plan.premium.f3": "Analysis with Claude Sonnet 4.6",
+        "plan.premium.f4": "Up to 10 alerts per day",
+        "plan.premium.f5": "Email support",
+        "plan.premium.f6": "Priority app access",
+        "plan.pro.f1": "All cryptocurrencies",
         "plan.pro.f2": "Unlimited alerts",
-        "plan.pro.f3": "Telegram & WhatsApp alerts",
-        "plan.pro.f4": "Analysis with GPT-4o",
-        "plan.pro.f5": "Languages: ES, EN",
-        "plan.pro.f6": "Real-time dashboard",
-        "plan.pro.f7": "30-day history",
-        "plan.pro.f8": "Personal API key",
-        "plan.pro.f9": "Priority Telegram support",
-        "plan.pro.f10": "Weekly PDF reports",
+        "plan.pro.f3": "Telegram alerts",
+        "plan.pro.f4": "Analysis with Claude Sonnet 4.6",
+        "plan.pro.f5": "Priority email support",
+        "plan.pro.f6": "Weekly digest",
+        "plan.pro.f7": "Priority app access",
         "sticky.cta": "How much would you earn?",
         "sim.label": "Simulator",
         "sim.title": "How much would you have earned following our alerts?",
