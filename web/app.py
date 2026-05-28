@@ -349,12 +349,15 @@ def create_app():
         try:
             with _get_predictions_conn() as conn:
                 rows = conn.execute(text("""
-                    SELECT direction, price_at_prediction
+                    SELECT direction, price_at_prediction, price_at_validation, outcome
                     FROM predictions
                     WHERE asset = :asset
+                      AND alerted = 1
+                      AND outcome IN ('correct', 'incorrect')
+                      AND price_at_prediction > 0
+                      AND price_at_validation > 0
                       AND predicted_at >= :start
                       AND predicted_at <= :end
-                      AND direction IN ('up', 'bullish', 'positive', 'alza', 'down', 'bearish', 'negative', 'baja')
                     ORDER BY predicted_at ASC
                 """), {
                     "asset": asset,
@@ -368,44 +371,35 @@ def create_app():
         if not rows:
             return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
 
-        cash = amount
-        position = 0.0
-        last_price = None
+        balance = amount
+        trades = []
 
-        for direction, price in rows:
-            if price and price > 0:
-                if direction in ("up", "bullish", "positive", "alza"):
-                    if cash > 0:
-                        position = cash / price
-                        cash = 0.0
-                elif direction in ("down", "bearish", "negative", "baja"):
-                    if position > 0:
-                        cash = position * price
-                        position = 0.0
-                last_price = price
+        for direction, price_pred, price_val, outcome in rows:
+            pct_change = (price_val - price_pred) / price_pred
 
-        # Close open position with current price
-        if position > 0:
-            try:
-                from src.services.real_price_fetcher import RealPriceFetcher
-                current_price = RealPriceFetcher().get_price(asset)
-                if current_price:
-                    cash = position * current_price
-                elif last_price:
-                    cash = position * last_price
-            except Exception:
-                if last_price:
-                    cash = position * last_price
+            if direction in ("up", "bullish", "positive", "alza"):
+                trade_return = pct_change
+            else:
+                trade_return = -pct_change
 
-        profit_loss = cash - amount
+            profit = balance * trade_return
+            balance += profit
+            trades.append({
+                "direction": direction,
+                "return_pct": round(trade_return * 100, 2),
+                "balance_after": round(balance, 2),
+            })
+
+        profit_loss = balance - amount
         percentage = (profit_loss / amount) * 100 if amount > 0 else 0.0
 
         return jsonify({
             "initial_amount": f"{amount:.2f}",
-            "final_amount": f"{cash:.2f}",
+            "final_amount": f"{balance:.2f}",
             "profit_loss": f"{profit_loss:+.2f}",
             "percentage": f"{percentage:+.2f}",
             "num_signals": len(rows),
+            "trades": trades,
         })
 
     @main_bp.route("/api/newsletter-signup", methods=["POST"])
