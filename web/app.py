@@ -370,31 +370,57 @@ def create_app():
         if not rows:
             return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
 
+        # State machine: IN_MARKET or CASH
+        # Start IN_MARKET — user buys at the price of the first alert
+        state = "IN_MARKET"
         balance = amount
+        entry_price = rows[0][1]  # price_at_prediction of first alert
         loss_avoided = 0.0
+        sell_price = None
         trades = []
 
         for direction, price_pred, price_val, outcome in rows:
-            pct_change = (price_val - price_pred) / price_pred
+            is_down = direction in ("down", "bearish", "negative", "baja")
+            is_up = direction in ("up", "bullish", "positive", "alza")
 
-            if direction in ("up", "bullish", "positive", "alza"):
-                profit = balance * pct_change
-                balance += profit
+            if state == "IN_MARKET" and is_down:
+                # SELL at the alert price
+                sell_price = price_pred
+                pct_change = (sell_price - entry_price) / entry_price
+                balance = balance * (1 + pct_change)
+                state = "CASH"
                 trades.append({
-                    "direction": "up",
+                    "action": "sell",
+                    "price": round(sell_price, 4),
                     "return_pct": round(pct_change * 100, 2),
                     "balance_after": round(balance, 2),
                 })
-            else:
-                # Sell signal: out of market
-                if outcome == "correct" and pct_change < 0:
-                    # Price dropped as predicted — we avoided this loss
-                    loss_avoided += balance * abs(pct_change)
+
+            elif state == "CASH" and is_up:
+                # BUY at the alert price
+                entry_price = price_pred
+                # Calculate loss avoided: if price dropped since we sold
+                if sell_price and price_pred < sell_price:
+                    loss_avoided += balance * ((sell_price - price_pred) / sell_price)
+                state = "IN_MARKET"
                 trades.append({
-                    "direction": "down",
+                    "action": "buy",
+                    "price": round(entry_price, 4),
                     "return_pct": 0,
                     "balance_after": round(balance, 2),
                 })
+
+        # Close open position at end of period using last known price
+        if state == "IN_MARKET" and len(rows) > 0:
+            last_price = rows[-1][2]  # price_at_validation of last alert
+            pct_change = (last_price - entry_price) / entry_price
+            balance = balance * (1 + pct_change)
+            trades.append({
+                "action": "close",
+                "price": round(last_price, 4),
+                "return_pct": round(pct_change * 100, 2),
+                "balance_after": round(balance, 2),
+            })
 
         profit_loss = balance - amount
         percentage = (profit_loss / amount) * 100 if amount > 0 else 0.0
