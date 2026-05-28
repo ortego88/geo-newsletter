@@ -371,25 +371,25 @@ def create_app():
             return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
 
         balance = amount
-        invested = False
+        loss_avoided = 0.0
         trades = []
 
         for direction, price_pred, price_val, outcome in rows:
             pct_change = (price_val - price_pred) / price_pred
 
             if direction in ("up", "bullish", "positive", "alza"):
-                # Buy signal: invest and ride the price change
                 profit = balance * pct_change
                 balance += profit
-                invested = True
                 trades.append({
                     "direction": "up",
                     "return_pct": round(pct_change * 100, 2),
                     "balance_after": round(balance, 2),
                 })
             else:
-                # Sell signal: go to cash, avoid movement
-                invested = False
+                # Sell signal: out of market
+                if outcome == "correct" and pct_change < 0:
+                    # Price dropped as predicted — we avoided this loss
+                    loss_avoided += balance * abs(pct_change)
                 trades.append({
                     "direction": "down",
                     "return_pct": 0,
@@ -404,6 +404,7 @@ def create_app():
             "final_amount": f"{balance:.2f}",
             "profit_loss": f"{profit_loss:+.2f}",
             "percentage": f"{percentage:+.2f}",
+            "loss_avoided": f"{loss_avoided:.2f}",
             "num_signals": len(rows),
             "trades": trades,
         })

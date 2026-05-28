@@ -203,8 +203,17 @@
                   <span class="text-slate-300" data-i18n="sim.percentage">Porcentaje:</span>
                   <span id="percentage" class="font-semibold"></span>
                 </div>
+                <div id="loss-avoided-row" class="hidden flex justify-between pt-3 mt-3 border-t border-slate-600">
+                  <span class="text-slate-300" data-i18n="sim.loss_avoided">Pérdida evitada:</span>
+                  <span id="loss-avoided" class="text-emerald-400 font-semibold"></span>
+                </div>
               </div>
-              <div class="mt-6 p-4 bg-slate-600/50 rounded-lg">
+              <div id="loss-avoided-note" class="hidden mt-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                <p class="text-sm text-emerald-300" data-i18n="sim.loss_avoided_note">
+                  🛡️ Nuestras alertas de venta te protegieron de esta pérdida. Saliste a tiempo antes de las caídas.
+                </p>
+              </div>
+              <div class="mt-4 p-4 bg-slate-600/50 rounded-lg">
                 <p class="text-sm text-slate-300">
                   <strong>Nota:</strong> Esta simulación es hipotética y se basa en las alertas generadas durante el período seleccionado. Los resultados pasados no garantizan rendimientos futuros.
                 </p>
@@ -939,6 +948,16 @@
         document.getElementById('profit-loss').className = parseFloat(data.profit_loss) >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
         document.getElementById('percentage').textContent = data.percentage + '%';
         document.getElementById('percentage').className = parseFloat(data.percentage) >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold';
+
+        var lossAvoided = parseFloat(data.loss_avoided || '0');
+        if (lossAvoided > 0) {
+          document.getElementById('loss-avoided').textContent = '+' + data.loss_avoided + ' €';
+          document.getElementById('loss-avoided-row').classList.remove('hidden');
+          document.getElementById('loss-avoided-note').classList.remove('hidden');
+        } else {
+          document.getElementById('loss-avoided-row').classList.add('hidden');
+          document.getElementById('loss-avoided-note').classList.add('hidden');
+        }
 
         results.classList.remove('hidden');
       } catch (error) {
