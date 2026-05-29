@@ -127,6 +127,8 @@ def create_app():
         accuracy_stats = {
             "total": 0, "correct": 0, "incorrect": 0,
             "accuracy_pct": 0.0, "pending": 0, "neutral": 0,
+            "up_correct": 0, "up_incorrect": 0,
+            "down_correct": 0, "down_incorrect": 0,
         }
 
         try:
@@ -169,7 +171,7 @@ def create_app():
 
                 # Stats — neutral no entra en correct/incorrect
                 all_outcomes = conn.execute(
-                    text(f"SELECT outcome, confidence FROM predictions {where}"), params
+                    text(f"SELECT outcome, confidence, direction FROM predictions {where}"), params
                 ).fetchall()
 
                 pending = sum(1 for r in all_outcomes if r[0] == "pending")
@@ -178,6 +180,14 @@ def create_app():
                 correct = sum(1 for r in decisive if r[0] == "correct")
                 total_decisive = len(decisive)
 
+                # Direction breakdown
+                up_dirs = ("up", "bullish", "positive", "alza")
+                down_dirs = ("down", "bearish", "negative", "baja")
+                up_outcomes = [r for r in decisive if (r[2] or "").lower() in up_dirs]
+                down_outcomes = [r for r in decisive if (r[2] or "").lower() in down_dirs]
+                up_correct = sum(1 for r in up_outcomes if r[0] == "correct")
+                down_correct = sum(1 for r in down_outcomes if r[0] == "correct")
+
                 accuracy_stats = {
                     "total": total_decisive,
                     "correct": correct,
@@ -185,6 +195,10 @@ def create_app():
                     "accuracy_pct": round(correct / total_decisive * 100, 1) if total_decisive else 0.0,
                     "pending": pending,
                     "neutral": neutral,
+                    "up_correct": up_correct,
+                    "up_incorrect": len(up_outcomes) - up_correct,
+                    "down_correct": down_correct,
+                    "down_incorrect": len(down_outcomes) - down_correct,
                 }
 
                 rows = conn.execute(

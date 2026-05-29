@@ -222,6 +222,8 @@ def index():
         "total": 0, "correct": 0, "incorrect": 0,
         "accuracy_pct": 0.0, "high_confidence_accuracy": 0.0,
         "pending": 0, "neutral": 0,
+        "up_correct": 0, "up_incorrect": 0,
+        "down_correct": 0, "down_incorrect": 0,
     }
     try:
         with _get_predictions_conn() as conn2:
@@ -262,7 +264,7 @@ def index():
 
             # Obtener todos los outcomes para las stats
             rows = conn2.execute(
-                text(f"SELECT outcome, confidence FROM predictions {stats_where}"),
+                text(f"SELECT outcome, confidence, direction FROM predictions {stats_where}"),
                 stats_params,
             ).fetchall()
 
@@ -277,6 +279,14 @@ def index():
         hc_correct = sum(1 for r in high_conf if r[0] == "correct")
         hc_accuracy = round(hc_correct / len(high_conf) * 100, 1) if high_conf else 0.0
 
+        # Direction breakdown
+        up_dirs = ("up", "bullish", "positive", "alza")
+        down_dirs = ("down", "bearish", "negative", "baja")
+        up_outcomes = [r for r in outcomes if (r[2] or "").lower() in up_dirs]
+        down_outcomes = [r for r in outcomes if (r[2] or "").lower() in down_dirs]
+        up_correct = sum(1 for r in up_outcomes if r[0] == "correct")
+        down_correct = sum(1 for r in down_outcomes if r[0] == "correct")
+
         accuracy_stats = {
             "total": total,
             "correct": correct,
@@ -285,6 +295,10 @@ def index():
             "high_confidence_accuracy": hc_accuracy,
             "pending": pending,
             "neutral": neutral,
+            "up_correct": up_correct,
+            "up_incorrect": len(up_outcomes) - up_correct,
+            "down_correct": down_correct,
+            "down_incorrect": len(down_outcomes) - down_correct,
         }
     except Exception:
         _logger.warning("Could not load accuracy stats", exc_info=True)
