@@ -89,8 +89,8 @@
         </div>
       {% endif %}
 
-      <!-- Stats row -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
+      <!-- Stats grid: 4 cols mobile, 8 cols desktop -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.alerts_today">Alertas</p>
           <p class="text-white font-bold text-xl">{{ total_alerts }}</p>
@@ -119,10 +119,6 @@
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
           <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_pending }}" onclick="filterByOutcome('pending')" data-dl-action="click" data-dl-format="button" data-dl-component="predictions" data-dl-element="pendings">{{ accuracy_stats.pending }}</p>
         </div>
-      </div>
-
-      <!-- Direction breakdown + best asset -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.up_signals">Alertas de subida ↑</p>
           <p class="font-bold text-lg">

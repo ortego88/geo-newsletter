@@ -37,8 +37,8 @@
 
     <div class="px-4 md:px-8 py-4 md:py-6">
 
-      <!-- Stats row -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
+      <!-- Stats grid: 4 cols mobile, 8 cols desktop -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">{{ t.alerts }}</p>
           <p class="text-white font-bold text-xl">{{ total_alerts }}</p>
@@ -65,10 +65,6 @@
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">{{ t.neutral }}</p>
           <p class="text-slate-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="Pulsa para ver solo alertas neutrales" onclick="filterByOutcome('neutral')">{{ accuracy_stats.neutral }}</p>
         </div>
-      </div>
-
-      <!-- Direction breakdown + best asset -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2">Alertas de subida ↑</p>
           <p class="font-bold text-lg">
