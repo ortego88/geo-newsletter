@@ -129,11 +129,16 @@ def create_app():
             "accuracy_pct": 0.0, "pending": 0, "neutral": 0,
             "up_correct": 0, "up_incorrect": 0,
             "down_correct": 0, "down_incorrect": 0,
+            "best_asset": "", "best_asset_pct": 0.0,
         }
+
+        # Only show predictions for assets in AVAILABLE_ASSETS
+        available_symbols = {a["symbol"].upper() for a in AVAILABLE_ASSETS}
+        available_in_clause = ",".join(f"'{s}'" for s in sorted(available_symbols))
 
         try:
             with _get_predictions_conn() as conn:
-                where = "WHERE 1=1"
+                where = f"WHERE UPPER(asset) IN ({available_in_clause})"
                 params: dict = {}
 
                 # Time filter
@@ -171,7 +176,7 @@ def create_app():
 
                 # Stats — neutral no entra en correct/incorrect
                 all_outcomes = conn.execute(
-                    text(f"SELECT outcome, confidence, direction FROM predictions {where}"), params
+                    text(f"SELECT outcome, confidence, direction, asset FROM predictions {where}"), params
                 ).fetchall()
 
                 pending = sum(1 for r in all_outcomes if r[0] == "pending")
@@ -188,6 +193,26 @@ def create_app():
                 up_correct = sum(1 for r in up_outcomes if r[0] == "correct")
                 down_correct = sum(1 for r in down_outcomes if r[0] == "correct")
 
+                # Best asset by accuracy (min 3 predictions)
+                asset_counts = {}
+                for r in decisive:
+                    a = (r[3] or "").upper()
+                    if not a:
+                        continue
+                    if a not in asset_counts:
+                        asset_counts[a] = {"correct": 0, "total": 0}
+                    asset_counts[a]["total"] += 1
+                    if r[0] == "correct":
+                        asset_counts[a]["correct"] += 1
+                best_asset = ""
+                best_asset_pct = 0.0
+                for a, c in asset_counts.items():
+                    if c["total"] >= 3:
+                        pct = c["correct"] / c["total"] * 100
+                        if pct > best_asset_pct or (pct == best_asset_pct and c["total"] > asset_counts.get(best_asset, {}).get("total", 0)):
+                            best_asset = a
+                            best_asset_pct = pct
+
                 accuracy_stats = {
                     "total": total_decisive,
                     "correct": correct,
@@ -199,6 +224,8 @@ def create_app():
                     "up_incorrect": len(up_outcomes) - up_correct,
                     "down_correct": down_correct,
                     "down_incorrect": len(down_outcomes) - down_correct,
+                    "best_asset": best_asset,
+                    "best_asset_pct": round(best_asset_pct, 0),
                 }
 
                 rows = conn.execute(

@@ -224,6 +224,7 @@ def index():
         "pending": 0, "neutral": 0,
         "up_correct": 0, "up_incorrect": 0,
         "down_correct": 0, "down_incorrect": 0,
+        "best_asset": "", "best_asset_pct": 0.0,
     }
     try:
         with _get_predictions_conn() as conn2:
@@ -264,7 +265,7 @@ def index():
 
             # Obtener todos los outcomes para las stats
             rows = conn2.execute(
-                text(f"SELECT outcome, confidence, direction FROM predictions {stats_where}"),
+                text(f"SELECT outcome, confidence, direction, asset FROM predictions {stats_where}"),
                 stats_params,
             ).fetchall()
 
@@ -287,6 +288,26 @@ def index():
         up_correct = sum(1 for r in up_outcomes if r[0] == "correct")
         down_correct = sum(1 for r in down_outcomes if r[0] == "correct")
 
+        # Best asset by accuracy (min 3 predictions)
+        asset_counts = {}
+        for r in outcomes:
+            a = (r[3] or "").upper()
+            if not a:
+                continue
+            if a not in asset_counts:
+                asset_counts[a] = {"correct": 0, "total": 0}
+            asset_counts[a]["total"] += 1
+            if r[0] == "correct":
+                asset_counts[a]["correct"] += 1
+        best_asset = ""
+        best_asset_pct = 0.0
+        for a, c in asset_counts.items():
+            if c["total"] >= 3:
+                pct = c["correct"] / c["total"] * 100
+                if pct > best_asset_pct or (pct == best_asset_pct and c["total"] > asset_counts.get(best_asset, {}).get("total", 0)):
+                    best_asset = a
+                    best_asset_pct = pct
+
         accuracy_stats = {
             "total": total,
             "correct": correct,
@@ -299,6 +320,8 @@ def index():
             "up_incorrect": len(up_outcomes) - up_correct,
             "down_correct": down_correct,
             "down_incorrect": len(down_outcomes) - down_correct,
+            "best_asset": best_asset,
+            "best_asset_pct": round(best_asset_pct, 0),
         }
     except Exception:
         _logger.warning("Could not load accuracy stats", exc_info=True)

@@ -121,8 +121,8 @@
         </div>
       </div>
 
-      <!-- Direction breakdown -->
-      <div class="grid grid-cols-2 gap-4 mb-6">
+      <!-- Direction breakdown + best asset -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.up_signals">Alertas de subida ↑</p>
           <p class="font-bold text-lg">
@@ -142,6 +142,17 @@
             <span class="text-down-red">{{ accuracy_stats.down_incorrect }}</span>
             {% if accuracy_stats.down_correct + accuracy_stats.down_incorrect > 0 %}
               <span class="text-slate-400 text-sm font-normal ml-2">({{ "%.0f"|format(accuracy_stats.down_correct / (accuracy_stats.down_correct + accuracy_stats.down_incorrect) * 100) }}%)</span>
+            {% endif %}
+          </p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+          <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.best_asset">Mejor activo</p>
+          <p class="font-bold text-lg">
+            {% if accuracy_stats.best_asset %}
+              <span class="text-white">{{ accuracy_stats.best_asset }}</span>
+              <span class="text-up-green text-sm ml-1">{{ accuracy_stats.best_asset_pct|int }}%</span>
+            {% else %}
+              <span class="text-slate-500">—</span>
             {% endif %}
           </p>
         </div>
@@ -431,6 +442,7 @@
       "dash.pending": "Pendientes",
       "dash.up_signals": "Alertas de subida ↑",
       "dash.down_signals": "Alertas de bajada ↓",
+      "dash.best_asset": "Mejor activo",
       "dash.col_event": "Título",
       "dash.col_asset": "Activo",
       "dash.col_direction": "Dir",
@@ -467,6 +479,7 @@
       "dash.pending": "Pending",
       "dash.up_signals": "Up signals ↑",
       "dash.down_signals": "Down signals ↓",
+      "dash.best_asset": "Best asset",
       "dash.col_event": "Title",
       "dash.col_asset": "Asset",
       "dash.col_direction": "Dir",
