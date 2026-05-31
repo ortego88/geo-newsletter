@@ -268,3 +268,95 @@ def reset_predictions():
         num_predictions=num_predictions,
         num_recent_articles=num_recent_articles,
     )
+
+
+@admin_bp.route("/seed-users", methods=["GET", "POST"])
+def seed_users():
+    if not _admin_required():
+        return redirect(url_for("admin.login"))
+
+    from werkzeug.security import generate_password_hash
+    from web.models import init_db
+
+    SHARED_PASSWORD = "Trianio2026!"
+    TEST_USERS = [
+        {"email": f"demo{i}@trianio.com", "name": f"Demo User {i}"}
+        for i in range(1, 11)
+    ]
+
+    if request.method == "POST":
+        init_db()
+        pw_hash = generate_password_hash(SHARED_PASSWORD)
+        now = datetime.utcnow().isoformat()
+        created = 0
+        skipped = 0
+
+        try:
+            from web.db_engine import get_engine as _get_app_engine
+            with _get_app_engine("app").connect() as conn:
+                for u in TEST_USERS:
+                    existing = conn.execute(
+                        text("SELECT id FROM users WHERE email = :email"),
+                        {"email": u["email"]},
+                    ).fetchone()
+                    if existing:
+                        skipped += 1
+                        continue
+
+                    result = conn.execute(
+                        text(
+                            "INSERT INTO users (email, password_hash, name, language, created_at, is_active) "
+                            "VALUES (:email, :pw, :name, 'es', :now, 1) RETURNING id"
+                        ),
+                        {"email": u["email"], "pw": pw_hash, "name": u["name"], "now": now},
+                    )
+                    user_id = result.fetchone()[0]
+                    conn.execute(
+                        text(
+                            "INSERT INTO subscriptions (user_id, plan, billing_cycle, status, created_at, updated_at) "
+                            "VALUES (:uid, 'pro', 'monthly', 'active', :now, :now)"
+                        ),
+                        {"uid": user_id, "now": now},
+                    )
+                    created += 1
+                conn.commit()
+
+            flash(f"✅ {created} usuarios creados, {skipped} ya existían. Password: {SHARED_PASSWORD}", "success")
+        except Exception as e:
+            flash(f"❌ Error: {e}", "danger")
+
+        return redirect(url_for("admin.seed_users"))
+
+    # GET — show current state
+    existing_users = []
+    try:
+        from web.db_engine import get_engine as _get_app_engine
+        with _get_app_engine("app").connect() as conn:
+            for u in TEST_USERS:
+                row = conn.execute(
+                    text("SELECT id, email, created_at FROM users WHERE email = :email"),
+                    {"email": u["email"]},
+                ).fetchone()
+                existing_users.append({"email": u["email"], "exists": row is not None, "id": row[0] if row else None})
+    except Exception:
+        pass
+
+    html = f"""
+    <!DOCTYPE html>
+    <html><head><title>Seed Test Users</title>
+    <style>body{{font-family:monospace;background:#1e293b;color:#e2e8f0;padding:2rem}}
+    .btn{{background:#10b981;color:white;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px}}
+    .btn:hover{{background:#059669}} table{{border-collapse:collapse;margin:1rem 0}} td,th{{padding:6px 12px;border:1px solid #475569}}
+    .exists{{color:#10b981}} .missing{{color:#94a3b8}}</style></head>
+    <body><h1>Seed Test Users</h1>
+    <p>Password compartida: <strong>{SHARED_PASSWORD}</strong></p>
+    <p>Plan: <strong>Profesional (pro)</strong> — activo, sin trial</p>
+    <table><tr><th>Email</th><th>Estado</th></tr>
+    {''.join(f'<tr><td>{u["email"]}</td><td class="{"exists" if u["exists"] else "missing"}">{"✅ Existe (id=" + str(u["id"]) + ")" if u["exists"] else "⏳ Pendiente"}</td></tr>' for u in existing_users)}
+    </table>
+    <form method="POST" style="margin-top:1rem">
+    <button type="submit" class="btn">Crear usuarios faltantes</button>
+    </form>
+    <br><a href="{url_for('admin.dashboard')}" style="color:#60a5fa">← Volver al admin</a>
+    </body></html>"""
+    return html
