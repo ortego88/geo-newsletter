@@ -71,6 +71,10 @@ def _redirect_based_on_completion_status():
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
+    import os
+    if os.getenv("REGISTRATION_OPEN", "false").lower() not in ("true", "1", "yes"):
+        flash("El registro está cerrado temporalmente. Contacta con nosotros para obtener acceso.", "error")
+        return redirect(url_for("auth.login"))
     if current_user.is_authenticated:
         # Si ya está autenticado, redirigir según el estado del flujo
         return _redirect_based_on_completion_status()

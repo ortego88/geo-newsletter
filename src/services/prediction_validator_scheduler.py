@@ -21,6 +21,17 @@ from src.services.real_price_fetcher import RealPriceFetcher
 logger = logging.getLogger("prediction_validator")
 
 
+def _format_price_usd(price: float) -> str:
+    """Formats a price in readable USD format."""
+    if price >= 1000:
+        return f"${price:,.0f}"
+    if price >= 1:
+        return f"${price:.2f}"
+    if price >= 0.01:
+        return f"${price:.4f}"
+    return f"${price:.6f}"
+
+
 def _format_validation_message(result: dict, stats: dict | None = None) -> str:
     """Formats the validation result message."""
     outcome = result.get("outcome", "unknown")
@@ -48,8 +59,8 @@ def _format_validation_message(result: dict, stats: dict | None = None) -> str:
         f"",
         f"• Activo: {asset}",
         f"• Dirección predicha: {dir_label}",
-        f"• Precio en alerta: {price_at:.4g}",
-        f"• Precio actual: {price_now:.4g}",
+        f"• Precio en alerta: {_format_price_usd(price_at)}",
+        f"• Precio actual: {_format_price_usd(price_now)}",
         f"• Cambio real: {change_emoji} {actual_change:+.2f}%",
         f"",
         f"{outcome_emoji} Predicción: {outcome_label}",

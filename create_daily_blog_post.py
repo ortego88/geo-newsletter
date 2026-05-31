@@ -83,9 +83,9 @@ TOPICS = [
         "prompt": "Repaso mensual de eventos geopolíticos relevantes y su impacto real en activos financieros. Incluye datos, gráficos conceptuales, y lecciones aprendidas."
     },
     {
-        "title": "Telegram y WhatsApp: Las mejores herramientas para alertas de trading",
-        "keywords": "alertas telegram, alertas whatsapp, señales trading",
-        "prompt": "Artículo sobre las ventajas de recibir alertas de trading en Telegram/WhatsApp vs email o apps dedicadas. Velocidad, conveniencia, ejemplos de uso."
+        "title": "Telegram: La mejor herramienta para alertas de trading en tiempo real",
+        "keywords": "alertas telegram, señales trading, bot telegram crypto",
+        "prompt": "Artículo sobre las ventajas de recibir alertas de trading en Telegram vs email o apps dedicadas. Velocidad, bots, canales, conveniencia, ejemplos de uso."
     },
     {
         "title": "Criptomonedas y geopolítica: ¿Cómo se relacionan?",
@@ -93,7 +93,7 @@ TOPICS = [
         "prompt": "Análisis de la relación entre eventos geopolíticos y el mercado crypto. Regulación, sanciones, adopción institucional, casos de uso reales."
     },
     {
-        "title": "Cómo funciona el scoring de eventos en GEO-NEWSLETTER",
+        "title": "Cómo funciona el scoring de eventos en Trianio",
         "keywords": "scoring eventos, sistema de puntuación, alertas automáticas",
         "prompt": "Explica cómo nuestro sistema de IA puntúa cada evento de 0 a 100 según su relevancia de mercado. Habla de factores: fuente, impacto potencial, confianza, y cómo se traduce en alertas."
     },
@@ -121,7 +121,7 @@ def _slugify(text):
 def generate_content_with_ai(topic):
     """Genera contenido usando Claude o GPT."""
     prompt = f"""
-Escribe un artículo de blog profesional en español para GEO-NEWSLETTER.
+Escribe un artículo de blog profesional en español para Trianio.
 
 TEMA: {topic['title']}
 INSTRUCCIONES: {topic['prompt']}
@@ -242,7 +242,7 @@ def publish_post(title, content, keywords, excerpt=None, featured_image=None):
                 "title": title,
                 "excerpt": excerpt,
                 "content": content,
-                "author": "Equipo GEO-NEWSLETTER",
+                "author": "Equipo Trianio",
                 "published": now,
                 "updated": now,
                 "meta_desc": meta_description,

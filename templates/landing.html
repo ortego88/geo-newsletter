@@ -19,7 +19,7 @@
     <div class="max-w-4xl mx-auto text-center">
       <div class="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm px-4 py-1.5 rounded-full mb-8">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span data-i18n="hero.badge">Crypto alerts · 35+ assets · AI-powered intelligence</span>
+        <span data-i18n="hero.badge">Crypto alerts · 65+ assets · AI-powered intelligence</span>
       </div>
       <h1 class="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6 font-display">
         <span data-i18n="hero.h1_part1">Intelligence</span> <span class="text-emerald-400" data-i18n="hero.h1_ai">before</span><br>
@@ -127,36 +127,86 @@
               <label class="block text-sm font-medium text-slate-300 mb-2" data-i18n="sim.asset">Activo</label>
               <select id="sim-asset" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white focus:border-emerald-400 focus:outline-none">
                 <option value="" data-i18n="sim.select_asset">Seleccionar activo...</option>
-                <optgroup label="Top Crypto">
+                <optgroup label="Top 20">
                   <option value="BTC">Bitcoin (BTC)</option>
                   <option value="ETH">Ethereum (ETH)</option>
-                  <option value="SOL">Solana (SOL)</option>
                   <option value="XRP">Ripple (XRP)</option>
+                  <option value="SOL">Solana (SOL)</option>
                   <option value="BNB">Binance Coin (BNB)</option>
                   <option value="ADA">Cardano (ADA)</option>
                   <option value="DOGE">Dogecoin (DOGE)</option>
-                  <option value="DOT">Polkadot (DOT)</option>
-                  <option value="AVAX">Avalanche (AVAX)</option>
+                  <option value="TRX">Tron (TRX)</option>
+                  <option value="TON">Toncoin (TON)</option>
                   <option value="LINK">Chainlink (LINK)</option>
-                </optgroup>
-                <optgroup label="DeFi & L2">
+                  <option value="AVAX">Avalanche (AVAX)</option>
+                  <option value="SHIB">Shiba Inu (SHIB)</option>
+                  <option value="DOT">Polkadot (DOT)</option>
+                  <option value="SUI">Sui (SUI)</option>
+                  <option value="LTC">Litecoin (LTC)</option>
+                  <option value="HBAR">Hedera (HBAR)</option>
                   <option value="UNI">Uniswap (UNI)</option>
-                  <option value="AAVE">Aave (AAVE)</option>
+                  <option value="ATOM">Cosmos (ATOM)</option>
+                  <option value="XLM">Stellar (XLM)</option>
+                  <option value="NEAR">NEAR Protocol (NEAR)</option>
+                </optgroup>
+                <optgroup label="Layer 2 & Infra">
                   <option value="ARB">Arbitrum (ARB)</option>
                   <option value="OP">Optimism (OP)</option>
                   <option value="MATIC">Polygon (MATIC)</option>
-                  <option value="SUI">Sui (SUI)</option>
-                  <option value="APT">Aptos (APT)</option>
-                  <option value="INJ">Injective (INJ)</option>
+                  <option value="ICP">Internet Computer (ICP)</option>
+                  <option value="FIL">Filecoin (FIL)</option>
+                  <option value="IMX">Immutable (IMX)</option>
+                  <option value="STX">Stacks (STX)</option>
+                  <option value="MNT">Mantle (MNT)</option>
                 </optgroup>
-                <optgroup label="Otros">
-                  <option value="TON">Toncoin (TON)</option>
-                  <option value="SHIB">Shiba Inu (SHIB)</option>
-                  <option value="PEPE">Pepe (PEPE)</option>
-                  <option value="RENDER">Render (RENDER)</option>
+                <optgroup label="DeFi">
+                  <option value="AAVE">Aave (AAVE)</option>
+                  <option value="MKR">Maker (MKR)</option>
+                  <option value="CRV">Curve (CRV)</option>
+                  <option value="LDO">Lido DAO (LDO)</option>
+                  <option value="DYDX">dYdX (DYDX)</option>
+                  <option value="SNX">Synthetix (SNX)</option>
+                  <option value="PENDLE">Pendle (PENDLE)</option>
+                  <option value="JUPITER">Jupiter (JUPITER)</option>
+                </optgroup>
+                <optgroup label="AI & Data">
                   <option value="FET">Fetch.ai (FET)</option>
-                  <option value="NEAR">NEAR Protocol (NEAR)</option>
-                  <option value="LTC">Litecoin (LTC)</option>
+                  <option value="RENDER">Render (RENDER)</option>
+                  <option value="INJ">Injective (INJ)</option>
+                  <option value="TAO">Bittensor (TAO)</option>
+                  <option value="ONDO">Ondo Finance (ONDO)</option>
+                  <option value="AIOZ">AIOZ Network (AIOZ)</option>
+                </optgroup>
+                <optgroup label="Gaming & Metaverse">
+                  <option value="AXS">Axie Infinity (AXS)</option>
+                  <option value="SAND">The Sandbox (SAND)</option>
+                  <option value="MANA">Decentraland (MANA)</option>
+                  <option value="GALA">Gala (GALA)</option>
+                  <option value="ENJ">Enjin Coin (ENJ)</option>
+                </optgroup>
+                <optgroup label="New L1s">
+                  <option value="APT">Aptos (APT)</option>
+                  <option value="SEI">Sei (SEI)</option>
+                  <option value="TIA">Celestia (TIA)</option>
+                  <option value="KAS">Kaspa (KAS)</option>
+                  <option value="ALGO">Algorand (ALGO)</option>
+                </optgroup>
+                <optgroup label="Memecoins">
+                  <option value="PEPE">Pepe (PEPE)</option>
+                  <option value="WIF">Dogwifhat (WIF)</option>
+                  <option value="FLOKI">Floki (FLOKI)</option>
+                  <option value="BONK">Bonk (BONK)</option>
+                </optgroup>
+                <optgroup label="Exchange & Otros">
+                  <option value="CRO">Cronos (CRO)</option>
+                  <option value="OKB">OKB (OKB)</option>
+                  <option value="GT">Gate Token (GT)</option>
+                  <option value="VET">VeChain (VET)</option>
+                  <option value="THETA">Theta (THETA)</option>
+                  <option value="FTM">Fantom (FTM)</option>
+                  <option value="EOS">EOS (EOS)</option>
+                  <option value="RUNE">THORChain (RUNE)</option>
+                  <option value="GRT">The Graph (GRT)</option>
                 </optgroup>
               </select>
             </div>
@@ -354,47 +404,6 @@
     </div>
   </section>
 
-  <!-- TESTIMONIALS -->
-  <section class="py-20 px-6">
-    <div class="max-w-4xl mx-auto">
-      <h2 class="text-3xl font-bold text-center text-white mb-12" data-i18n="testimonials.title">Lo que dicen nuestros usuarios</h2>
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <div class="text-emerald-400 text-2xl mb-3">★★★★★</div>
-          <p class="text-slate-300 text-sm mb-4">"Las alertas me llegaron antes de que WTI se desplomara un 4% por las tensiones en Oriente Medio. Inestimable para mi operativa."</p>
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">JM</div>
-            <div>
-              <p class="text-white text-sm font-semibold">Javier M.</p>
-              <p class="text-slate-500 text-xs">Trader de futuros · Madrid</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <div class="text-emerald-400 text-2xl mb-3">★★★★★</div>
-          <p class="text-slate-300 text-sm mb-4">"Uso el plan Premium para GOLD y BTC. Las alertas en español con el razonamiento del por qué me ahorran mucho tiempo de análisis."</p>
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">SL</div>
-            <div>
-              <p class="text-white text-sm font-semibold">Sara L.</p>
-              <p class="text-slate-500 text-xs">Inversora particular · Barcelona</p>
-            </div>
-          </div>
-        </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-          <div class="text-emerald-400 text-2xl mb-3">★★★★☆</div>
-          <p class="text-slate-300 text-sm mb-4">"Perfecto para el plan Profesional: tengo la API integrada en mi bot de trading y la precisión es sorprendente para ser IA pura."</p>
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">RG</div>
-            <div>
-              <p class="text-white text-sm font-semibold">Rodrigo G.</p>
-              <p class="text-slate-500 text-xs">Quant developer · Buenos Aires</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- FAQ -->
   <section id="faq" class="py-20 px-6 bg-slate-800/30">
@@ -576,7 +585,7 @@
         "nav.login": "Iniciar sesión",
         "nav.start_free": "Empezar gratis",
         "nav.history": "Historial",
-        "hero.badge": "Alertas crypto en tiempo real · 35+ activos · Inteligencia con IA",
+        "hero.badge": "Alertas crypto en tiempo real · 65+ activos · Inteligencia con IA",
         "hero.h1_part1": "Intelligence",
         "hero.h1_ai": "before",
         "hero.h1_part2": "the market",
@@ -615,7 +624,6 @@
         "plan.basic.name": "Básica",
         "plan.premium.name": "Premium",
         "plan.pro.name": "Profesional",
-        "testimonials.title": "Lo que dicen nuestros usuarios",
         "faq.title": "Preguntas frecuentes",
         "faq.q1": "¿Necesito tarjeta de crédito para la prueba gratuita?",
         "faq.a1": "Sí, pedimos los datos de pago al registrarte, pero no se realizará ningún cargo hasta que finalice el período de prueba de 7 días. Puedes cancelar en cualquier momento antes de que termine.",
@@ -693,7 +701,7 @@
         "nav.login": "Sign in",
         "nav.start_free": "Start free",
         "nav.history": "History",
-        "hero.badge": "Crypto alerts · 35+ assets · AI-powered intelligence",
+        "hero.badge": "Crypto alerts · 65+ assets · AI-powered intelligence",
         "hero.h1_part1": "Intelligence",
         "hero.h1_ai": "before",
         "hero.h1_part2": "the market",
@@ -732,7 +740,6 @@
         "plan.basic.name": "Basic",
         "plan.premium.name": "Premium",
         "plan.pro.name": "Professional",
-        "testimonials.title": "What our users say",
         "faq.title": "Frequently asked questions",
         "faq.q1": "Do I need a credit card for the free trial?",
         "faq.a1": "Yes, we ask for payment details when you register, but no charge will be made until the 7-day trial period ends. You can cancel at any time before that.",

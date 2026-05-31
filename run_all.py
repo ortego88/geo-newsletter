@@ -220,45 +220,19 @@ def _send_pipeline_alerts(events: list):
 
     logger.info(f"📊 {len(saved_predictions)} eventos listos para alertar")
 
-    # Step 2: send to global channel (filtered by TELEGRAM_ALERT_ASSETS env var)
-    subscribed = get_subscribed_assets()
-    global_events = saved_predictions
-    if subscribed:
-        global_events = [e for e in saved_predictions if _get_event_assets(e) & subscribed]
-
-    sent_global = 0
+    # Step 2: send per-user alerts based on telegram_chat_id + selected_assets
+    # (the public channel only gets 1 BTC alert/day via send_daily_channel_alert + daily summary)
     alerted_prediction_ids = set()
-    for event in global_events:
-        msg = format_telegram_alert(event, event["analysis"])
-        if send_telegram(msg):
-            sent_global += 1
-            alerted_prediction_ids.add(event.get("prediction_id"))
-            conflict_tag = " [conflicto resuelto]" if event.get("_conflict_resolved") else ""
-            logger.info(f"✅ Alerta global enviada{conflict_tag}: {event.get('title','')[:60]}")
-
-    logger.info(f"📤 Canal global: {sent_global}/{len(global_events)} alertas enviadas")
-
-    # Step 3: send per-user alerts based on telegram_chat_id + selected_assets
     user_sent = _send_per_user_alerts(saved_predictions, format_telegram_alert, send_telegram)
     for event in saved_predictions:
         alerted_prediction_ids.add(event.get("prediction_id"))
 
-    # Step 4: mark sent predictions as alerted (for historical filter accuracy)
+    # Step 3: mark sent predictions as alerted (for historical filter accuracy)
     for pid in alerted_prediction_ids:
         if pid:
             tracker.mark_as_alerted(pid)
 
-    # Enviar también por WhatsApp si está configurado
-    try:
-        from src.services.whatsapp_sender import send_whatsapp, is_whatsapp_configured
-        if is_whatsapp_configured():
-            for event in global_events:
-                msg = format_telegram_alert(event, event["analysis"])
-                send_whatsapp(msg)
-    except Exception as e:
-        logger.warning(f"Error en envío WhatsApp: {e}")
-
-    logger.info(f"📤 Total alertas enviadas en este ciclo: {sent_global + user_sent}")
+    logger.info(f"📤 Total alertas per-usuario enviadas en este ciclo: {user_sent}")
 
 
 def run_pipeline_cycle():
@@ -288,6 +262,18 @@ def run_pipeline_cycle():
 
     except Exception as e:
         logger.error(f"Error en ciclo de pipeline: {e}", exc_info=True)
+    finally:
+        try:
+            from src.services.claude_analyzer import get_daily_token_usage
+            usage = get_daily_token_usage()
+            if usage["calls"] > 0:
+                logger.info(
+                    f"💰 Tokens hoy ({usage['date']}): "
+                    f"input={usage['input_tokens']:,} output={usage['output_tokens']:,} "
+                    f"calls={usage['calls']}"
+                )
+        except Exception:
+            pass
 
 
 def start_scheduler():

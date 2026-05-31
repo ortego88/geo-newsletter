@@ -17,6 +17,39 @@ from typing import List, Dict, Optional
 
 logger = logging.getLogger("claude")
 
+# ── Token usage tracking ─────────────────────────────────────────────────────
+_token_usage = {"date": "", "input": 0, "output": 0, "calls": 0}
+
+
+def _track_token_usage(input_tokens: int, output_tokens: int):
+    """Tracks daily token usage and logs a summary each cycle."""
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    if _token_usage["date"] != today:
+        if _token_usage["date"]:
+            logger.info(
+                f"💰 Token usage (final {_token_usage['date']}): "
+                f"input={_token_usage['input']:,} output={_token_usage['output']:,} "
+                f"calls={_token_usage['calls']}"
+            )
+        _token_usage["date"] = today
+        _token_usage["input"] = 0
+        _token_usage["output"] = 0
+        _token_usage["calls"] = 0
+    _token_usage["input"] += input_tokens
+    _token_usage["output"] += output_tokens
+    _token_usage["calls"] += 1
+
+
+def get_daily_token_usage() -> dict:
+    """Returns current day's token usage stats."""
+    return {
+        "date": _token_usage["date"],
+        "input_tokens": _token_usage["input"],
+        "output_tokens": _token_usage["output"],
+        "calls": _token_usage["calls"],
+    }
+
+
 # Configuración para API directa de Anthropic
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6-20250514")
@@ -300,6 +333,13 @@ def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dic
         response_body = json_lib.loads(response['body'].read())
         raw_response = response_body['content'][0]['text'].strip()
 
+        # Log token usage
+        usage = response_body.get("usage", {})
+        input_tokens = usage.get("input_tokens", 0)
+        output_tokens = usage.get("output_tokens", 0)
+        logger.info(f"🔢 Tokens (Bedrock): input={input_tokens} output={output_tokens} total={input_tokens + output_tokens}")
+        _track_token_usage(input_tokens, output_tokens)
+
         logger.debug(f"Claude (Bedrock) response: {raw_response}")
         return _parse_json_response(raw_response)
 
@@ -327,6 +367,13 @@ def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict
 
         # Claude devuelve la respuesta en message.content[0].text
         raw_response = message.content[0].text.strip()
+
+        # Log token usage
+        input_tokens = message.usage.input_tokens
+        output_tokens = message.usage.output_tokens
+        logger.info(f"🔢 Tokens (Direct): input={input_tokens} output={output_tokens} total={input_tokens + output_tokens}")
+        _track_token_usage(input_tokens, output_tokens)
+
         logger.debug(f"Claude (Direct API) response: {raw_response}")
 
         return _parse_json_response(raw_response)
