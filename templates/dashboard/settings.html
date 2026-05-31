@@ -38,7 +38,7 @@
         {% for category, message in messages %}
           <div class="mb-4 p-3 rounded-lg text-sm
             {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
-            {% elif category == 'success' %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
+            {% elif category in ('success', 'info') %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400
             {% else %}bg-amber-500/10 border border-amber-500/30 text-amber-400{% endif %}">
             {{ message }}
           </div>
@@ -83,7 +83,7 @@
             <p class="text-slate-300 text-sm">{{ t.asset_changes_warning_msg }}</p>
           </div>
           {% endif %}
-          {% if is_locked_for_changes %}
+          {% if is_locked_for_changes and not just_saved %}
           <div class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
             <p class="text-red-400 text-sm font-semibold">{{ t.changes_locked_title }}</p>
             <p class="text-slate-300 text-sm">{{ t.changes_locked_msg_part1 }} {{ next_change_allowed }}.</p>

@@ -461,7 +461,7 @@ def settings():
             if next_step == "select_assets":
                 return redirect(url_for("dashboard_web.index"))
 
-            return redirect(url_for("dashboard_web.settings"))
+            return redirect(url_for("dashboard_web.settings", saved="1"))
 
     # Verificar si está en periodo de bloqueo de 24h
     is_locked_for_changes = False
@@ -501,6 +501,8 @@ def settings():
         if bot_username else ""
     )
 
+    just_saved = request.args.get("saved") == "1"
+
     return render_template(
         "dashboard/settings.html",
         sub=sub,
@@ -513,6 +515,7 @@ def settings():
         next_step=next_step,
         trial_expired=False,
         telegram_link_url=telegram_link_url,
+        just_saved=just_saved,
     )
 
 
