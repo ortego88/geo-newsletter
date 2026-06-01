@@ -25,13 +25,13 @@ def _slugify(text):
 
 # Artículo inicial de bienvenida
 FIRST_POST = {
-    "title": "Bienvenido a GEO-NEWSLETTER: Tu fuente de alertas geopolíticas con IA",
+    "title": "Bienvenido a Trianio: Tu fuente de alertas crypto con IA",
     "excerpt": "Descubre cómo la inteligencia artificial puede ayudarte a anticipar movimientos de mercado analizando eventos geopolíticos en tiempo real.",
-    "keywords": "alertas geopolíticas, trading IA, inteligencia artificial, análisis mercados",
+    "keywords": "alertas crypto, trading IA, inteligencia artificial, análisis mercados",
     "content": """
-<h2>¿Qué es GEO-NEWSLETTER?</h2>
+<h2>¿Qué es Trianio?</h2>
 
-<p>GEO-NEWSLETTER es una plataforma innovadora que utiliza inteligencia artificial para analizar eventos geopolíticos globales y generar alertas de trading en tiempo real. Nuestro sistema monitoriza más de 50 fuentes de noticias las 24 horas del día, 7 días a la semana.</p>
+<p>Trianio es una plataforma innovadora que utiliza inteligencia artificial para analizar eventos geopolíticos globales y generar alertas de trading en tiempo real. Nuestro sistema monitoriza más de 50 fuentes de noticias las 24 horas del día, 7 días a la semana.</p>
 
 <h2>¿Cómo funciona?</h2>
 
@@ -67,7 +67,7 @@ FIRST_POST = {
 
 <h2>Empieza gratis hoy</h2>
 
-<p>Prueba GEO-NEWSLETTER durante 7 días sin compromiso. Sin tarjeta de crédito requerida hasta el día 8. Recibe alertas reales desde el primer día y comprueba por ti mismo el poder de la inteligencia artificial aplicada al trading.</p>
+<p>Prueba Trianio durante 7 días sin compromiso. Sin tarjeta de crédito requerida hasta el día 8. Recibe alertas reales desde el primer día y comprueba por ti mismo el poder de la inteligencia artificial aplicada al trading.</p>
 
 <blockquote>
 <p>"La geopolítica mueve los mercados. Ahora puedes estar un paso adelante."</p>
@@ -119,7 +119,7 @@ def main():
                 "title": FIRST_POST["title"],
                 "excerpt": FIRST_POST["excerpt"],
                 "content": FIRST_POST["content"],
-                "author": "Equipo GEO-NEWSLETTER",
+                "author": "Equipo Trianio",
                 "published": now,
                 "updated": now,
                 "meta_desc": FIRST_POST["excerpt"][:160],

@@ -120,14 +120,14 @@
         <div class="bg-gradient-to-br from-emerald-900/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 text-center">
           <p class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="landing.best_gain_label">Mejor rentabilidad 7 días</p>
           <p class="text-4xl font-extrabold text-white mb-1">+{{ best_performers.best_gain.pct }}%</p>
-          <p class="text-slate-400 text-sm">{{ best_performers.best_gain.asset }} <span data-i18n="landing.best_gain_suffix">siguiendo nuestras alertas</span></p>
+          <p class="text-slate-400 text-sm">{{ best_performers.best_gain.asset }} <span data-i18n="landing.best_gain_suffix">siguiendo las alertas</span></p>
         </div>
         {% endif %}
         {% if best_performers.best_avoided.pct > 0 %}
         <div class="bg-gradient-to-br from-amber-900/30 to-slate-900 border border-amber-500/30 rounded-2xl p-6 text-center">
           <p class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="landing.best_avoided_label">Mayores pérdidas evitadas 7 días</p>
           <p class="text-4xl font-extrabold text-white mb-1">-{{ best_performers.best_avoided.pct }}%</p>
-          <p class="text-slate-400 text-sm">{{ best_performers.best_avoided.asset }} <span data-i18n="landing.best_avoided_suffix">vendiendo a tiempo con nuestra alerta</span></p>
+          <p class="text-slate-400 text-sm">{{ best_performers.best_avoided.asset }} <span data-i18n="landing.best_avoided_suffix">vendiendo a tiempo siguiendo las alertas</span></p>
         </div>
         {% endif %}
       </div>
@@ -140,7 +140,7 @@
       <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/20 rounded-3xl p-10 md:p-14">
         <div class="text-center mb-10">
           <span class="inline-block bg-emerald-500/10 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full mb-4 uppercase tracking-widest" data-i18n="sim.label">Simulador</span>
-          <h2 class="text-3xl font-bold text-white mb-4" data-i18n="sim.title">¿Cuánto hubieras ganado siguiendo nuestras alertas?</h2>
+          <h2 class="text-3xl font-bold text-white mb-4" data-i18n="sim.title">¿Cuánto hubieras ganado siguiendo las alertas?</h2>
           <p class="text-slate-400 max-w-2xl mx-auto" data-i18n="sim.desc">Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.</p>
         </div>
 
@@ -686,11 +686,11 @@
         "plan.pro.f7": "Acceso prioritario a la app",
         "sticky.cta": "¿Cuánto ganarías?",
         "landing.best_gain_label": "Mejor rentabilidad 7 días",
-        "landing.best_gain_suffix": "siguiendo nuestras alertas",
+        "landing.best_gain_suffix": "siguiendo las alertas",
         "landing.best_avoided_label": "Mayores pérdidas evitadas 7 días",
-        "landing.best_avoided_suffix": "vendiendo a tiempo con nuestra alerta",
+        "landing.best_avoided_suffix": "vendiendo a tiempo siguiendo las alertas",
         "sim.label": "Simulador",
-        "sim.title": "¿Cuánto hubieras ganado siguiendo nuestras alertas?",
+        "sim.title": "¿Cuánto hubieras ganado siguiendo las alertas?",
         "sim.desc": "Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.",
         "sim.asset": "Activo",
         "sim.select_asset": "Seleccionar activo...",
@@ -806,11 +806,11 @@
         "plan.pro.f7": "Priority app access",
         "sticky.cta": "How much would you earn?",
         "landing.best_gain_label": "Best return in 7 days",
-        "landing.best_gain_suffix": "following our alerts",
+        "landing.best_gain_suffix": "following the alerts",
         "landing.best_avoided_label": "Biggest loss avoided in 7 days",
-        "landing.best_avoided_suffix": "selling in time with our alert",
+        "landing.best_avoided_suffix": "selling in time following the alerts",
         "sim.label": "Simulator",
-        "sim.title": "How much would you have earned following our alerts?",
+        "sim.title": "How much would you have earned following the alerts?",
         "sim.desc": "Select an asset, a time period and an initial amount. We show you the result of investing following our buy/sell signals based on geopolitical events.",
         "sim.asset": "Asset",
         "sim.select_asset": "Select asset...",
