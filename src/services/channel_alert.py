@@ -47,10 +47,19 @@ def _init_channel_log_table():
                 asset TEXT,
                 score INTEGER,
                 confidence INTEGER,
+                prediction_id INTEGER,
                 sent_at TEXT NOT NULL
             )
         """))
         conn.commit()
+        # Migration: add prediction_id if missing
+        result = conn.execute(text("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name='channel_alert_log' AND column_name='prediction_id'
+        """)).fetchone()
+        if not result:
+            conn.execute(text("ALTER TABLE channel_alert_log ADD COLUMN prediction_id INTEGER"))
+            conn.commit()
 
 
 def _already_sent_today() -> bool:
@@ -74,17 +83,19 @@ def _log_sent(event: dict, analysis: dict):
     today = _now_madrid().strftime("%Y-%m-%d")
     now_iso = datetime.utcnow().isoformat()
     asset = (analysis.get("most_affected_assets") or [""])[0]
+    prediction_id = event.get("prediction_id")
     try:
         with get_engine("app").connect() as conn:
             conn.execute(text("""
-                INSERT INTO channel_alert_log (sent_date, event_title, asset, score, confidence, sent_at)
-                VALUES (:date, :title, :asset, :score, :conf, :sent_at)
+                INSERT INTO channel_alert_log (sent_date, event_title, asset, score, confidence, prediction_id, sent_at)
+                VALUES (:date, :title, :asset, :score, :conf, :pred_id, :sent_at)
             """), {
                 "date": today,
                 "title": (event.get("title") or "")[:200],
                 "asset": asset,
                 "score": int(event.get("score", 0)),
                 "conf": int(analysis.get("confidence", 0)),
+                "pred_id": prediction_id,
                 "sent_at": now_iso,
             })
             conn.commit()

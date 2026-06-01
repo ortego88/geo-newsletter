@@ -85,22 +85,21 @@ def _send_validation_telegram(result: dict, stats: dict | None = None):
         return
 
     message = _format_validation_message(result, stats)
-    asset = result.get("asset", "")
+    prediction_id = result.get("prediction_id")
 
-    # 1. Send to private channel ONLY if this was today's channel alert (BTC alert of the day)
+    # 1. Send to private channel ONLY if this prediction was the channel's daily alert
     channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "")
-    if channel_id and asset:
+    if channel_id and prediction_id:
         try:
             from sqlalchemy import text as _text_ch
             from web.db_engine import get_engine as _get_engine_ch
-            from src.services.alert_formatter import _now_madrid
-            today = _now_madrid().strftime("%Y-%m-%d")
             with _get_engine_ch("app").connect() as conn:
                 was_channel_alert = conn.execute(_text_ch(
-                    "SELECT 1 FROM channel_alert_log WHERE sent_date = :today AND asset = :asset"
-                ), {"today": today, "asset": asset.upper()}).fetchone()
+                    "SELECT 1 FROM channel_alert_log WHERE prediction_id = :pred_id"
+                ), {"pred_id": prediction_id}).fetchone()
             if was_channel_alert:
                 send_telegram(message, chat_id=channel_id)
+                logger.info(f"📢 Resultado enviado al canal (prediction_id={prediction_id})")
         except Exception as e:
             logger.warning(f"Error checking channel alert for validation: {e}")
 
