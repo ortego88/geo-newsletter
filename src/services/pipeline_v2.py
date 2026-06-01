@@ -436,14 +436,20 @@ class AnalysisPipeline:
         if not scored:
             return []
 
-        # Paso 4: Analizar con IA
-        logger.info("🤖 PASO 4: Analizando con IA (Ollama)...")
+        # Paso 4: Analizar con IA (batch mode — reduce token usage)
+        logger.info(f"🤖 PASO 4: Analizando {len(scored)} eventos con IA (batch)...")
+        BATCH_SIZE = 5
         analyzed = []
-        for i, event in enumerate(scored, 1):
-            logger.info(f"   [{i}/{len(scored)}] Analizando: {event['title'][:55]}...")
-            analysis = self.analyzer.analyze(event)
-            event["analysis"] = analysis
-            analyzed.append(event)
+        for batch_start in range(0, len(scored), BATCH_SIZE):
+            batch = scored[batch_start:batch_start + BATCH_SIZE]
+            logger.info(f"   📦 Batch {batch_start // BATCH_SIZE + 1}: {len(batch)} eventos")
+            from src.services.claude_analyzer import analyze_events_batch
+            batch_results = analyze_events_batch(batch)
+            for event, analysis in zip(batch, batch_results):
+                if analysis is None:
+                    analysis = {}
+                event["analysis"] = analysis
+                analyzed.append(event)
 
         logger.info(f"   ✅ {len(analyzed)} eventos analizados")
 

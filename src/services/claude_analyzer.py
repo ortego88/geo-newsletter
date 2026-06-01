@@ -295,13 +295,12 @@ def _format_historical_context(similar_events: List[Dict]) -> str:
     return "\n".join(context_lines) + "\n"
 
 
-def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
-    """Llama a Claude a través de AWS Bedrock."""
+def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT, max_tokens: int = 1024) -> dict | None:
+    """Llama a Claude a través de AWS Bedrock con prompt caching."""
     try:
         import boto3
         import json as json_lib
 
-        # Crear cliente de Bedrock
         bedrock = boto3.client(
             service_name='bedrock-runtime',
             region_name=AWS_REGION,
@@ -309,12 +308,18 @@ def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dic
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY
         )
 
-        # Formato de request para Bedrock (ligeramente diferente a API directa)
+        # Prompt caching: system como array con cache_control
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1024,
+            "max_tokens": max_tokens,
             "temperature": 0.2,
-            "system": system_prompt,
+            "system": [
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ],
             "messages": [
                 {
                     "role": "user",
@@ -323,21 +328,23 @@ def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dic
             ]
         }
 
-        # Llamar a Bedrock
         response = bedrock.invoke_model(
             modelId=BEDROCK_MODEL_ID,
             body=json_lib.dumps(request_body)
         )
 
-        # Parsear respuesta
         response_body = json_lib.loads(response['body'].read())
         raw_response = response_body['content'][0]['text'].strip()
 
-        # Log token usage
         usage = response_body.get("usage", {})
         input_tokens = usage.get("input_tokens", 0)
         output_tokens = usage.get("output_tokens", 0)
-        logger.info(f"🔢 Tokens (Bedrock): input={input_tokens} output={output_tokens} total={input_tokens + output_tokens}")
+        cache_read = usage.get("cache_read_input_tokens", 0)
+        cache_creation = usage.get("cache_creation_input_tokens", 0)
+        if cache_read:
+            logger.info(f"🔢 Tokens (Bedrock): input={input_tokens} output={output_tokens} cache_read={cache_read} 💰 CACHED")
+        else:
+            logger.info(f"🔢 Tokens (Bedrock): input={input_tokens} output={output_tokens} cache_creation={cache_creation}")
         _track_token_usage(input_tokens, output_tokens)
 
         logger.debug(f"Claude (Bedrock) response: {raw_response}")
@@ -348,8 +355,8 @@ def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dic
         return None
 
 
-def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
-    """Llama a la API directa de Claude (Anthropic)."""
+def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT, max_tokens: int = 1024) -> dict | None:
+    """Llama a la API directa de Claude (Anthropic) con prompt caching."""
     try:
         import anthropic
 
@@ -357,21 +364,30 @@ def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict
 
         message = client.messages.create(
             model=CLAUDE_MODEL,
-            max_tokens=1024,
+            max_tokens=max_tokens,
             temperature=0.2,
-            system=system_prompt,
+            system=[
+                {
+                    "type": "text",
+                    "text": system_prompt,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ],
             messages=[
                 {"role": "user", "content": prompt}
             ]
         )
 
-        # Claude devuelve la respuesta en message.content[0].text
         raw_response = message.content[0].text.strip()
 
-        # Log token usage
         input_tokens = message.usage.input_tokens
         output_tokens = message.usage.output_tokens
-        logger.info(f"🔢 Tokens (Direct): input={input_tokens} output={output_tokens} total={input_tokens + output_tokens}")
+        cache_read = getattr(message.usage, "cache_read_input_tokens", 0) or 0
+        cache_creation = getattr(message.usage, "cache_creation_input_tokens", 0) or 0
+        if cache_read:
+            logger.info(f"🔢 Tokens (Direct): input={input_tokens} output={output_tokens} cache_read={cache_read} 💰 CACHED")
+        else:
+            logger.info(f"🔢 Tokens (Direct): input={input_tokens} output={output_tokens} cache_creation={cache_creation}")
         _track_token_usage(input_tokens, output_tokens)
 
         logger.debug(f"Claude (Direct API) response: {raw_response}")
@@ -383,23 +399,80 @@ def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict
         return None
 
 
-def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
+def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT, max_tokens: int = 1024) -> dict | None:
     """
     Llama a Claude usando Bedrock o API directa según configuración.
     Si Bedrock falla, intenta con API directa como fallback.
     """
     if USE_BEDROCK:
         logger.info(f"Usando Claude via AWS Bedrock (región: {AWS_REGION})")
-        result = _call_claude_bedrock(prompt, system_prompt)
+        result = _call_claude_bedrock(prompt, system_prompt, max_tokens)
         if result is not None:
             return result
         if ANTHROPIC_API_KEY:
             logger.warning("Bedrock falló, intentando con API directa como fallback...")
-            return _call_claude_direct(prompt, system_prompt)
+            return _call_claude_direct(prompt, system_prompt, max_tokens)
         return None
     else:
         logger.info("Usando Claude via API directa de Anthropic")
-        return _call_claude_direct(prompt, system_prompt)
+        return _call_claude_direct(prompt, system_prompt, max_tokens)
+
+
+def _call_claude_raw(prompt: str, system_prompt: str = SYSTEM_PROMPT, max_tokens: int = 2048) -> str | None:
+    """Like _call_claude but returns the raw text response (for batch parsing)."""
+    try:
+        if USE_BEDROCK:
+            import boto3
+            import json as json_lib
+
+            bedrock = boto3.client(
+                service_name='bedrock-runtime',
+                region_name=AWS_REGION,
+                aws_access_key_id=AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+            )
+            request_body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": max_tokens,
+                "temperature": 0.2,
+                "system": [
+                    {"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}
+                ],
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            response = bedrock.invoke_model(
+                modelId=BEDROCK_MODEL_ID,
+                body=json_lib.dumps(request_body)
+            )
+            response_body = json_lib.loads(response['body'].read())
+            usage = response_body.get("usage", {})
+            input_tokens = usage.get("input_tokens", 0)
+            output_tokens = usage.get("output_tokens", 0)
+            cache_read = usage.get("cache_read_input_tokens", 0)
+            logger.info(f"🔢 Tokens (Bedrock batch): input={input_tokens} output={output_tokens} cache_read={cache_read}")
+            _track_token_usage(input_tokens, output_tokens)
+            return response_body['content'][0]['text'].strip()
+        else:
+            import anthropic
+            client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+            message = client.messages.create(
+                model=CLAUDE_MODEL,
+                max_tokens=max_tokens,
+                temperature=0.2,
+                system=[
+                    {"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}
+                ],
+                messages=[{"role": "user", "content": prompt}]
+            )
+            input_tokens = message.usage.input_tokens
+            output_tokens = message.usage.output_tokens
+            cache_read = getattr(message.usage, "cache_read_input_tokens", 0) or 0
+            logger.info(f"🔢 Tokens (Direct batch): input={input_tokens} output={output_tokens} cache_read={cache_read}")
+            _track_token_usage(input_tokens, output_tokens)
+            return message.content[0].text.strip()
+    except Exception as e:
+        logger.error(f"Error in _call_claude_raw: {e}", exc_info=True)
+        return None
 
 
 def _parse_json_response(text: str) -> dict | None:
@@ -562,6 +635,149 @@ def analyze_event_with_claude(event: dict) -> Optional[dict]:
     return None
 
 
+BATCH_PROMPT_TEMPLATE = """Analiza estas {count} noticias crypto. Para CADA una, determina si provocará un movimiento MEDIBLE en el precio.
+
+{events_block}
+
+Responde con un JSON array con {count} objetos, uno por noticia, EN EL MISMO ORDEN.
+Cada objeto debe tener exactamente este formato:
+{{
+  "event_index": <número de la noticia, empezando en 1>,
+  "direction": "up|down|neutral",
+  "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
+  "confidence": <entero 25-95>,
+  "signal_strength": "high|medium|low",
+  "most_affected_assets": [<1-3 tickers>],
+  "reasoning": "<UNA frase máx 150 chars EN ESPAÑOL>",
+  "historical_learning": "<aprendizaje histórico o 'sin datos históricos'>",
+  "verification_window_hours": <entero 1-24>
+}}
+
+Responde SOLO con el JSON array, sin explicaciones."""
+
+
+def analyze_events_batch(events: List[dict]) -> List[Optional[dict]]:
+    """
+    Analiza múltiples eventos en una sola llamada a Claude (batching).
+    Reduce el overhead del system prompt pagándolo solo 1 vez para N eventos.
+    Returns a list of validated analyses (same order as input), None for failures.
+    """
+    if not events:
+        return []
+
+    if len(events) == 1:
+        return [analyze_event_with_claude(events[0])]
+
+    # Verificar disponibilidad
+    if USE_BEDROCK:
+        if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+            return [None] * len(events)
+    elif not ANTHROPIC_API_KEY:
+        return [None] * len(events)
+
+    # Construir bloque de eventos
+    event_blocks = []
+    for i, event in enumerate(events, 1):
+        title = event.get("title", "")
+        description = (event.get("description") or event.get("summary") or "")[:300]
+        score = event.get("score", event.get("impact_score", 50))
+        category = event.get("category", "")
+
+        # Contexto histórico reducido (solo estadísticas)
+        similar = _get_similar_events_from_db(event, limit=3)
+        hist_line = ""
+        if similar:
+            correct = sum(1 for e in similar if e["outcome"] == "correct")
+            hist_line = f"Historial eventos similares: {correct}/{len(similar)} correctos"
+
+        # Contexto de precio reducido
+        price_line = ""
+        try:
+            from src.services.real_price_fetcher import RealPriceFetcher
+            asset = event.get("suggested_asset", "BTC")
+            fetcher = RealPriceFetcher()
+            ctx = fetcher.get_price_context(asset)
+            if ctx and ctx.get("current", 0) > 0:
+                recent = fetcher.get_recent_change(asset, hours=4)
+                recent_str = f", cambio 4h: {recent:+.2f}%" if recent is not None else ""
+                price_line = f"Precio {asset}: ${ctx['current']} | RSI: {ctx['rsi_14']} | 7d: {ctx['change_7d_pct']:+.1f}%{recent_str}"
+        except Exception:
+            pass
+
+        block = (
+            f"--- NOTICIA {i} ---\n"
+            f"Título: {title}\n"
+            f"Descripción: {description}\n"
+            f"Categoría: {category} | Score: {score}/100\n"
+        )
+        if price_line:
+            block += f"{price_line}\n"
+        if hist_line:
+            block += f"{hist_line}\n"
+
+        event_blocks.append(block)
+
+    events_block = "\n".join(event_blocks)
+    prompt = BATCH_PROMPT_TEMPLATE.format(count=len(events), events_block=events_block)
+
+    logger.info(f"📦 Batch analysis: {len(events)} eventos en una sola llamada")
+    raw_text = _call_claude_raw(prompt, max_tokens=2048)
+
+    results: List[Optional[dict]] = [None] * len(events)
+
+    if raw_text is None:
+        logger.warning("Batch analysis failed, falling back to individual calls")
+        return [analyze_event_with_claude(e) for e in events]
+
+    parsed = _parse_json_response_batch(raw_text)
+
+    if parsed is None:
+        logger.warning("Batch parse failed, falling back to individual calls")
+        return [analyze_event_with_claude(e) for e in events]
+
+    # Array of results
+    if isinstance(parsed, list):
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            idx = item.get("event_index", 0) - 1
+            if 0 <= idx < len(events):
+                results[idx] = _validate_analysis(item)
+        return results
+
+    # Single dict returned
+    if isinstance(parsed, dict):
+        if "event_index" in parsed:
+            idx = parsed.get("event_index", 1) - 1
+            if 0 <= idx < len(events):
+                results[idx] = _validate_analysis(parsed)
+        else:
+            results[0] = _validate_analysis(parsed)
+
+    return results
+
+
+def _parse_json_response_batch(text: str) -> list | dict | None:
+    """Parses a JSON array or object from text."""
+    if not text:
+        return None
+    # Try array first
+    match = re.search(r'\[.*\]', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    # Fall back to single object
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
 class ClaudeAnalyzer:
     """Analizador de eventos usando Claude con RAG."""
 
@@ -572,6 +788,10 @@ class ClaudeAnalyzer:
     def analyze(self, event: dict) -> Optional[dict]:
         """Analiza un evento y devuelve la predicción."""
         return analyze_event_with_claude(event)
+
+    def analyze_batch(self, events: List[dict]) -> List[Optional[dict]]:
+        """Analiza múltiples eventos en una sola llamada."""
+        return analyze_events_batch(events)
 
     def is_available(self) -> bool:
         """Verifica si Claude está disponible (via Bedrock o API directa)."""
