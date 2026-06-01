@@ -28,16 +28,22 @@ def _init_firebase():
     if _app_initialized:
         return True
 
-    creds_json = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
-    if not creds_json:
+    creds_raw = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
+    if not creds_raw:
         logger.debug("FIREBASE_CREDENTIALS_JSON not set — push disabled")
         return False
 
     try:
         import firebase_admin
         from firebase_admin import credentials
+        import base64
 
-        creds_dict = json.loads(creds_json)
+        # Accepts both plain JSON and base64-encoded JSON
+        try:
+            creds_dict = json.loads(creds_raw)
+        except json.JSONDecodeError:
+            creds_dict = json.loads(base64.b64decode(creds_raw).decode("utf-8"))
+
         cred = credentials.Certificate(creds_dict)
         firebase_admin.initialize_app(cred)
         _app_initialized = True

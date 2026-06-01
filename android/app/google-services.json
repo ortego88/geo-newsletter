@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "199931257790",
+    "project_id": "trianio",
+    "storage_bucket": "trianio.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:199931257790:android:05da0701cd6c3323704fef",
+        "android_client_info": {
+          "package_name": "com.trianio.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANq5eaOKePeHxttaDCh-E1d_sHq0FApw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

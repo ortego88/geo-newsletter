@@ -1,4 +1,4 @@
-package com.geonewsletter.app;
+package com.trianio.app;
 
 import com.getcapacitor.BridgeActivity;
 
