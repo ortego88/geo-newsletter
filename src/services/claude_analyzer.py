@@ -62,7 +62,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 # Modelos disponibles en Bedrock (mayo 2026)
 # Claude 3.5 Haiku - modelo compatible con on-demand throughput
 # Para Claude 4.X necesitas configurar inference profiles en AWS
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6-v1")
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-sonnet-4-6")
 
 # ── System prompt mejorado para Claude — CRYPTO ONLY ─────────────────────────
 SYSTEM_PROMPT = """Eres un trader cuantitativo experto en criptomonedas con un track record verificable.
@@ -386,10 +386,17 @@ def _call_claude_direct(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict
 def _call_claude(prompt: str, system_prompt: str = SYSTEM_PROMPT) -> dict | None:
     """
     Llama a Claude usando Bedrock o API directa según configuración.
+    Si Bedrock falla, intenta con API directa como fallback.
     """
     if USE_BEDROCK:
         logger.info(f"Usando Claude via AWS Bedrock (región: {AWS_REGION})")
-        return _call_claude_bedrock(prompt, system_prompt)
+        result = _call_claude_bedrock(prompt, system_prompt)
+        if result is not None:
+            return result
+        if ANTHROPIC_API_KEY:
+            logger.warning("Bedrock falló, intentando con API directa como fallback...")
+            return _call_claude_direct(prompt, system_prompt)
+        return None
     else:
         logger.info("Usando Claude via API directa de Anthropic")
         return _call_claude_direct(prompt, system_prompt)
