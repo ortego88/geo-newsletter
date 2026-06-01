@@ -227,6 +227,14 @@ def _send_pipeline_alerts(events: list):
     for event in saved_predictions:
         alerted_prediction_ids.add(event.get("prediction_id"))
 
+    # Step 2b: send FCM push notifications to plan topics
+    try:
+        from src.services.firebase_push import send_alert_to_topics
+        for event in saved_predictions:
+            send_alert_to_topics(event, event.get("analysis", {}))
+    except Exception as e:
+        logger.debug(f"FCM push skipped: {e}")
+
     # Step 3: mark sent predictions as alerted (for historical filter accuracy)
     for pid in alerted_prediction_ids:
         if pid:

@@ -622,6 +622,42 @@ def create_app():
 
         return jsonify({"ok": True}), 201
 
+    @main_bp.route("/api/fcm-token", methods=["POST"])
+    def register_fcm_token():
+        """Register or update a user's FCM token and subscribe to plan topic."""
+        from flask_login import current_user, login_required
+
+        if not current_user.is_authenticated:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        data = request.get_json(silent=True) or {}
+        token = data.get("token", "").strip()
+        if not token:
+            return jsonify({"error": "token required"}), 400
+
+        sub = current_user.get_subscription()
+        plan = sub["plan"] if sub else "basic"
+
+        try:
+            from src.services.firebase_push import migrate_user_topic
+            migrate_user_topic(token, plan)
+        except Exception as e:
+            _logger.warning(f"FCM topic subscription failed: {e}")
+
+        try:
+            with get_conn() as conn:
+                conn.execute(text("""
+                    INSERT INTO user_fcm_tokens (user_id, token, updated_at)
+                    VALUES (:uid, :token, :now)
+                    ON CONFLICT (user_id, token) DO UPDATE SET updated_at = :now
+                """), {"uid": current_user.id, "token": token,
+                       "now": datetime.utcnow().isoformat()})
+                conn.commit()
+        except Exception as e:
+            _logger.warning(f"Error saving FCM token: {e}")
+
+        return jsonify({"ok": True, "topic": f"alerts-{plan}"}), 200
+
     app.register_blueprint(main_bp)
 
     @app.context_processor

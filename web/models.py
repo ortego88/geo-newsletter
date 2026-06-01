@@ -266,6 +266,15 @@ def init_db():
         Column("subscribed_at", Text, nullable=False),
     )
 
+    from sqlalchemy import UniqueConstraint
+    Table("user_fcm_tokens", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("user_id", Integer, ForeignKey("users.id"), nullable=False),
+        Column("token", Text, nullable=False),
+        Column("updated_at", Text),
+        UniqueConstraint("user_id", "token", name="uq_user_fcm_token"),
+    )
+
     # CREATE TABLE IF NOT EXISTS — idempotente, nunca borra datos
     meta.create_all(engine, checkfirst=True)
 
