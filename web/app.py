@@ -402,9 +402,7 @@ def create_app():
                     SELECT direction, price_at_prediction, price_at_validation, outcome
                     FROM predictions
                     WHERE UPPER(asset) = UPPER(:asset)
-                      AND outcome IN ('correct', 'incorrect')
                       AND price_at_prediction > 0
-                      AND price_at_validation > 0
                       AND predicted_at >= :start
                       AND predicted_at <= :end
                     ORDER BY predicted_at ASC
@@ -420,11 +418,14 @@ def create_app():
         if not rows:
             return jsonify({"error": "Sin datos suficientes para este activo y período"}), 400
 
+        # Get current real-time price for end-state calculations
+        from src.services.real_price_fetcher import get_price
+        current_price = get_price(asset)
+
         # State machine: IN_MARKET or CASH
-        # Start IN_MARKET — user buys at the price of the first alert
         state = "IN_MARKET"
         balance = amount
-        entry_price = rows[0][1]  # price_at_prediction of first alert
+        entry_price = rows[0][1]
         loss_avoided = 0.0
         sell_price = None
         trades = []
@@ -434,7 +435,6 @@ def create_app():
             is_up = direction in ("up", "bullish", "positive", "alza")
 
             if state == "IN_MARKET" and is_down:
-                # SELL at the alert price
                 sell_price = price_pred
                 pct_change = (sell_price - entry_price) / entry_price
                 balance = balance * (1 + pct_change)
@@ -447,9 +447,7 @@ def create_app():
                 })
 
             elif state == "CASH" and is_up:
-                # BUY at the alert price
                 entry_price = price_pred
-                # Calculate loss avoided: if price dropped since we sold
                 if sell_price and price_pred < sell_price:
                     loss_avoided += balance * ((sell_price - price_pred) / sell_price)
                 state = "IN_MARKET"
@@ -460,17 +458,20 @@ def create_app():
                     "balance_after": round(balance, 2),
                 })
 
-        # Close open position at end of period using last known price
-        if state == "IN_MARKET" and len(rows) > 0:
-            last_price = rows[-1][2]  # price_at_validation of last alert
-            pct_change = (last_price - entry_price) / entry_price
+        # End-state: use current real-time price
+        if state == "IN_MARKET" and current_price and entry_price:
+            pct_change = (current_price - entry_price) / entry_price
             balance = balance * (1 + pct_change)
             trades.append({
                 "action": "close",
-                "price": round(last_price, 4),
+                "price": round(current_price, 4),
                 "return_pct": round(pct_change * 100, 2),
                 "balance_after": round(balance, 2),
             })
+        elif state == "CASH" and current_price and sell_price:
+            # Still in cash after last sell signal — calculate loss avoided
+            if current_price < sell_price:
+                loss_avoided += balance * ((sell_price - current_price) / sell_price)
 
         profit_loss = balance - amount
         percentage = (profit_loss / amount) * 100 if amount > 0 else 0.0
