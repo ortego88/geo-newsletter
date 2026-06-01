@@ -464,6 +464,12 @@ class AnalysisPipeline:
             assets = analysis.get("most_affected_assets", ["UNKNOWN"])
             primary_asset = assets[0] if assets else "UNKNOWN"
 
+            # Skip stablecoins
+            from src.services.real_price_fetcher import STABLECOIN_BLACKLIST
+            if primary_asset.upper() in STABLECOIN_BLACKLIST:
+                logger.info(f"   ⏭️ Stablecoin {primary_asset} — omitiendo predicción")
+                continue
+
             # Validar el activo primario contra la lista conocida
             if primary_asset.upper() not in VALID_ASSETS:
                 # Preferir el mejor match por tier entre todos los activos detectados.

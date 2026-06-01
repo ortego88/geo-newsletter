@@ -220,9 +220,8 @@ def send_daily_channel_alert(events: list) -> bool:
 
 def send_daily_summary() -> bool:
     """
-    Scheduled job (10:00 Madrid) — sends yesterday's channel alert results.
-    Only shows results for alerts that were sent to the public channel (from channel_alert_log),
-    not all predictions from the system.
+    Scheduled job (10:00 Madrid) — sends yesterday's results for ALL alerts to the channel.
+    Shows total alerts, correct/incorrect breakdown by asset, overall accuracy.
     """
     if not TELEGRAM_CHANNEL_ID:
         return False
@@ -230,42 +229,22 @@ def send_daily_summary() -> bool:
     yesterday = (_now_madrid() - timedelta(days=1)).strftime("%Y-%m-%d")
     yesterday_display = (_now_madrid() - timedelta(days=1)).strftime("%d/%m/%Y")
 
-    # Get channel alerts sent yesterday from channel_alert_log
-    try:
-        _init_channel_log_table()
-        with get_engine("app").connect() as conn:
-            channel_rows = conn.execute(text("""
-                SELECT event_title, asset, score, confidence
-                FROM channel_alert_log
-                WHERE sent_date = :yesterday
-            """), {"yesterday": yesterday}).fetchall()
-    except Exception as e:
-        logger.error(f"Error reading channel_alert_log for summary: {e}")
-        return False
-
-    if not channel_rows:
-        logger.info("Canal resumen: sin alertas de canal ayer — no se envía")
-        return False
-
-    # Get prediction outcomes for those channel alerts
     try:
         engine = get_engine("predictions")
         with engine.connect() as conn:
             rows = conn.execute(text("""
                 SELECT asset, direction, outcome, confidence, score
                 FROM predictions
-                WHERE UPPER(asset) = 'BTC'
-                AND alerted = 1
+                WHERE alerted = 1
                 AND DATE(predicted_at) = :yesterday
                 ORDER BY score DESC
-                LIMIT :limit
-            """), {"yesterday": yesterday, "limit": len(channel_rows)}).fetchall()
+            """), {"yesterday": yesterday}).fetchall()
     except Exception as e:
         logger.error(f"Error reading predictions for daily summary: {e}")
         return False
 
     if not rows:
-        logger.info("Canal resumen: sin predicciones BTC alertadas ayer — no se envía")
+        logger.info("Canal resumen: sin predicciones alertadas ayer — no se envía")
         return False
 
     total = len(rows)
@@ -274,18 +253,29 @@ def send_daily_summary() -> bool:
     pending = sum(1 for r in rows if r[2] == "pending")
     accuracy = round(correct / (correct + incorrect) * 100) if (correct + incorrect) > 0 else 0
 
-    # Get cumulative channel stats (all time from channel_alert_log)
+    # Breakdown by asset
+    assets_seen = {}
+    for r in rows:
+        asset = (r[0] or "?").upper()
+        if asset not in assets_seen:
+            assets_seen[asset] = {"correct": 0, "incorrect": 0, "pending": 0}
+        if r[2] == "correct":
+            assets_seen[asset]["correct"] += 1
+        elif r[2] == "incorrect":
+            assets_seen[asset]["incorrect"] += 1
+        else:
+            assets_seen[asset]["pending"] += 1
+
+    # Cumulative all-time accuracy
     try:
-        engine_pred = get_engine("predictions")
-        with engine_pred.connect() as conn:
-            all_channel = conn.execute(text("""
+        with engine.connect() as conn:
+            all_time = conn.execute(text("""
                 SELECT outcome FROM predictions
-                WHERE UPPER(asset) = 'BTC'
-                AND alerted = 1
+                WHERE alerted = 1
                 AND outcome IN ('correct', 'incorrect')
             """)).fetchall()
-        total_hist = len(all_channel)
-        correct_hist = sum(1 for r in all_channel if r[0] == "correct")
+        total_hist = len(all_time)
+        correct_hist = sum(1 for r in all_time if r[0] == "correct")
         accuracy_hist = round(correct_hist / total_hist * 100) if total_hist > 0 else 0
     except Exception:
         total_hist = 0
@@ -303,7 +293,7 @@ def send_daily_summary() -> bool:
             lines.append(f"✅ Precisión ayer: {accuracy}%")
         else:
             lines.append(f"📈 Precisión ayer: {accuracy}%")
-    lines.append(f"📬 Alertas BTC enviadas: {total}")
+    lines.append(f"📬 Alertas enviadas: {total}")
     lines.append(f"✅ Correctas: {correct}")
     lines.append(f"❌ Incorrectas: {incorrect}")
     if pending:
@@ -311,26 +301,43 @@ def send_daily_summary() -> bool:
 
     if total_hist > 0:
         lines.append("")
-        lines.append(f"📈 Acumulado canal: {accuracy_hist}% ({correct_hist}/{total_hist})")
+        lines.append(f"📈 Acumulado total: {accuracy_hist}% ({correct_hist}/{total_hist})")
+
+    lines.append("")
+    lines.append("━━━━━━━━━━━━━━━━━━━━")
+    lines.append("📋 Detalle por activo:")
+    lines.append("")
+
+    for asset, stats in sorted(assets_seen.items(), key=lambda x: x[1]["correct"], reverse=True):
+        icon = ASSET_ICONS.get(asset, "💹")
+        name = ASSET_NAMES.get(asset, asset)
+        parts = []
+        if stats["correct"]:
+            parts.append(f"✅{stats['correct']}")
+        if stats["incorrect"]:
+            parts.append(f"❌{stats['incorrect']}")
+        if stats["pending"]:
+            parts.append(f"⏳{stats['pending']}")
+        lines.append(f"  {icon} {name}: {' '.join(parts)}")
 
     lines.append("")
     lines.append("━━━━━━━━━━━━━━━━━━━━")
 
     if accuracy >= 65:
-        lines.append("🔥 ¡Buen día para BTC! Nuestro sistema de IA sigue mejorando.")
+        lines.append("🔥 ¡Buen día! Nuestro sistema de IA sigue mejorando.")
     elif accuracy >= 55:
         lines.append("💡 Análisis basado en IA con datos en tiempo real.")
     else:
         lines.append("📡 Seguimos optimizando nuestros modelos de predicción.")
 
     lines.append("")
-    lines.append("💎 Recibe alertas de +65 criptomonedas con planes desde 14,99€")
+    lines.append("💎 Recibe alertas personalizadas de +65 criptomonedas")
     lines.append("👉 Suscríbete en trianio.com")
 
     msg = "\n".join(lines)
 
     if _send_to_channel(msg):
-        logger.info(f"📊 Resumen diario enviado al canal: {total} alertas BTC, {accuracy}% accuracy")
+        logger.info(f"📊 Resumen diario enviado al canal: {total} alertas, {accuracy}% accuracy")
         return True
 
     return False
