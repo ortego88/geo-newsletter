@@ -27,6 +27,98 @@ def _get_predictions_conn():
     return get_engine("predictions").connect()
 
 
+# ── Best performer cache (recalculated every hour) ───────────────────────────
+_best_performer_cache = {"data": None, "expires": 0}
+
+
+def _get_best_performers() -> dict:
+    """
+    Scans all 65 cryptos and returns the best gain % and best loss avoided %
+    over the last 7 days using the simulator logic. Cached 1 hour.
+    """
+    import time
+    now = time.time()
+    if _best_performer_cache["data"] and now < _best_performer_cache["expires"]:
+        return _best_performer_cache["data"]
+
+    from src.services.real_price_fetcher import get_price
+
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=7)
+    best_gain = {"asset": "", "pct": 0.0}
+    best_avoided = {"asset": "", "pct": 0.0}
+
+    try:
+        with _get_predictions_conn() as conn:
+            for asset_info in AVAILABLE_ASSETS:
+                symbol = asset_info["symbol"]
+                rows = conn.execute(text("""
+                    SELECT direction, price_at_prediction
+                    FROM predictions
+                    WHERE UPPER(asset) = UPPER(:asset)
+                      AND price_at_prediction > 0
+                      AND predicted_at >= :start
+                      AND predicted_at <= :end
+                    ORDER BY predicted_at ASC
+                """), {
+                    "asset": symbol,
+                    "start": start_date.isoformat(),
+                    "end": end_date.isoformat(),
+                }).fetchall()
+
+                if not rows:
+                    continue
+
+                current_price = get_price(symbol)
+                if not current_price:
+                    continue
+
+                # Simulate
+                state = "IN_MARKET"
+                balance = 1000.0
+                entry_price = rows[0][1]
+                loss_avoided = 0.0
+                sell_price = None
+
+                for direction, price_pred in rows:
+                    is_down = direction in ("down", "bearish", "negative", "baja")
+                    is_up = direction in ("up", "bullish", "positive", "alza")
+
+                    if state == "IN_MARKET" and is_down:
+                        sell_price = price_pred
+                        pct_change = (sell_price - entry_price) / entry_price
+                        balance = balance * (1 + pct_change)
+                        state = "CASH"
+                    elif state == "CASH" and is_up:
+                        if sell_price and price_pred < sell_price:
+                            loss_avoided += balance * ((sell_price - price_pred) / sell_price)
+                        entry_price = price_pred
+                        state = "IN_MARKET"
+
+                # Close with current price
+                if state == "IN_MARKET" and entry_price:
+                    pct_change = (current_price - entry_price) / entry_price
+                    balance = balance * (1 + pct_change)
+                elif state == "CASH" and sell_price and current_price < sell_price:
+                    loss_avoided += balance * ((sell_price - current_price) / sell_price)
+
+                gain_pct = (balance - 1000.0) / 1000.0 * 100
+                avoided_pct = loss_avoided / 1000.0 * 100
+
+                if gain_pct > best_gain["pct"]:
+                    best_gain = {"asset": symbol, "pct": round(gain_pct, 1)}
+                if avoided_pct > best_avoided["pct"]:
+                    best_avoided = {"asset": symbol, "pct": round(avoided_pct, 1)}
+
+    except Exception as exc:
+        _logger.warning("Error calculating best performers: %s", exc)
+
+    result = {"best_gain": best_gain, "best_avoided": best_avoided}
+    _best_performer_cache["data"] = result
+    _best_performer_cache["expires"] = now + 3600  # 1 hour
+    return result
+
+
 def _to_madrid_str(dt_str) -> str:
     """UTC ISO string → 'dd/mm HH:MM' hora Madrid. Devuelve '—' si falla."""
     if not dt_str:
@@ -83,7 +175,8 @@ def create_app():
 
     @main_bp.route("/")
     def landing():
-        return render_template("landing.html", plans=PLANS)
+        best = _get_best_performers()
+        return render_template("landing.html", plans=PLANS, best_performers=best)
 
     @main_bp.route("/app")
     def app_home():

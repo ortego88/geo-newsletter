@@ -111,6 +111,30 @@
   </section>
 
   <!-- SIMULATOR -->
+  <!-- Best performers (last 7 days) -->
+  {% if best_performers and (best_performers.best_gain.pct > 0 or best_performers.best_avoided.pct > 0) %}
+  <section class="py-12 px-6">
+    <div class="max-w-4xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% if best_performers.best_gain.pct > 0 %}
+        <div class="bg-gradient-to-br from-emerald-900/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 text-center">
+          <p class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="landing.best_gain_label">Mejor rentabilidad 7 días</p>
+          <p class="text-4xl font-extrabold text-white mb-1">+{{ best_performers.best_gain.pct }}%</p>
+          <p class="text-slate-400 text-sm">{{ best_performers.best_gain.asset }} <span data-i18n="landing.best_gain_suffix">siguiendo nuestras alertas</span></p>
+        </div>
+        {% endif %}
+        {% if best_performers.best_avoided.pct > 0 %}
+        <div class="bg-gradient-to-br from-amber-900/30 to-slate-900 border border-amber-500/30 rounded-2xl p-6 text-center">
+          <p class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="landing.best_avoided_label">Mayores pérdidas evitadas 7 días</p>
+          <p class="text-4xl font-extrabold text-white mb-1">-{{ best_performers.best_avoided.pct }}%</p>
+          <p class="text-slate-400 text-sm">{{ best_performers.best_avoided.asset }} <span data-i18n="landing.best_avoided_suffix">vendiendo a tiempo con nuestra alerta</span></p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <section id="simulador" class="py-20 px-6 scroll-mt-20">
     <div class="max-w-4xl mx-auto">
       <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-emerald-500/20 rounded-3xl p-10 md:p-14">
@@ -661,6 +685,10 @@
         "plan.pro.f6": "Resumen semanal",
         "plan.pro.f7": "Acceso prioritario a la app",
         "sticky.cta": "¿Cuánto ganarías?",
+        "landing.best_gain_label": "Mejor rentabilidad 7 días",
+        "landing.best_gain_suffix": "siguiendo nuestras alertas",
+        "landing.best_avoided_label": "Mayores pérdidas evitadas 7 días",
+        "landing.best_avoided_suffix": "vendiendo a tiempo con nuestra alerta",
         "sim.label": "Simulador",
         "sim.title": "¿Cuánto hubieras ganado siguiendo nuestras alertas?",
         "sim.desc": "Selecciona un activo, un período y una cantidad inicial. Te mostramos el resultado de invertir siguiendo nuestras señales de compra y venta basadas en eventos geopolíticos.",
@@ -777,6 +805,10 @@
         "plan.pro.f6": "Weekly digest",
         "plan.pro.f7": "Priority app access",
         "sticky.cta": "How much would you earn?",
+        "landing.best_gain_label": "Best return in 7 days",
+        "landing.best_gain_suffix": "following our alerts",
+        "landing.best_avoided_label": "Biggest loss avoided in 7 days",
+        "landing.best_avoided_suffix": "selling in time with our alert",
         "sim.label": "Simulator",
         "sim.title": "How much would you have earned following our alerts?",
         "sim.desc": "Select an asset, a time period and an initial amount. We show you the result of investing following our buy/sell signals based on geopolitical events.",
