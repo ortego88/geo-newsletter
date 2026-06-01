@@ -124,10 +124,12 @@ Estima EXACTAMENTE cuántas horas después de la noticia el precio reflejará el
 IMPORTANTE: El precio se comparará en el momento exacto de verification_window_hours.
 Piensa: "¿Cuándo habrá alcanzado el precio su movimiento principal por esta noticia?"
 
-SÍMBOLOS PERMITIDOS:
-BTC, ETH, XRP, SOL, BNB, ADA, DOGE, DOT, AVAX, MATIC, LINK, UNI, LTC, ATOM,
-XLM, ALGO, FIL, NEAR, ARB, OP, SUI, APT, SEI, TIA, INJ, RENDER, FET,
-PEPE, WIF, SHIB, TON, TRX, HBAR, ICP, AAVE
+SÍMBOLOS PERMITIDOS (65 criptomonedas):
+BTC, ETH, XRP, SOL, BNB, ADA, DOGE, TRX, TON, LINK, AVAX, SHIB, DOT, SUI,
+LTC, HBAR, UNI, ATOM, XLM, NEAR, ARB, OP, MATIC, ICP, FIL, IMX, STX, MNT,
+AAVE, MKR, CRV, LDO, DYDX, SNX, PENDLE, JUPITER, FET, RENDER, INJ, TAO,
+ONDO, AIOZ, AXS, SAND, MANA, GALA, ENJ, APT, SEI, TIA, KAS, ALGO,
+PEPE, WIF, FLOKI, BONK, CRO, OKB, GT, VET, THETA, FTM, EOS, RUNE, GRT
 
 Responde SOLO con JSON válido, sin explicaciones."""
 

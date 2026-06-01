@@ -101,22 +101,58 @@ ASSET_KEYWORDS: dict[str, list[str]] = {
     "NEAR": ["near protocol", "near token"],
     "ARB": ["arbitrum", "arb token", "arbitrum one"],
     "OP": ["optimism rollup", "optimism network", "optimism l2", "optimism blockchain"],
-    # ── Nuevas criptomonedas ────────────────────────────────────────────────
+    # ── Layer 2 & Infra ─────────────────────────────────────────────────────
     "SUI": ["sui network", "sui blockchain", "sui token"],
     "APT": ["aptos", "aptos labs", "apt token"],
     "SEI": ["sei network", "sei blockchain", "sei token"],
     "TIA": ["celestia", "tia token", "celestia modular"],
     "INJ": ["injective", "inj token", "injective protocol"],
+    "ICP": ["internet computer", "icp token", "dfinity"],
+    "STX": ["stacks", "stx token", "stacks bitcoin"],
+    "MNT": ["mantle network", "mantle token", "mnt token"],
+    "IMX": ["immutable", "immutable x", "imx token"],
+    # ── DeFi ──────────────────────────────────────────────────────────────
+    "AAVE": ["aave", "aave protocol", "aave lending"],
+    "MKR": ["maker", "makerdao", "maker dao", "mkr token", "dai stablecoin"],
+    "CRV": ["curve finance", "curve dao", "crv token", "curve protocol"],
+    "LDO": ["lido dao", "lido finance", "lido staking", "ldo token"],
+    "DYDX": ["dydx", "dydx exchange", "dydx protocol"],
+    "SNX": ["synthetix", "snx token", "synthetix protocol"],
+    "PENDLE": ["pendle", "pendle finance", "pendle protocol"],
+    "JUPITER": ["jupiter exchange", "jupiter solana", "jupiter dex", "jup token"],
+    # ── AI & Data ─────────────────────────────────────────────────────────
     "RENDER": ["render network", "render token", "rndr"],
     "FET": ["fetch.ai", "fetch ai", "artificial superintelligence", "fet token"],
+    "TAO": ["bittensor", "tao token", "bittensor network"],
+    "ONDO": ["ondo finance", "ondo token", "ondo rwa"],
+    "AIOZ": ["aioz network", "aioz token"],
+    # ── Gaming & Metaverse ────────────────────────────────────────────────
+    "AXS": ["axie infinity", "axs token", "axie"],
+    "SAND": ["the sandbox", "sandbox metaverse", "sand token"],
+    "MANA": ["decentraland", "mana token", "decentraland metaverse"],
+    "GALA": ["gala games", "gala token", "gala gaming"],
+    "ENJ": ["enjin", "enjin coin", "enj token"],
+    # ── Memecoins ─────────────────────────────────────────────────────────
     "PEPE": ["pepe coin", "pepe token", "pepe memecoin"],
     "WIF": ["dogwifhat", "wif token"],
+    "FLOKI": ["floki", "floki inu", "floki token"],
+    "BONK": ["bonk", "bonk token", "bonk solana"],
     "SHIB": ["shiba inu", "shib token", "shibarium"],
+    # ── Exchange tokens ───────────────────────────────────────────────────
+    "CRO": ["cronos", "crypto.com", "cro token"],
+    "OKB": ["okb", "okx token", "okex"],
+    "GT": ["gate token", "gate.io", "gatechain"],
+    # ── Otros relevantes ──────────────────────────────────────────────────
     "TON": ["toncoin", "ton network", "telegram open network", "ton blockchain"],
     "TRX": ["tron", "trx token", "tron network", "justin sun"],
     "HBAR": ["hedera", "hbar token", "hedera hashgraph"],
-    "ICP": ["internet computer", "icp token", "dfinity"],
-    "AAVE": ["aave", "aave protocol", "aave lending"],
+    "VET": ["vechain", "vet token", "vechain supply"],
+    "THETA": ["theta network", "theta token", "theta blockchain"],
+    "FTM": ["fantom", "ftm token", "fantom opera", "sonic"],
+    "EOS": ["eos", "eos network", "block.one"],
+    "RUNE": ["thorchain", "rune token", "thorchain dex"],
+    "GRT": ["the graph", "graph protocol", "grt token", "subgraph"],
+    "KAS": ["kaspa", "kas token", "kaspa blockchain"],
     # ── Genérico crypto (catch-all para noticias de mercado general) ────────
     "CRYPTO_MARKET": [
         "criptomoneda", "criptomonedas", "crypto", "cryptocurrency",
@@ -130,15 +166,22 @@ ASSET_KEYWORDS: dict[str, list[str]] = {
 
 # Tiers de prioridad — un ticker de Nivel 1 siempre gana sobre Nivel 2, etc.
 _PRIORITY_TIERS = [
-    # Tier 1: Criptos específicas de alta cap (BTC, ETH, SOL, etc.)
+    # Tier 1: Top 20 por capitalización
     frozenset({"BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "TON", "DOGE", "DOT",
-               "AVAX", "LINK", "SHIB", "TRX", "MATIC"}),
-    # Tier 2: Criptos de media cap
-    frozenset({"UNI", "LTC", "ATOM", "XLM", "ALGO", "FIL", "NEAR", "ARB", "OP",
-               "SUI", "APT", "SEI", "TIA", "INJ", "RENDER", "FET", "HBAR", "ICP", "AAVE"}),
-    # Tier 3: Memecoins y baja cap
-    frozenset({"PEPE", "WIF"}),
-    # Tier 4: Genérico crypto — solo si no hay nada en tiers superiores
+               "AVAX", "LINK", "SHIB", "TRX", "MATIC", "SUI", "LTC", "HBAR",
+               "UNI", "ATOM", "XLM", "NEAR"}),
+    # Tier 2: Layer 2, DeFi, AI, Infra
+    frozenset({"ARB", "OP", "ICP", "FIL", "IMX", "STX", "MNT",
+               "AAVE", "MKR", "CRV", "LDO", "DYDX", "SNX", "PENDLE", "JUPITER",
+               "FET", "RENDER", "INJ", "TAO", "ONDO", "AIOZ",
+               "APT", "SEI", "TIA", "KAS", "ALGO"}),
+    # Tier 3: Gaming, exchange tokens, otros
+    frozenset({"AXS", "SAND", "MANA", "GALA", "ENJ",
+               "CRO", "OKB", "GT",
+               "VET", "THETA", "FTM", "EOS", "RUNE", "GRT"}),
+    # Tier 4: Memecoins
+    frozenset({"PEPE", "WIF", "FLOKI", "BONK"}),
+    # Tier 5: Genérico crypto — solo si no hay nada en tiers superiores
     frozenset({"CRYPTO_MARKET"}),
 ]
 
