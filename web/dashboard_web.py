@@ -128,6 +128,7 @@ def index():
     offset = (page - 1) * per_page
     asset_filter = request.args.get("asset", "").strip()
     outcome_filter = request.args.get("outcome", "").strip()
+    direction_filter = request.args.get("direction", "").strip()
     asset_type_filter = request.args.get("asset_type", "").strip()
     time_filter = request.args.get("time_filter", "").strip()
     sort_by = request.args.get("sort", "predicted_at")
@@ -179,6 +180,11 @@ def index():
             if outcome_filter in ("correct", "incorrect", "pending", "neutral"):
                 where += " AND outcome = :outcome"
                 extra_params["outcome"] = outcome_filter
+
+            if direction_filter in ("up", "down"):
+                dir_values = ("up", "bullish", "positive", "alza") if direction_filter == "up" else ("down", "bearish", "negative", "baja")
+                dir_list = ",".join([f"'{d}'" for d in dir_values])
+                where += f" AND LOWER(direction) IN ({dir_list})"
 
             total_alerts = conn2.execute(
                 text(f"SELECT COUNT(*) FROM predictions {where}"), extra_params
@@ -358,6 +364,7 @@ def index():
         asset_filter=asset_filter,
         asset_type_filter=asset_type_filter,
         outcome_filter=outcome_filter,
+        direction_filter=direction_filter,
         time_filter=time_filter,
         sort_by=sort_by,
         sort_dir=sort_dir,

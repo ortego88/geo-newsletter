@@ -119,7 +119,7 @@
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
           <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_pending }}" onclick="filterByOutcome('pending')" data-dl-action="click" data-dl-format="button" data-dl-component="predictions" data-dl-element="pendings">{{ accuracy_stats.pending }}</p>
         </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-500 transition" onclick="filterByDirection('up')">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.up_signals">Alertas de subida ↑</p>
           <p class="font-bold text-lg">
             <span class="text-up-green">{{ accuracy_stats.up_correct }}</span>
@@ -130,7 +130,7 @@
             {% endif %}
           </p>
         </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-500 transition" onclick="filterByDirection('down')">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.down_signals">Alertas de bajada ↓</p>
           <p class="font-bold text-lg">
             <span class="text-up-green">{{ accuracy_stats.down_correct }}</span>
@@ -141,7 +141,7 @@
             {% endif %}
           </p>
         </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-500 transition" onclick="filterByAsset('{{ accuracy_stats.best_asset }}')">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.best_asset">Mejor activo</p>
           <p class="font-bold text-lg">
             {% if accuracy_stats.best_asset %}
@@ -583,15 +583,37 @@
   function filterByOutcome(outcome) {
     var url = new URL(window.location);
     var currentOutcome = url.searchParams.get('outcome');
-    
-    // Toggle: si ya está filtrado por este outcome, desactivar
     if (currentOutcome === outcome) {
       url.searchParams.delete('outcome');
     } else {
       url.searchParams.set('outcome', outcome);
-      url.searchParams.set('page', '1'); // Reset to page 1
+      url.searchParams.set('page', '1');
     }
-    
+    window.location.href = url.toString();
+  }
+
+  function filterByDirection(dir) {
+    var url = new URL(window.location);
+    var current = url.searchParams.get('direction');
+    if (current === dir) {
+      url.searchParams.delete('direction');
+    } else {
+      url.searchParams.set('direction', dir);
+      url.searchParams.set('page', '1');
+    }
+    window.location.href = url.toString();
+  }
+
+  function filterByAsset(asset) {
+    if (!asset) return;
+    var url = new URL(window.location);
+    var current = url.searchParams.get('asset');
+    if (current === asset) {
+      url.searchParams.delete('asset');
+    } else {
+      url.searchParams.set('asset', asset);
+      url.searchParams.set('page', '1');
+    }
     window.location.href = url.toString();
   }
 

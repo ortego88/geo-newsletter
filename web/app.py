@@ -112,6 +112,7 @@ def create_app():
         asset_filter = request.args.get("asset", "").strip()
         asset_type_filter = request.args.get("asset_type", "").strip()
         outcome_filter = request.args.get("outcome", "").strip()
+        direction_filter = request.args.get("direction", "").strip()
         time_filter = request.args.get("time_filter", "").strip()
         sort_by = request.args.get("sort", "predicted_at")
         sort_dir = request.args.get("dir", "desc")
@@ -138,8 +139,10 @@ def create_app():
 
         try:
             with _get_predictions_conn() as conn:
-                where = f"WHERE UPPER(asset) IN ({available_in_clause})"
-                params: dict = {}
+                # 24h delay: only show predictions older than 24 hours
+                delay_cutoff = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+                where = f"WHERE UPPER(asset) IN ({available_in_clause}) AND predicted_at <= :delay_cutoff"
+                params: dict = {"delay_cutoff": delay_cutoff}
 
                 # Time filter
                 if time_filter == "24h":
@@ -168,6 +171,11 @@ def create_app():
                 if outcome_filter in ("correct", "incorrect", "pending", "neutral"):
                     where += " AND outcome = :outcome"
                     params["outcome"] = outcome_filter
+
+                if direction_filter in ("up", "down"):
+                    dir_values = ("up", "bullish", "positive", "alza") if direction_filter == "up" else ("down", "bearish", "negative", "baja")
+                    dir_list = ",".join([f"'{d}'" for d in dir_values])
+                    where += f" AND LOWER(direction) IN ({dir_list})"
 
                 total_alerts = conn.execute(
                     text(f"SELECT COUNT(*) FROM predictions {where}"), params
@@ -271,6 +279,7 @@ def create_app():
             asset_filter=asset_filter,
             asset_type_filter=asset_type_filter,
             outcome_filter=outcome_filter,
+            direction_filter=direction_filter,
             time_filter=time_filter,
             sort_by=sort_by,
             sort_dir=sort_dir,
