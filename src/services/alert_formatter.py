@@ -66,80 +66,62 @@ MOCK_PRICES = {
 
 # --- Iconos por activo crypto ---
 ASSET_ICONS = {
-    "BTC": "🪙",
-    "ETH": "🔷",
-    "XRP": "💧",
-    "SOL": "☀️",
-    "ADA": "🔵",
-    "BNB": "🟡",
-    "DOGE": "🐶",
-    "DOT": "⚫",
-    "AVAX": "🔺",
-    "MATIC": "🟣",
-    "LINK": "🔗",
-    "UNI": "🦄",
-    "LTC": "🥈",
-    "ATOM": "⚛️",
-    "XLM": "⭐",
-    "ALGO": "🔷",
-    "FIL": "📁",
-    "NEAR": "🌐",
-    "ARB": "🔵",
-    "OP": "🔴",
-    "SUI": "💎",
-    "APT": "🟢",
-    "SEI": "🌊",
-    "TIA": "🟣",
-    "INJ": "💉",
-    "RENDER": "🎨",
-    "FET": "🤖",
-    "PEPE": "🐸",
-    "WIF": "🐕",
-    "SHIB": "🐕",
-    "TON": "💎",
-    "TRX": "🔴",
-    "HBAR": "⬡",
-    "ICP": "🌐",
-    "AAVE": "👻",
+    # Top 20
+    "BTC": "🪙", "ETH": "🔷", "XRP": "💧", "SOL": "☀️", "BNB": "🟡",
+    "ADA": "🔵", "DOGE": "🐶", "TRX": "🔴", "TON": "💎", "LINK": "🔗",
+    "AVAX": "🔺", "SHIB": "🐕", "DOT": "⚫", "SUI": "💎", "LTC": "🥈",
+    "HBAR": "⬡", "UNI": "🦄", "ATOM": "⚛️", "XLM": "⭐", "NEAR": "🌐",
+    # Layer 2 & Infra
+    "ARB": "🔵", "OP": "🔴", "MATIC": "🟣", "ICP": "🌐", "FIL": "📁",
+    "IMX": "🎮", "STX": "🟠", "MNT": "🟢",
+    # DeFi
+    "AAVE": "👻", "MKR": "🏛️", "CRV": "🌀", "LDO": "🧊", "DYDX": "📊",
+    "SNX": "💠", "PENDLE": "⏳", "JUPITER": "🪐",
+    # AI & Data
+    "FET": "🤖", "RENDER": "🎨", "INJ": "💉", "TAO": "🧠", "ONDO": "🏦",
+    "AIOZ": "📡",
+    # Gaming & Metaverse
+    "AXS": "🎮", "SAND": "🏖️", "MANA": "🌍", "GALA": "🎲", "ENJ": "⚔️",
+    # New L1s
+    "APT": "🟢", "SEI": "🌊", "TIA": "🟣", "KAS": "⛏️", "ALGO": "🔷",
+    # Memecoins
+    "PEPE": "🐸", "WIF": "🐕", "FLOKI": "🐺", "BONK": "🦴",
+    # Exchange tokens
+    "CRO": "🔵", "OKB": "🟡", "GT": "🚪",
+    # Otros
+    "VET": "✅", "THETA": "🎬", "FTM": "👻", "EOS": "🔮", "RUNE": "⚡", "GRT": "📈",
 }
 
 # --- Nombres legibles ---
 ASSET_NAMES = {
-    "BTC": "Bitcoin",
-    "ETH": "Ethereum",
-    "XRP": "Ripple",
-    "SOL": "Solana",
-    "ADA": "Cardano",
-    "BNB": "Binance Coin",
-    "DOGE": "Dogecoin",
-    "DOT": "Polkadot",
-    "AVAX": "Avalanche",
-    "MATIC": "Polygon",
-    "LINK": "Chainlink",
-    "UNI": "Uniswap",
-    "LTC": "Litecoin",
-    "ATOM": "Cosmos",
-    "XLM": "Stellar",
-    "ALGO": "Algorand",
-    "FIL": "Filecoin",
-    "NEAR": "NEAR Protocol",
-    "ARB": "Arbitrum",
-    "OP": "Optimism",
-    "SUI": "Sui",
-    "APT": "Aptos",
-    "SEI": "Sei",
-    "TIA": "Celestia",
-    "INJ": "Injective",
-    "RENDER": "Render",
-    "FET": "Fetch.ai",
-    "PEPE": "Pepe",
-    "WIF": "Dogwifhat",
-    "SHIB": "Shiba Inu",
-    "TON": "Toncoin",
-    "TRX": "Tron",
-    "HBAR": "Hedera",
-    "ICP": "Internet Computer",
-    "AAVE": "Aave",
+    # Top 20
+    "BTC": "Bitcoin", "ETH": "Ethereum", "XRP": "Ripple", "SOL": "Solana",
+    "BNB": "Binance Coin", "ADA": "Cardano", "DOGE": "Dogecoin", "TRX": "Tron",
+    "TON": "Toncoin", "LINK": "Chainlink", "AVAX": "Avalanche", "SHIB": "Shiba Inu",
+    "DOT": "Polkadot", "SUI": "Sui", "LTC": "Litecoin", "HBAR": "Hedera",
+    "UNI": "Uniswap", "ATOM": "Cosmos", "XLM": "Stellar", "NEAR": "NEAR Protocol",
+    # Layer 2 & Infra
+    "ARB": "Arbitrum", "OP": "Optimism", "MATIC": "Polygon",
+    "ICP": "Internet Computer", "FIL": "Filecoin", "IMX": "Immutable",
+    "STX": "Stacks", "MNT": "Mantle",
+    # DeFi
+    "AAVE": "Aave", "MKR": "Maker", "CRV": "Curve", "LDO": "Lido DAO",
+    "DYDX": "dYdX", "SNX": "Synthetix", "PENDLE": "Pendle", "JUPITER": "Jupiter",
+    # AI & Data
+    "FET": "Fetch.ai", "RENDER": "Render", "INJ": "Injective",
+    "TAO": "Bittensor", "ONDO": "Ondo Finance", "AIOZ": "AIOZ Network",
+    # Gaming & Metaverse
+    "AXS": "Axie Infinity", "SAND": "The Sandbox", "MANA": "Decentraland",
+    "GALA": "Gala", "ENJ": "Enjin Coin",
+    # New L1s
+    "APT": "Aptos", "SEI": "Sei", "TIA": "Celestia", "KAS": "Kaspa", "ALGO": "Algorand",
+    # Memecoins
+    "PEPE": "Pepe", "WIF": "Dogwifhat", "FLOKI": "Floki", "BONK": "Bonk",
+    # Exchange tokens
+    "CRO": "Cronos", "OKB": "OKB", "GT": "Gate Token",
+    # Otros
+    "VET": "VeChain", "THETA": "Theta", "FTM": "Fantom",
+    "EOS": "EOS", "RUNE": "THORChain", "GRT": "The Graph",
 }
 
 # --- Traducción básica de inglés a español para el campo reasoning ---
