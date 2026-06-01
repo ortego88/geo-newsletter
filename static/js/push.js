@@ -37,14 +37,13 @@
         console.log('Push received:', notification.title);
       });
 
-      // Usuario toca la notificación — navegar si viene con datos
+      // Usuario toca la notificación — navegar al dashboard
       PushNotifications.addListener('pushNotificationActionPerformed', function (action) {
         const data = action.notification.data || {};
         if (data.type === 'alert' && data.asset) {
-          // Navegar al historial filtrando por el activo
-          window.location.href = '/historial?asset=' + encodeURIComponent(data.asset);
-        } else if (data.type === 'result' && data.prediction_id) {
-          window.location.href = '/historial';
+          window.location.href = '/dashboard?asset=' + encodeURIComponent(data.asset);
+        } else {
+          window.location.href = '/dashboard';
         }
       });
 
