@@ -119,23 +119,23 @@
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.pending">Pendientes</p>
           <p class="text-amber-400 font-bold text-xl cursor-pointer hover:opacity-80 transition" data-tooltip="{{ t.click_pending }}" onclick="filterByOutcome('pending')" data-dl-action="click" data-dl-format="button" data-dl-component="predictions" data-dl-element="pendings">{{ accuracy_stats.pending }}</p>
         </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-500 transition" onclick="filterByDirection('up')">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.up_signals">Alertas de subida ↑</p>
           <p class="font-bold text-lg">
-            <span class="text-up-green">{{ accuracy_stats.up_correct }}</span>
+            <span class="text-up-green cursor-pointer hover:opacity-80 transition" onclick="filterByDirectionOutcome('up','correct')">{{ accuracy_stats.up_correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-down-red">{{ accuracy_stats.up_incorrect }}</span>
+            <span class="text-down-red cursor-pointer hover:opacity-80 transition" onclick="filterByDirectionOutcome('up','incorrect')">{{ accuracy_stats.up_incorrect }}</span>
             {% if accuracy_stats.up_correct + accuracy_stats.up_incorrect > 0 %}
               <span class="text-slate-400 text-sm font-normal ml-2">({{ "%.0f"|format(accuracy_stats.up_correct / (accuracy_stats.up_correct + accuracy_stats.up_incorrect) * 100) }}%)</span>
             {% endif %}
           </p>
         </div>
-        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-500 transition" onclick="filterByDirection('down')">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-5">
           <p class="text-slate-400 text-xs uppercase tracking-wide mb-2" data-i18n="dash.down_signals">Alertas de bajada ↓</p>
           <p class="font-bold text-lg">
-            <span class="text-up-green">{{ accuracy_stats.down_correct }}</span>
+            <span class="text-up-green cursor-pointer hover:opacity-80 transition" onclick="filterByDirectionOutcome('down','correct')">{{ accuracy_stats.down_correct }}</span>
             <span class="text-slate-500 font-normal mx-1">/</span>
-            <span class="text-down-red">{{ accuracy_stats.down_incorrect }}</span>
+            <span class="text-down-red cursor-pointer hover:opacity-80 transition" onclick="filterByDirectionOutcome('down','incorrect')">{{ accuracy_stats.down_incorrect }}</span>
             {% if accuracy_stats.down_correct + accuracy_stats.down_incorrect > 0 %}
               <span class="text-slate-400 text-sm font-normal ml-2">({{ "%.0f"|format(accuracy_stats.down_correct / (accuracy_stats.down_correct + accuracy_stats.down_incorrect) * 100) }}%)</span>
             {% endif %}
@@ -592,13 +592,16 @@
     window.location.href = url.toString();
   }
 
-  function filterByDirection(dir) {
+  function filterByDirectionOutcome(dir, outcome) {
     var url = new URL(window.location);
-    var current = url.searchParams.get('direction');
-    if (current === dir) {
+    var curDir = url.searchParams.get('direction');
+    var curOut = url.searchParams.get('outcome');
+    if (curDir === dir && curOut === outcome) {
       url.searchParams.delete('direction');
+      url.searchParams.delete('outcome');
     } else {
       url.searchParams.set('direction', dir);
+      url.searchParams.set('outcome', outcome);
       url.searchParams.set('page', '1');
     }
     window.location.href = url.toString();
