@@ -85,6 +85,7 @@ def _send_validation_telegram(result: dict, stats: dict | None = None):
         return
 
     message = _format_validation_message(result, stats)
+    asset = result.get("asset", "")
     prediction_id = result.get("prediction_id")
 
     # 1. Send to private channel ONLY if this prediction was the channel's daily alert
