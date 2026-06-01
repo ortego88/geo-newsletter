@@ -219,11 +219,12 @@
               <tbody class="divide-y divide-slate-700/50">
                 {% for pred in alerts %}
                   {% set outcome = pred.outcome or 'pending' %}
-                  <tr class="hover:bg-slate-700/30 transition" data-status="{{ outcome }}" title="{{ (pred.reasoning or '')[:150] }}">
-                    <td class="px-3 py-3 text-slate-500">{{ (page - 1) * per_page + loop.index }}</td>
+                  {% set row_id = (page - 1) * per_page + loop.index %}
+                  <tr class="hover:bg-slate-700/30 transition cursor-pointer" data-status="{{ outcome }}" onclick="toggleDetail({{ row_id }})">
+                    <td class="px-3 py-3 text-slate-500">{{ row_id }}</td>
                     <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
                     <td class="px-3 py-3 font-semibold text-white">
-                      <span title="{{ asset_names.get(pred.asset, pred.asset or '—') }}" data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
+                      <span data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
                     </td>
                     <td class="px-3 py-3 text-center">
                       {% set dir = pred.direction or 'neutral' %}
@@ -282,6 +283,29 @@
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-slate-500 whitespace-nowrap">{{ pred.predicted_at_madrid or '—' }}</td>
+                  </tr>
+                  <!-- Detail row (hidden by default) -->
+                  <tr id="detail-{{ row_id }}" class="hidden bg-slate-900/70">
+                    <td colspan="11" class="px-4 py-4">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.detail_title">Noticia</p>
+                          <p class="text-white font-medium">{{ pred.title or '—' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.detail_reasoning">Razonamiento IA</p>
+                          <p class="text-slate-300">{{ pred.reasoning or '—' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.detail_timeframe">Plazo estimado</p>
+                          <p class="text-slate-300">{{ pred.timeframe or '—' }}</p>
+                        </div>
+                        <div>
+                          <p class="text-slate-400 text-xs uppercase tracking-wide mb-1" data-i18n="dash.detail_verification">Ventana de verificación</p>
+                          <p class="text-slate-300">{{ pred.verification_window_hours or '—' }}h</p>
+                        </div>
+                      </div>
+                    </td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -360,6 +384,11 @@
     sidebar.classList.add('-translate-x-full');
     overlay.classList.add('hidden');
     document.body.classList.remove('sidebar-open');
+  }
+
+  function toggleDetail(id) {
+    var row = document.getElementById('detail-' + id);
+    if (row) row.classList.toggle('hidden');
   }
 
   var DASH_LANG_META = {
@@ -449,6 +478,10 @@
       "dash.col_change": "Cambio real",
       "dash.col_outcome": "Resultado",
       "dash.col_date": "Fecha",
+      "dash.detail_title": "Noticia",
+      "dash.detail_reasoning": "Razonamiento IA",
+      "dash.detail_timeframe": "Plazo estimado",
+      "dash.detail_verification": "Ventana de verificación",
       "cookies.title": "Usamos cookies",
       "cookies.desc": "Utilizamos cookies propias y de terceros para mejorar tu experiencia y analizar el tráfico. Puedes aceptar todas o elegir solo las esenciales.",
       "cookies.policy_link": "Política de cookies",
@@ -486,6 +519,10 @@
       "dash.col_change": "Real change",
       "dash.col_outcome": "Status",
       "dash.col_date": "Date",
+      "dash.detail_title": "News",
+      "dash.detail_reasoning": "AI Reasoning",
+      "dash.detail_timeframe": "Estimated timeframe",
+      "dash.detail_verification": "Verification window",
       "cookies.title": "We use cookies",
       "cookies.desc": "We use our own and third-party cookies to improve your experience and analyse traffic. You can accept all or choose only essential ones.",
       "cookies.policy_link": "Cookie policy",

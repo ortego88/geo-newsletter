@@ -189,7 +189,8 @@ def index():
                 text(f"""
                     SELECT id, title, category, asset, direction, impact_percent, timeframe,
                            confidence, price_at_prediction, price_at_validation, predicted_at,
-                           validated_at, outcome, score, source, reasoning
+                           validated_at, outcome, score, source, reasoning,
+                           verification_window_hours
                     FROM predictions {where}
                     ORDER BY {sort_col} {sort_order}
                     LIMIT :limit OFFSET :offset
