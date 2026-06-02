@@ -521,7 +521,12 @@ def create_app():
         entry_price = rows[0][1]
         loss_avoided = 0.0
         sell_price = None
-        trades = []
+        trades = [{
+            "action": "buy",
+            "price": round(entry_price, 4),
+            "return_pct": 0,
+            "balance_after": round(amount, 2),
+        }]
 
         for direction, price_pred, price_val, outcome in rows:
             is_down = direction in ("down", "bearish", "negative", "baja")

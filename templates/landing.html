@@ -287,6 +287,11 @@
                   🛡️ Nuestras alertas de venta te protegieron de esta pérdida. Saliste a tiempo antes de las caídas.
                 </p>
               </div>
+              <div class="mt-4 text-center">
+                <button onclick="document.getElementById('sim-modal').classList.remove('hidden')" class="text-emerald-400 hover:text-emerald-300 text-sm font-semibold transition" data-i18n="sim.view_detail">
+                  Ver detalle de transacciones →
+                </button>
+              </div>
               <div class="mt-4 p-4 bg-slate-600/50 rounded-lg">
                 <p class="text-sm text-slate-300">
                   <strong>Nota:</strong> Esta simulación es hipotética y se basa en las alertas generadas durante el período seleccionado. Los resultados pasados no garantizan rendimientos futuros.
@@ -297,6 +302,31 @@
         </div>
       </div>
     </div>
+
+  <!-- Modal transacciones simulador -->
+  <div id="sim-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div class="relative bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden shadow-2xl">
+      <div class="flex items-center justify-between p-5 border-b border-slate-700">
+        <h3 class="text-lg font-bold text-white" data-i18n="sim.modal_title">Detalle de transacciones</h3>
+        <button onclick="document.getElementById('sim-modal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl transition">✕</button>
+      </div>
+      <div class="overflow-y-auto max-h-[60vh] p-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-slate-400 text-xs uppercase tracking-wider">
+              <th class="text-left pb-3" data-i18n="sim.col_action">Acción</th>
+              <th class="text-right pb-3" data-i18n="sim.col_price">Precio</th>
+              <th class="text-right pb-3" data-i18n="sim.col_change">Cambio</th>
+              <th class="text-right pb-3" data-i18n="sim.col_balance">Balance</th>
+            </tr>
+          </thead>
+          <tbody id="sim-trades-body"></tbody>
+        </table>
+        <div id="sim-no-trades" class="hidden text-center text-slate-500 py-6" data-i18n="sim.no_trades">Sin transacciones en este período</div>
+      </div>
+    </div>
+  </div>
   </section>
 
   <!-- PRICING -->
@@ -702,6 +732,13 @@
         "sim.final": "Valor final:",
         "sim.profit": "Ganancia/Pérdida:",
         "sim.percentage": "Porcentaje:",
+        "sim.view_detail": "Ver detalle de transacciones →",
+        "sim.modal_title": "Detalle de transacciones",
+        "sim.col_action": "Acción",
+        "sim.col_price": "Precio",
+        "sim.col_change": "Cambio",
+        "sim.col_balance": "Balance",
+        "sim.no_trades": "Sin transacciones en este período",
         "logout.title": "¿Cerrar sesión?",
         "logout.message": "¿Estás seguro de que quieres cerrar sesión?",
         "logout.cancel": "Cancelar",
@@ -822,6 +859,13 @@
         "sim.final": "Final value:",
         "sim.profit": "Profit/Loss:",
         "sim.percentage": "Percentage:",
+        "sim.view_detail": "View transaction details →",
+        "sim.modal_title": "Transaction details",
+        "sim.col_action": "Action",
+        "sim.col_price": "Price",
+        "sim.col_change": "Change",
+        "sim.col_balance": "Balance",
+        "sim.no_trades": "No transactions in this period",
         "logout.title": "Sign out?",
         "logout.message": "Are you sure you want to sign out?",
         "logout.cancel": "Cancel",
@@ -978,6 +1022,39 @@
         } else {
           document.getElementById('loss-avoided-row').classList.add('hidden');
           document.getElementById('loss-avoided-note').classList.add('hidden');
+        }
+
+        // Populate trades modal
+        var tbody = document.getElementById('sim-trades-body');
+        var noTrades = document.getElementById('sim-no-trades');
+        tbody.innerHTML = '';
+        if (data.trades && data.trades.length > 0) {
+          noTrades.classList.add('hidden');
+          data.trades.forEach(function(t) {
+            var actionLabel, actionClass;
+            if (t.action === 'buy') {
+              actionLabel = 'Compra';
+              actionClass = 'text-green-400';
+            } else if (t.action === 'sell') {
+              actionLabel = 'Venta';
+              actionClass = 'text-red-400';
+            } else {
+              actionLabel = 'Cierre';
+              actionClass = 'text-slate-300';
+            }
+            var changeTxt = t.return_pct > 0 ? '+' + t.return_pct + '%' : t.return_pct + '%';
+            var changeClass = t.return_pct >= 0 ? 'text-green-400' : 'text-red-400';
+            if (t.action === 'buy') { changeTxt = '—'; changeClass = 'text-slate-500'; }
+            var row = '<tr class="border-t border-slate-700/50">'
+              + '<td class="py-2.5 ' + actionClass + ' font-medium">' + actionLabel + '</td>'
+              + '<td class="py-2.5 text-right text-white">$' + t.price.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>'
+              + '<td class="py-2.5 text-right ' + changeClass + '">' + changeTxt + '</td>'
+              + '<td class="py-2.5 text-right text-white font-semibold">' + t.balance_after.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €</td>'
+              + '</tr>';
+            tbody.insertAdjacentHTML('beforeend', row);
+          });
+        } else {
+          noTrades.classList.remove('hidden');
         }
 
         results.classList.remove('hidden');
