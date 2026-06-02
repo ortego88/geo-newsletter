@@ -94,13 +94,22 @@ NOTICIAS QUE NO MUEVEN PRECIOS (confidence < 40, no predecir):
 - Noticias sobre desarrollo "en progreso" sin fecha
 - Métricas on-chain menores sin contexto de acción
 - Noticias ya conocidas por el mercado (>24h antiguas)
-- Noticias que DESCRIBEN un movimiento que ya ocurrió ("Bitcoin sube un 5%", "ETH alcanza máximos")
+- Noticias que describen un movimiento PEQUEÑO ya completado ("Bitcoin sube un 2%", "ETH alcanza máximos")
 
-REGLA CRÍTICA — "SELL THE NEWS":
-- Si la noticia describe un movimiento PASADO (ej: "BTC sube...", "X alcanza..."), el precio
+EXCEPCIÓN CRÍTICA — CORRECCIONES/RALLIES EN CURSO:
+- Si la noticia describe una CORRECCIÓN GENERALIZADA (caída >3% en múltiples activos, liquidaciones masivas,
+  pérdida de miles de millones en capitalización) → la tendencia probablemente CONTINÚA a corto plazo.
+  Predice con confidence >= 70 en la MISMA dirección del movimiento actual.
+- Si la noticia describe un rally generalizado con catalizadores macro activos → misma lógica.
+- Clave: diferencia entre "BTC sube 2%" (movimiento menor ya agotado) vs "corrección borra $176B,
+  liquidaciones masivas continúan" (evento en curso con momentum).
+
+REGLA — "SELL THE NEWS" (solo para movimientos MENORES):
+- Si la noticia describe un movimiento PASADO MENOR (ej: "BTC sube un 3% por rumor de ETF"), el precio
   probablemente YA se movió. Predecir la MISMA dirección suele fallar (reversión posterior).
-- Solo predice si la noticia describe un CATALIZADOR FUTURO (regulación pendiente, evento programado).
-- Si la noticia es reactiva (describe lo que ya pasó), usa confidence < 40 o predice REVERSA.
+- PERO si es una corrección/rally MASIVA en curso (>5% generalizado, liquidaciones, pánico/euforia),
+  el momentum suele continuar → predice en la misma dirección con alta confianza.
+- Si es noticia reactiva de movimiento menor → confidence < 40 o predice REVERSA.
 
 REGLAS DE DIRECCIÓN:
 - Usa "up" o "down" SOLO cuando tengas certeza de la dirección
@@ -151,10 +160,12 @@ ANÁLISIS OBLIGATORIO (responde mentalmente antes del JSON):
    - Hecho confirmado → continúa
    - Opinión/rumor → confidence < 40, NO generar alerta
 
-2. ¿La noticia describe un MOVIMIENTO PASADO o un CATALIZADOR FUTURO?
-   - "BTC sube un 5%" → PASADO (el precio ya se movió) → confidence < 40
+2. ¿La noticia describe un MOVIMIENTO PASADO, un CATALIZADOR FUTURO, o un MOVIMIENTO MASIVO EN CURSO?
+   - "BTC sube un 2%" → PASADO MENOR (el precio ya se movió) → confidence < 40
    - "SEC aprueba ETF mañana" → FUTURO (el precio aún no refleja) → continúa
-   - Si es PASADO, el movimiento posterior suele ser REVERSA (sell the news)
+   - "Corrección borra $176B, liquidaciones masivas" → EN CURSO (momentum continúa) → confidence >= 70
+   - Si es PASADO MENOR, el movimiento posterior suele ser REVERSA (sell the news)
+   - Si es corrección/rally MASIVA en curso (>3-5% generalizado) → predice CONTINUACIÓN
 
 3. ¿QUÉ CRIPTO específica se ve afectada directamente?
    - Si no hay cripto específica clara → usar BTC como proxy solo si es macro relevante

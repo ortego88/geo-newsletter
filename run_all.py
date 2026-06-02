@@ -250,7 +250,30 @@ def run_pipeline_cycle():
     try:
         events = pipeline.run(minutes=180, min_score=45)
         if not events:
-            logger.info("Sin eventos relevantes en este ciclo.")
+            events = []
+            logger.info("Sin eventos de noticias en este ciclo.")
+
+        # Check for price-based signals (large movements)
+        try:
+            from src.services.price_signals import check_price_signals
+            from src.services.real_price_fetcher import get_price
+            price_events = check_price_signals()
+            if price_events:
+                for pe in price_events:
+                    analysis = pe.get("analysis", {})
+                    assets = analysis.get("most_affected_assets", [])
+                    asset = assets[0] if assets else ""
+                    price_now = get_price(asset) or 0.0
+                    pred_id = tracker.save_prediction(pe, price_now)
+                    if pred_id:
+                        pe["prediction_id"] = pred_id
+                        tracker.mark_as_alerted(pred_id)
+                events.extend(price_events)
+                logger.info(f"📊 {len(price_events)} señales de precio añadidas")
+        except Exception as e:
+            logger.warning(f"Error en price_signals: {e}")
+
+        if not events:
             return
         logger.info(f"✅ {len(events)} eventos relevantes encontrados")
         stats = tracker.get_accuracy_stats()
