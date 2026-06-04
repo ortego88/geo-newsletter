@@ -335,13 +335,13 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="weekly_digest",
     )
-    # Newsletter: every Sunday at 11:00 AM (Madrid time) for all subscribers
+    # Newsletter: every Monday at 8:00 AM (Madrid time) for all subscribers
     from src.services.newsletter_sender import send_weekly_newsletter
     scheduler.add_job(
         send_weekly_newsletter,
         "cron",
-        day_of_week="sun",
-        hour=11,
+        day_of_week="mon",
+        hour=8,
         minute=0,
         timezone="Europe/Madrid",
         id="weekly_newsletter",
