@@ -314,6 +314,19 @@ def run_pipeline_cycle():
             pass
 
 
+def run_gem_scan_cycle():
+    """Separate cycle for gem detection — isolated from main predictions."""
+    try:
+        from src.services.gem_scanner import run_gem_scan, save_gem_signals, send_gem_alerts_admin
+        signals = run_gem_scan()
+        if signals:
+            save_gem_signals(signals)
+            admin_chat_id = os.getenv("GEM_ADMIN_CHAT_ID", "161542135")
+            send_gem_alerts_admin(signals, admin_chat_id)
+    except Exception as e:
+        logger.warning(f"Error en gem scan: {e}")
+
+
 def start_scheduler():
     validator.start()
     scheduler = BackgroundScheduler()
@@ -322,6 +335,14 @@ def start_scheduler():
         "interval",
         minutes=10,
         id="pipeline_cycle",
+        next_run_time=datetime.now(),
+    )
+    # Gem scanner: every 30 minutes (separate from main pipeline)
+    scheduler.add_job(
+        run_gem_scan_cycle,
+        "interval",
+        minutes=30,
+        id="gem_scan",
         next_run_time=datetime.now(),
     )
     # Weekly digest: every Sunday at 10:00 AM (Madrid time) for Premium/Pro users
