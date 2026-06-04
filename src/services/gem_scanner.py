@@ -37,6 +37,30 @@ MIN_5M_TXNS = 30
 
 _COOLDOWN_HOURS = 24
 _cooldowns: dict[str, float] = {}
+_COOLDOWN_FILE = "/tmp/gem_cooldowns.json"
+
+
+def _load_cooldowns():
+    """Load cooldowns from disk to survive restarts."""
+    global _cooldowns
+    try:
+        import json
+        with open(_COOLDOWN_FILE) as f:
+            _cooldowns = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        _cooldowns = {}
+
+
+def _save_cooldowns():
+    """Persist cooldowns to disk."""
+    import json
+    now = time.time()
+    active = {k: v for k, v in _cooldowns.items() if now - v < _COOLDOWN_HOURS * 3600}
+    with open(_COOLDOWN_FILE, "w") as f:
+        json.dump(active, f)
+
+
+_load_cooldowns()
 
 # Tokens that are NEVER gems (stablecoins, fiat, wrapped, top 30, commodities)
 _BLACKLIST = {
@@ -64,6 +88,7 @@ def _is_on_cooldown(token_id: str) -> bool:
 
 def _set_cooldown(token_id: str):
     _cooldowns[token_id] = time.time()
+    _save_cooldowns()
 
 
 def scan_dex_accumulation() -> list[dict]:
@@ -414,9 +439,9 @@ def run_gem_scan() -> list[dict]:
     all_signals.extend(scan_binance_pre_pump())
 
     all_signals.sort(key=lambda s: s.get("volume_24h", 0), reverse=True)
-    all_signals = all_signals[:2]
+    all_signals = all_signals[:1]
 
-    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signals (max 2/cycle)")
+    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signal (max 1/cycle)")
     return all_signals
 
 

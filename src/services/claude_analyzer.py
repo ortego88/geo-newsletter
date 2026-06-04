@@ -88,27 +88,30 @@ NOTICIAS QUE MUEVEN PRECIOS (predice con confidence >= 70):
 - Listado/deslisting en exchange principal → movimiento rápido
 
 NOTICIAS QUE NO MUEVEN PRECIOS (confidence < 40, no predecir):
-- Opiniones de analistas sobre precio futuro
-- Artículos de "análisis técnico" genérico
+- Opiniones de analistas sobre precio futuro ("analyst says", "strategist predicts")
+- Artículos de "análisis técnico" genérico (patrones, fibonacci, ondas de Elliott)
 - Rumores sin confirmación
 - Noticias sobre desarrollo "en progreso" sin fecha
-- Métricas on-chain menores sin contexto de acción
 - Noticias ya conocidas por el mercado (>24h antiguas)
-- Noticias que describen un movimiento PEQUEÑO ya completado ("Bitcoin sube un 2%", "ETH alcanza máximos")
+- Descripciones simples de precio ("Bitcoin sube un 2%", "ETH alcanza máximos")
 
-EXCEPCIÓN — CORRECCIONES/RALLIES MASIVOS EN CURSO:
-- SOLO aplica si la noticia describe un movimiento MASIVO (>5% generalizado, liquidaciones >$100M,
-  pérdida de miles de millones en capitalización, pánico/euforia evidente en el mercado).
-- En ese caso la tendencia probablemente CONTINÚA a corto plazo → confidence >= 70 misma dirección.
-- NO aplica a movimientos del 2-4% sin catalizador claro — esos son fluctuaciones normales de crypto.
-- Clave: "BTC cae 3%" NO es una corrección masiva. "Mercado pierde $200B con liquidaciones en cascada" SÍ lo es.
+NOTICIAS QUE SÍ MUEVEN PRECIOS — FLUJOS DE CAPITAL (confidence >= 65):
+- Salidas/entradas masivas de ETFs (>$500M en una semana) → presión real de venta/compra
+- Ventas/compras institucionales confirmadas con cifras (no rumores)
+- Whale movements: grandes transferencias a/desde exchanges (>1000 BTC, >10K ETH)
+- Liquidaciones en cascada (>$100M en 24h) → momentum continúa
+- Outflows/inflows masivos en exchanges (señal de acumulación o distribución)
+
+EXCEPCIÓN — CORRECCIONES/RALLIES EN CURSO:
+- Si hay flujos masivos de capital CONTINUADOS (ETF outflows >$1B semanal, liquidaciones
+  encadenadas, whale dumps consecutivos) → la tendencia CONTINÚA. Confidence >= 70.
+- Movimientos de precio aislados del 2-4% sin flujo de capital claro → NO aplica.
 
 REGLA — "SELL THE NEWS":
-- Si la noticia describe un movimiento PASADO (ej: "BTC sube un 3% por rumor de ETF"), el precio
-  probablemente YA se movió. Predecir la MISMA dirección suele fallar (reversión posterior).
-- SOLO excepción: corrección/rally MASIVA en curso (>5% generalizado, liquidaciones >$100M,
-  pánico/euforia claro) → el momentum suele continuar.
-- Si es noticia reactiva de movimiento < 5% → confidence < 40.
+- Si la noticia describe un movimiento de precio PASADO sin flujo de capital nuevo
+  (ej: "BTC sube un 3% por rumor") → el precio YA se movió → confidence < 40.
+- Si la noticia describe FLUJO DE CAPITAL real y medible (ETF outflows, whale dumps,
+  liquidaciones) → el impacto suele continuar → confidence >= 65.
 
 REGLAS DE DIRECCIÓN:
 - Usa "up" o "down" SOLO cuando tengas certeza de la dirección

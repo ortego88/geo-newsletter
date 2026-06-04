@@ -326,7 +326,7 @@ def run_gem_scan_cycle():
         signals = run_gem_scan()
         if signals:
             for sig in signals:
-                if sig["source"] == "binance_momentum":
+                if "binance" in sig["source"]:
                     sig["_price"] = _get_current_price_binance(sig["symbol"])
                 else:
                     sig["_price"] = _get_current_price_dexscreener(sig["address"])
@@ -348,11 +348,11 @@ def start_scheduler():
         id="pipeline_cycle",
         next_run_time=datetime.now(),
     )
-    # Gem scanner: every 30 minutes (separate from main pipeline)
+    # Gem scanner: every 2 hours (max ~12 signals/day)
     scheduler.add_job(
         run_gem_scan_cycle,
         "interval",
-        minutes=30,
+        hours=2,
         id="gem_scan",
         next_run_time=datetime.now(),
     )
