@@ -278,16 +278,19 @@ def scan_binance_pre_pump() -> list[dict]:
             volume = t["volume_usd"]
 
             # Pattern 1: High volume + small price change (accumulation)
+            # Only flag tokens with unusually high trade count relative to volume
+            # (lots of small buys = retail accumulation before pump)
             is_accumulation = (
-                volume >= 1_000_000
-                and abs(price_change) <= 5
-                and t["trades"] >= 10_000
+                volume >= 5_000_000
+                and abs(price_change) <= 3
+                and t["trades"] >= 50_000
+                and t["trades"] / (volume / 1_000_000) >= 20
             )
 
-            # Pattern 2: Moderate pump (10-30%) with very high volume — early stage
+            # Pattern 2: Moderate pump (15-30%) with very high volume — early stage
             is_early_pump = (
-                10 <= price_change <= 30
-                and volume >= 5_000_000
+                15 <= price_change <= 30
+                and volume >= 10_000_000
             )
 
             if not is_accumulation and not is_early_pump:
@@ -374,14 +377,17 @@ def _get_current_price_binance(symbol: str) -> float | None:
 
 
 def run_gem_scan() -> list[dict]:
-    """Run all early-detection scanners and return combined results."""
+    """Run all early-detection scanners and return combined results (max 5 per cycle)."""
     all_signals = []
 
     all_signals.extend(scan_dex_accumulation())
     all_signals.extend(scan_new_pairs_with_traction())
     all_signals.extend(scan_binance_pre_pump())
 
-    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signals found")
+    all_signals.sort(key=lambda s: s.get("volume_24h", 0), reverse=True)
+    all_signals = all_signals[:5]
+
+    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signals (capped at 5)")
     return all_signals
 
 
