@@ -1,9 +1,10 @@
 """
-price_signals.py — Genera alertas automáticas cuando el precio de un activo
-cae o sube un porcentaje significativo en las últimas horas.
+price_signals.py — Genera eventos sintéticos cuando el precio de un activo
+se mueve significativamente en las últimas 24h.
 
-Complementa al pipeline de noticias: detecta movimientos de mercado grandes
-que pueden no tener una noticia asociada inmediatamente.
+Estos eventos se pasan por Claude para análisis (como cualquier otra noticia),
+NO generan predicciones directamente. Complementan las fuentes RSS detectando
+movimientos grandes que pueden no tener noticia asociada.
 
 Se ejecuta cada ciclo (10 min). Cooldown de 4 horas por activo para no spammear.
 """
@@ -14,7 +15,7 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("price_signals")
 
-THRESHOLD_PCT = 2.0
+THRESHOLD_PCT = 3.0
 COOLDOWN_SECONDS = 4 * 3600
 TOP_ASSETS = ["BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK"]
 
@@ -55,7 +56,8 @@ def _get_24h_change(asset: str) -> float | None:
 def check_price_signals() -> list[dict]:
     """
     Checks top assets for significant price movements (>= THRESHOLD_PCT).
-    Returns a list of synthetic events that can be fed into the alert pipeline.
+    Returns synthetic events in article format so they go through the normal
+    pipeline (Claude analysis, scoring, etc.) — NOT pre-analyzed.
     """
     signals = []
 
@@ -70,37 +72,36 @@ def check_price_signals() -> list[dict]:
         if abs(change) < THRESHOLD_PCT:
             continue
 
-        from src.services.real_price_fetcher import get_price
-        current_price = get_price(asset)
-
         if change <= -THRESHOLD_PCT:
-            direction = "down"
-            title = f"{asset} cae un {abs(change):.1f}% en 24h — señal de corrección activa"
-            reasoning = f"{asset} pierde {abs(change):.1f}% en las últimas 24h con momentum bajista"
+            title = f"{asset} cae un {abs(change):.1f}% en las últimas 24 horas"
+            description = (
+                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 24 horas. "
+                f"Este movimiento puede indicar una corrección en curso o "
+                f"una reacción a eventos de mercado aún no reflejados en noticias."
+            )
         else:
-            direction = "up"
-            title = f"{asset} sube un {change:.1f}% en 24h — rally en curso"
-            reasoning = f"{asset} gana {change:.1f}% en las últimas 24h con momentum alcista"
+            title = f"{asset} sube un {change:.1f}% en las últimas 24 horas"
+            description = (
+                f"{asset} ha ganado un {change:.1f}% en las últimas 24 horas. "
+                f"Este movimiento puede indicar un rally en curso o "
+                f"una reacción a catalizadores positivos."
+            )
 
-        confidence = min(85, 70 + int(abs(change) - THRESHOLD_PCT) * 3)
-        score = min(90, 70 + int(abs(change)))
+        score = min(85, 65 + int(abs(change)))
 
         event = {
             "title": title,
-            "score": score,
+            "description": description,
             "source": "price_signal",
-            "analysis": {
-                "direction": direction,
-                "confidence": confidence,
-                "most_affected_assets": [asset],
-                "timeframe": "hours",
-                "reasoning": reasoning,
-                "signal_strength": "high" if abs(change) >= 4.0 else "medium",
-                "verification_window_hours": 4,
-            },
+            "sources": ["Price Monitor"],
+            "suggested_asset": asset,
+            "matched_assets": [asset],
+            "score": score,
+            "category": "CRYPTO",
+            "published_at": datetime.now(timezone.utc).isoformat(),
         }
         signals.append(event)
         _set_cooldown(asset)
-        logger.info(f"📊 Price signal: {asset} {change:+.1f}% → {direction} (conf={confidence})")
+        logger.info(f"📊 Price signal: {asset} {change:+.1f}% (score={score})")
 
     return signals

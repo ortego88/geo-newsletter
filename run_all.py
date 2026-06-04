@@ -180,16 +180,16 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events (score >= 65, confidence >= 70)
+    # Step 1: filter alertable events (score >= 60, confidence >= 70)
     resolved = [
         e for e in events
-        if e.get("score", 0) >= 65
+        if e.get("score", 0) >= 60
         and e.get("analysis")
         and e.get("analysis", {}).get("confidence", 0) >= 70
     ]
 
     if not resolved:
-        logger.info("Sin eventos con score >= 65 y confidence >= 70 para alertar")
+        logger.info("Sin eventos con score >= 60 y confidence >= 70 para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
@@ -253,23 +253,30 @@ def run_pipeline_cycle():
             events = []
             logger.info("Sin eventos de noticias en este ciclo.")
 
-        # Check for price-based signals (large movements)
+        # Check for price-based signals (large movements) — these are injected
+        # back into the pipeline as synthetic articles for Claude to analyze
         try:
             from src.services.price_signals import check_price_signals
-            from src.services.real_price_fetcher import get_price
             price_events = check_price_signals()
             if price_events:
-                for pe in price_events:
-                    analysis = pe.get("analysis", {})
+                from src.services.claude_analyzer import analyze_events_batch
+                from src.services.real_price_fetcher import get_price
+                logger.info(f"📊 {len(price_events)} señales de precio → analizando con Claude...")
+                batch_results = analyze_events_batch(price_events)
+                for pe, analysis in zip(price_events, batch_results):
+                    if analysis is None or analysis.get("confidence", 0) < 70:
+                        continue
+                    pe["analysis"] = analysis
                     assets = analysis.get("most_affected_assets", [])
-                    asset = assets[0] if assets else ""
+                    asset = assets[0] if assets else pe.get("suggested_asset", "")
                     price_now = get_price(asset) or 0.0
+                    if price_now <= 0:
+                        continue
                     pred_id = tracker.save_prediction(pe, price_now)
                     if pred_id:
                         pe["prediction_id"] = pred_id
-                        tracker.mark_as_alerted(pred_id)
-                events.extend(price_events)
-                logger.info(f"📊 {len(price_events)} señales de precio añadidas")
+                        events.append(pe)
+                logger.info(f"📊 {sum(1 for e in price_events if e.get('prediction_id'))} señales de precio guardadas tras análisis Claude")
         except Exception as e:
             logger.warning(f"Error en price_signals: {e}")
 
