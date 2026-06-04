@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trianio — Resumen Semanal</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- HEADER -->
+          <tr>
+            <td style="padding:32px 40px;background:#1e293b;border-radius:16px 16px 0 0;border-bottom:1px solid #334155;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <h1 style="margin:0;font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Trianio</h1>
+                    <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">Resumen semanal de predicciones crypto</p>
+                  </td>
+                  <td align="right" style="vertical-align:top;">
+                    <span style="display:inline-block;background:#065f46;color:#34d399;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;">
+                      {{ week_range }}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ACCURACY BADGE -->
+          <tr>
+            <td style="padding:32px 40px 24px;background:#1e293b;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <div style="display:inline-block;background:linear-gradient(135deg,#065f46,#064e3b);border:1px solid #34d399;border-radius:12px;padding:20px 32px;text-align:center;">
+                      <p style="margin:0;font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Accuracy esta semana</p>
+                      <p style="margin:8px 0 0;font-size:42px;font-weight:700;color:#34d399;">{{ accuracy_pct }}%</p>
+                      <p style="margin:4px 0 0;font-size:13px;color:#6ee7b7;">{{ correct }}/{{ total }} predicciones correctas</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- TOP PREDICTIONS -->
+          <tr>
+            <td style="padding:0 40px 32px;background:#1e293b;">
+              <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#ffffff;">Top predicciones de la semana</h2>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0 8px;">
+                {% for pred in top_predictions %}
+                <tr>
+                  <td style="background:#0f172a;border-radius:8px;padding:14px 16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="50" style="vertical-align:top;">
+                          <span style="display:inline-block;background:{% if pred.direction == 'down' %}rgba(248,113,113,0.15){% else %}rgba(52,211,153,0.15){% endif %};color:{% if pred.direction == 'down' %}#f87171{% else %}#34d399{% endif %};font-size:11px;font-weight:700;padding:4px 8px;border-radius:4px;">
+                            {% if pred.direction == 'down' %}BAJA{% else %}ALZA{% endif %}
+                          </span>
+                        </td>
+                        <td style="padding-left:8px;">
+                          <p style="margin:0;font-size:14px;font-weight:600;color:#e2e8f0;">{{ pred.asset }}</p>
+                          <p style="margin:2px 0 0;font-size:12px;color:#94a3b8;">{{ pred.reasoning }}</p>
+                        </td>
+                        <td width="60" align="right" style="vertical-align:top;">
+                          <span style="font-size:14px;font-weight:700;color:{% if pred.outcome == 'correct' %}#34d399{% else %}#f87171{% endif %};">
+                            {% if pred.outcome == 'correct' %}&#10003;{% else %}&#10007;{% endif %} {{ pred.actual_change }}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                {% endfor %}
+              </table>
+            </td>
+          </tr>
+
+          <!-- MARKET INSIGHTS -->
+          <tr>
+            <td style="padding:0 40px 32px;background:#1e293b;">
+              <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#ffffff;">Insights del mercado</h2>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;padding:16px;">
+                <tr>
+                  <td style="padding:16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="33%" style="text-align:center;padding:8px;">
+                          <p style="margin:0;font-size:12px;color:#94a3b8;">Alertas enviadas</p>
+                          <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#ffffff;">{{ total_alerts }}</p>
+                        </td>
+                        <td width="33%" style="text-align:center;padding:8px;border-left:1px solid #334155;border-right:1px solid #334155;">
+                          <p style="margin:0;font-size:12px;color:#94a3b8;">Mejor activo</p>
+                          <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#34d399;">{{ best_asset }}</p>
+                        </td>
+                        <td width="33%" style="text-align:center;padding:8px;">
+                          <p style="margin:0;font-size:12px;color:#94a3b8;">Acc. acumulada</p>
+                          <p style="margin:4px 0 0;font-size:24px;font-weight:700;color:#ffffff;">{{ global_accuracy }}%</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- SECTOR BREAKDOWN -->
+          {% if sectors %}
+          <tr>
+            <td style="padding:0 40px 32px;background:#1e293b;">
+              <h2 style="margin:0 0 16px;font-size:18px;font-weight:600;color:#ffffff;">Por sector</h2>
+              {% for sector in sectors %}
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+                <tr>
+                  <td style="background:#0f172a;border-radius:6px;padding:12px 16px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <span style="font-size:13px;color:#e2e8f0;font-weight:500;">{{ sector.name }}</span>
+                        </td>
+                        <td align="right">
+                          <span style="font-size:13px;color:{% if sector.change > 0 %}#34d399{% else %}#f87171{% endif %};font-weight:600;">
+                            {{ sector.change }}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- CTA -->
+          <tr>
+            <td style="padding:0 40px 32px;background:#1e293b;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="https://trianio.com/dashboard" style="display:inline-block;background:#34d399;color:#064e3b;font-size:14px;font-weight:700;text-decoration:none;padding:14px 32px;border-radius:10px;">
+                      Ver dashboard completo &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td style="padding:24px 40px;background:#1e293b;border-radius:0 0 16px 16px;border-top:1px solid #334155;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-size:12px;color:#64748b;">
+                      &copy; 2026 Trianio. Predicciones crypto con IA.
+                    </p>
+                    <p style="margin:8px 0 0;font-size:11px;color:#475569;">
+                      Recibes este email porque te suscribiste en trianio.com.<br>
+                      <a href="{{ unsubscribe_url }}" style="color:#94a3b8;text-decoration:underline;">Darme de baja</a>
+                    </p>
+                  </td>
+                  <td align="right" style="vertical-align:top;">
+                    <a href="https://trianio.com" style="color:#94a3b8;font-size:12px;text-decoration:none;">trianio.com</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

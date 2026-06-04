@@ -382,6 +382,70 @@ def create_app():
     def health():
         return jsonify({"status": "ok"})
 
+    @main_bp.route("/google<code>.html")
+    def google_verification(code):
+        """Google Search Console verification file."""
+        from flask import Response
+        return Response(
+            f"google-site-verification: google{code}.html",
+            mimetype="text/html",
+        )
+
+    @main_bp.route("/robots.txt")
+    def robots_txt():
+        from flask import Response
+        content = (
+            "User-agent: *\n"
+            "Allow: /\n"
+            "Disallow: /admin\n"
+            "Disallow: /api/\n"
+            "Disallow: /dashboard\n"
+            "\n"
+            "Sitemap: https://trianio.com/sitemap.xml\n"
+        )
+        return Response(content, mimetype="text/plain")
+
+    @main_bp.route("/sitemap.xml")
+    def sitemap_xml():
+        from flask import Response
+        urls = []
+        urls.append({"loc": "https://trianio.com/", "priority": "1.0", "changefreq": "daily"})
+        urls.append({"loc": "https://trianio.com/blog", "priority": "0.9", "changefreq": "daily"})
+        try:
+            with get_engine("app").connect() as conn:
+                rows = conn.execute(text(
+                    "SELECT slug, updated_at, published_at FROM blog_posts "
+                    "WHERE is_published = TRUE ORDER BY published_at DESC"
+                )).fetchall()
+            for row in rows:
+                lastmod = row[1] or row[2]
+                if lastmod:
+                    try:
+                        lastmod = datetime.fromisoformat(lastmod).strftime("%Y-%m-%d")
+                    except Exception:
+                        lastmod = str(lastmod)[:10]
+                urls.append({
+                    "loc": f"https://trianio.com/blog/{row[0]}",
+                    "lastmod": lastmod,
+                    "priority": "0.8",
+                    "changefreq": "weekly",
+                })
+        except Exception:
+            pass
+
+        xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        for url in urls:
+            xml += '  <url>\n'
+            xml += f'    <loc>{url["loc"]}</loc>\n'
+            if url.get("lastmod"):
+                xml += f'    <lastmod>{url["lastmod"]}</lastmod>\n'
+            xml += f'    <changefreq>{url.get("changefreq", "weekly")}</changefreq>\n'
+            xml += f'    <priority>{url.get("priority", "0.5")}</priority>\n'
+            xml += '  </url>\n'
+        xml += '</urlset>'
+        return Response(xml, mimetype="application/xml")
+
     @main_bp.route("/seed-blog")
     def seed_blog():
         """
@@ -625,7 +689,29 @@ def create_app():
             _logger.error("Error en newsletter signup: %s", exc)
             return jsonify({"error": "Error al registrar. Inténtalo de nuevo."}), 500
 
+        _sync_brevo_contact(email, first_name, last_name)
         return jsonify({"ok": True}), 201
+
+    def _sync_brevo_contact(email: str, first_name: str, last_name: str):
+        """Adds or updates contact in Brevo (async, best-effort)."""
+        brevo_key = os.getenv("BREVO_API_KEY", "")
+        if not brevo_key:
+            return
+        try:
+            import requests as _req
+            _req.post(
+                "https://api.brevo.com/v3/contacts",
+                headers={"api-key": brevo_key, "Content-Type": "application/json"},
+                json={
+                    "email": email,
+                    "attributes": {"FIRSTNAME": first_name, "LASTNAME": last_name},
+                    "listIds": [int(os.getenv("BREVO_LIST_ID", "2"))],
+                    "updateEnabled": True,
+                },
+                timeout=5,
+            )
+        except Exception as e:
+            _logger.debug(f"Brevo sync failed: {e}")
 
     @main_bp.route("/api/fcm-token", methods=["POST"])
     def register_fcm_token():
