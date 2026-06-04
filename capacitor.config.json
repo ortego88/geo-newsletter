@@ -3,7 +3,7 @@
   "appName": "Trianio",
   "webDir": "dist",
   "server": {
-    "url": "https://geo-newsletter-production.up.railway.app/app",
+    "url": "https://trianio.com/app",
     "cleartext": false
   },
   "plugins": {
