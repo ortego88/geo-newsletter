@@ -317,12 +317,23 @@ def run_pipeline_cycle():
 def run_gem_scan_cycle():
     """Separate cycle for gem detection — isolated from main predictions."""
     try:
-        from src.services.gem_scanner import run_gem_scan, save_gem_signals, send_gem_alerts_admin
+        from src.services.gem_scanner import (
+            run_gem_scan, save_gem_signals, send_gem_alerts_admin, validate_pending_gems,
+            _get_current_price_dexscreener, _get_current_price_binance,
+        )
+        admin_chat_id = os.getenv("GEM_ADMIN_CHAT_ID", "161542135")
+
         signals = run_gem_scan()
         if signals:
+            for sig in signals:
+                if sig["source"] == "binance_momentum":
+                    sig["_price"] = _get_current_price_binance(sig["symbol"])
+                else:
+                    sig["_price"] = _get_current_price_dexscreener(sig["address"])
             save_gem_signals(signals)
-            admin_chat_id = os.getenv("GEM_ADMIN_CHAT_ID", "161542135")
             send_gem_alerts_admin(signals, admin_chat_id)
+
+        validate_pending_gems(admin_chat_id)
     except Exception as e:
         logger.warning(f"Error en gem scan: {e}")
 

@@ -6,13 +6,18 @@ Fuentes:
 - CoinGecko: tokens recientemente añadidos con tracción
 - Binance: nuevos listings anunciados
 
+Validación (7 días después):
+- CORRECT: precio max en 7d >= +30% desde detección
+- INCORRECT: precio cae >= -30% sin haber tocado +30%
+- NEUTRAL: ni +30% ni -30% en 7 días
+
 Completamente aislado del pipeline principal de predicciones.
 Resultados se guardan en tabla 'gem_signals' y se envían solo al admin.
 """
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -271,8 +276,39 @@ def run_gem_scan() -> list[dict]:
     return all_signals
 
 
+def _get_current_price_dexscreener(address: str) -> float | None:
+    """Get current price from DexScreener for a token."""
+    try:
+        resp = requests.get(
+            f"https://api.dexscreener.com/latest/dex/tokens/{address}",
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return None
+        pairs = resp.json().get("pairs", [])
+        if not pairs:
+            return None
+        return float(pairs[0].get("priceUsd", 0))
+    except Exception:
+        return None
+
+
+def _get_current_price_binance(symbol: str) -> float | None:
+    """Get current price from Binance."""
+    try:
+        resp = requests.get(
+            f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}USDT",
+            timeout=5,
+        )
+        if resp.status_code != 200:
+            return None
+        return float(resp.json().get("price", 0))
+    except Exception:
+        return None
+
+
 def save_gem_signals(signals: list[dict]):
-    """Save gem signals to the database (separate table from predictions)."""
+    """Save gem signals to the database with current price at detection."""
     if not signals:
         return
 
@@ -296,18 +332,27 @@ def save_gem_signals(signals: list[dict]):
                     dex_url TEXT,
                     detected_at TEXT,
                     price_at_detection DOUBLE PRECISION,
-                    price_after_24h DOUBLE PRECISION,
+                    price_max_7d DOUBLE PRECISION,
+                    price_at_validation DOUBLE PRECISION,
+                    validated_at TEXT,
                     outcome TEXT DEFAULT 'pending'
                 )
             """))
 
             for sig in signals:
+                price = None
+                if sig["source"] == "binance_momentum":
+                    price = _get_current_price_binance(sig["symbol"])
+                else:
+                    price = _get_current_price_dexscreener(sig["address"])
+
                 conn.execute(text("""
                     INSERT INTO gem_signals
                         (source, symbol, name, chain, address, price_change_24h,
-                         volume_24h, liquidity_usd, fdv, dex_url, detected_at)
+                         volume_24h, liquidity_usd, fdv, dex_url, detected_at,
+                         price_at_detection)
                     VALUES (:source, :symbol, :name, :chain, :address, :change,
-                            :vol, :liq, :fdv, :url, :detected)
+                            :vol, :liq, :fdv, :url, :detected, :price)
                 """), {
                     "source": sig["source"],
                     "symbol": sig["symbol"],
@@ -320,6 +365,7 @@ def save_gem_signals(signals: list[dict]):
                     "fdv": sig["fdv"],
                     "url": sig["dex_url"],
                     "detected": sig["detected_at"],
+                    "price": price,
                 })
             conn.commit()
             logger.info(f"💾 {len(signals)} gem signals saved to DB")
@@ -336,18 +382,119 @@ def send_gem_alerts_admin(signals: list[dict], admin_chat_id: str):
         from src.services.telegram_sender import send_telegram
 
         for sig in signals[:5]:
+            price_str = f"${sig.get('_price', 0):.6f}" if sig.get('_price') else "N/A"
             msg = (
-                f"💎 GEM DETECTED\n\n"
-                f"{sig['symbol']} ({sig['name']})\n"
+                f"{'='*30}\n"
+                f"💎 GEM ALERT 💎\n"
+                f"{'='*30}\n\n"
+                f"🪙 {sig['symbol']} ({sig['name']})\n"
                 f"📈 +{sig['price_change_24h']}% en 24h\n"
-                f"💰 Vol: ${sig['volume_24h']:,.0f}\n"
+                f"💵 Precio: {price_str}\n"
+                f"💰 Vol 24h: ${sig['volume_24h']:,.0f}\n"
                 f"🏦 MCap: ${sig['fdv']:,.0f}\n"
                 f"💧 Liquidez: ${sig['liquidity_usd']:,.0f}\n"
                 f"🔗 Chain: {sig['chain']}\n"
                 f"📡 Fuente: {sig['source']}\n\n"
+                f"⏱ Validación en 7 días\n"
+                f"✅ Correcta si sube +30% desde ahora\n"
+                f"❌ Incorrecta si cae -30%\n\n"
                 f"{sig['dex_url']}"
             )
             send_telegram(msg, chat_id=admin_chat_id)
 
     except Exception as e:
         logger.warning(f"Error sending gem alerts: {e}")
+
+
+_GEM_CORRECT_THRESHOLD = 30.0
+_GEM_INCORRECT_THRESHOLD = -30.0
+_GEM_VALIDATION_DAYS = 7
+
+
+def validate_pending_gems(admin_chat_id: str = "161542135"):
+    """
+    Validates gem signals that are >= 7 days old.
+    Checks current price vs price_at_detection.
+
+    - CORRECT: price went up >= 30% at any point (check current price)
+    - INCORRECT: price dropped >= 30% and never hit +30%
+    - NEUTRAL: 7 days passed, neither threshold reached
+    """
+    try:
+        from web.db_engine import get_engine
+        from sqlalchemy import text
+        from src.services.telegram_sender import send_telegram
+
+        cutoff = (datetime.utcnow() - timedelta(days=_GEM_VALIDATION_DAYS)).isoformat()
+
+        with get_engine("predictions").connect() as conn:
+            pending = conn.execute(text("""
+                SELECT id, symbol, name, source, address, chain,
+                       price_at_detection, detected_at, dex_url
+                FROM gem_signals
+                WHERE outcome = 'pending'
+                  AND detected_at <= :cutoff
+                  AND price_at_detection IS NOT NULL
+                  AND price_at_detection > 0
+            """), {"cutoff": cutoff}).fetchall()
+
+        if not pending:
+            return
+
+        logger.info(f"💎 Validating {len(pending)} gem signals...")
+
+        with get_engine("predictions").connect() as conn:
+            for gem in pending:
+                gem_id, symbol, name, source, address, chain, price_det, detected_at, dex_url = gem
+
+                current_price = None
+                if source == "binance_momentum":
+                    current_price = _get_current_price_binance(symbol)
+                else:
+                    current_price = _get_current_price_dexscreener(address)
+
+                if current_price is None or current_price <= 0:
+                    continue
+
+                change_pct = ((current_price - price_det) / price_det) * 100
+
+                if change_pct >= _GEM_CORRECT_THRESHOLD:
+                    outcome = "correct"
+                elif change_pct <= _GEM_INCORRECT_THRESHOLD:
+                    outcome = "incorrect"
+                else:
+                    outcome = "neutral"
+
+                conn.execute(text("""
+                    UPDATE gem_signals
+                    SET outcome = :outcome,
+                        price_at_validation = :price,
+                        validated_at = :now
+                    WHERE id = :id
+                """), {
+                    "outcome": outcome,
+                    "price": current_price,
+                    "now": datetime.utcnow().isoformat(),
+                    "id": gem_id,
+                })
+
+                emoji = {"correct": "✅", "incorrect": "❌", "neutral": "⚪"}.get(outcome, "?")
+                msg = (
+                    f"{'='*30}\n"
+                    f"💎 GEM RESULTADO ({_GEM_VALIDATION_DAYS}d)\n"
+                    f"{'='*30}\n\n"
+                    f"🪙 {symbol} ({name})\n"
+                    f"{emoji} {outcome.upper()}\n\n"
+                    f"💵 Precio alerta: ${price_det:.6f}\n"
+                    f"💵 Precio ahora: ${current_price:.6f}\n"
+                    f"📊 Cambio: {change_pct:+.1f}%\n\n"
+                    f"📡 Fuente: {source}\n"
+                    f"{dex_url}"
+                )
+                send_telegram(msg, chat_id=admin_chat_id)
+                logger.info(f"💎 Gem #{gem_id} {symbol}: {outcome} ({change_pct:+.1f}%)")
+
+            conn.commit()
+
+    except Exception as e:
+        logger.error(f"Error validating gems: {e}")
