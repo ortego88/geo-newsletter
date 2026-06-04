@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
@@ -5,6 +6,22 @@ from urllib.parse import urlparse
 from web.models import User, init_db, PLANS
 
 auth_bp = Blueprint("auth", __name__)
+
+_login_attempts: dict[str, list[float]] = {}
+_MAX_ATTEMPTS = 5
+_WINDOW_SECONDS = 300
+
+
+def _is_rate_limited(ip: str) -> bool:
+    now = time.time()
+    attempts = _login_attempts.get(ip, [])
+    attempts = [t for t in attempts if now - t < _WINDOW_SECONDS]
+    _login_attempts[ip] = attempts
+    return len(attempts) >= _MAX_ATTEMPTS
+
+
+def _record_attempt(ip: str):
+    _login_attempts.setdefault(ip, []).append(time.time())
 
 
 def _is_safe_redirect(url: str) -> bool:
@@ -18,10 +35,14 @@ def _is_safe_redirect(url: str) -> bool:
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        # Redirigir según el estado del flujo
         return _redirect_based_on_completion_status()
 
     if request.method == "POST":
+        ip = request.headers.get("X-Real-IP", request.remote_addr)
+        if _is_rate_limited(ip):
+            flash("Demasiados intentos. Espera 5 minutos.", "error")
+            return render_template("auth/login.html")
+
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         user = User.get_by_email(email)
@@ -30,8 +51,8 @@ def login():
             next_page = request.args.get("next", "")
             if _is_safe_redirect(next_page):
                 return redirect(next_page)
-            # Redirigir según el estado del flujo del usuario
             return _redirect_based_on_completion_status()
+        _record_attempt(ip)
         flash("Email o contraseña incorrectos", "error")
     return render_template("auth/login.html")
 

@@ -137,6 +137,11 @@ def create_app():
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
     app.config["GTM_ID"] = os.getenv("GTM_ID", "")
     app.config["GA4_ID"] = os.getenv("GA4_ID", "")
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+    app.config["WTF_CSRF_ENABLED"] = False  # Using SameSite=Lax as primary CSRF defense
 
     debug_mode = (
         os.getenv("FLASK_ENV", "production") == "development"
@@ -144,6 +149,7 @@ def create_app():
     )
     if debug_mode:
         app.config["TEMPLATES_AUTO_RELOAD"] = True
+        app.config["SESSION_COOKIE_SECURE"] = False
 
     login_manager = LoginManager(app)
     login_manager.login_view = "auth.login"
@@ -156,14 +162,12 @@ def create_app():
 
     init_db()
 
-    from web.admin import admin_bp
     from web.auth import auth_bp
     from web.billing import billing_bp
     from web.dashboard_web import dashboard_bp
     from web.blog import blog_bp
     from web.telegram_bot import telegram_bp
 
-    app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(billing_bp)
     app.register_blueprint(dashboard_bp)
@@ -446,93 +450,6 @@ def create_app():
         xml += '</urlset>'
         return Response(xml, mimetype="application/xml")
 
-    @main_bp.route("/seed-blog")
-    def seed_blog():
-        """
-        Endpoint para crear el primer artículo del blog.
-        Solo ejecutar una vez, luego se puede eliminar.
-        """
-        try:
-            import subprocess
-            result = subprocess.run(
-                ["python3", "seed_first_blog_post.py"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                cwd=os.path.dirname(os.path.dirname(__file__))
-            )
-
-            if result.returncode == 0:
-                return jsonify({
-                    "status": "success",
-                    "message": "✅ Primer artículo creado correctamente",
-                    "output": result.stdout
-                })
-            else:
-                return jsonify({
-                    "status": "error",
-                    "message": "❌ Error creando artículo",
-                    "error": result.stderr
-                }), 500
-
-        except Exception as e:
-            _logger.error(f"Error en seed-blog: {e}", exc_info=True)
-            return jsonify({
-                "status": "error",
-                "message": f"❌ Error: {str(e)}"
-            }), 500
-
-    @main_bp.route("/test-telegram")
-    def test_telegram():
-        """
-        Endpoint para forzar el envío de una alerta de prueba a Telegram.
-        Útil para verificar que el bot y el chat_id están configurados correctamente.
-        """
-        try:
-            from src.services.telegram_sender import send_telegram
-            from src.services.alert_formatter import format_telegram_alert
-
-            # Evento de prueba
-            test_event = {
-                "title": "🧪 ALERTA DE PRUEBA - Sistema funcionando correctamente",
-                "description": "Esta es una alerta manual disparada desde el endpoint /test-telegram",
-                "score": 85,
-                "category": "test",
-                "sources": ["endpoint_test"],
-                "prediction_id": 999999,
-                "analysis": {
-                    "direction": "up",
-                    "confidence": 90,
-                    "most_affected_assets": ["BTC", "ETH"],
-                    "signal_strength": "high",
-                    "timeframe": "hours",
-                    "reasoning": "Prueba manual del sistema de alertas. Si recibes esto, todo funciona ✅",
-                    "market_impact_percent": 0,
-                }
-            }
-
-            # Formatear y enviar
-            msg = format_telegram_alert(test_event, test_event["analysis"])
-            success = send_telegram(msg)
-
-            if success:
-                return jsonify({
-                    "status": "success",
-                    "message": "✅ Alerta de prueba enviada correctamente a Telegram",
-                    "telegram_message": msg
-                })
-            else:
-                return jsonify({
-                    "status": "error",
-                    "message": "❌ Error al enviar alerta. Verifica TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID"
-                }), 500
-
-        except Exception as e:
-            _logger.error(f"Error en test-telegram: {e}", exc_info=True)
-            return jsonify({
-                "status": "error",
-                "message": f"❌ Error: {str(e)}"
-            }), 500
 
     @main_bp.route("/api/simulate", methods=["POST"])
     def simulate():
