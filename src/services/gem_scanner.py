@@ -337,17 +337,17 @@ def send_gem_alerts_admin(signals: list[dict], admin_chat_id: str):
 
         for sig in signals[:5]:
             msg = (
-                f"💎 *GEM DETECTED*\n\n"
-                f"*{sig['symbol']}* ({sig['name']})\n"
+                f"💎 GEM DETECTED\n\n"
+                f"{sig['symbol']} ({sig['name']})\n"
                 f"📈 +{sig['price_change_24h']}% en 24h\n"
                 f"💰 Vol: ${sig['volume_24h']:,.0f}\n"
                 f"🏦 MCap: ${sig['fdv']:,.0f}\n"
                 f"💧 Liquidez: ${sig['liquidity_usd']:,.0f}\n"
                 f"🔗 Chain: {sig['chain']}\n"
                 f"📡 Fuente: {sig['source']}\n\n"
-                f"[Ver en DEX]({sig['dex_url']})"
+                f"{sig['dex_url']}"
             )
-            send_telegram(msg, chat_id=admin_chat_id, parse_mode="Markdown")
+            send_telegram(msg, chat_id=admin_chat_id)
 
     except Exception as e:
         logger.warning(f"Error sending gem alerts: {e}")
