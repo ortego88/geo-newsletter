@@ -524,9 +524,6 @@ class AnalysisPipeline:
 
             # Validar el activo primario contra la lista conocida
             if primary_asset.upper() not in VALID_ASSETS:
-                # Preferir el mejor match por tier entre todos los activos detectados.
-                # matched_assets ya está ordenado por tier (ascendente) y hits (descendente)
-                # desde _match_asset(), por lo que el primer válido es el mejor candidato.
                 suggested = event.get("suggested_asset", "")
                 matched = event.get("matched_assets", [])
 
@@ -548,6 +545,80 @@ class AnalysisPipeline:
                     )
                     continue
 
+            direction = analysis.get("direction", "neutral")
+
+            # ── Filtro 1: Lenguaje especulativo + hedging en predicciones UP ─
+            # Si Claude usa "podría/sugiere" + "aunque/pero" sin catalizador confirmado
+            # → la convicción es realmente baja, penalizar confidence
+            if direction == "up":
+                reasoning_lower = (analysis.get("reasoning") or "").lower()
+                speculative_words = ("podría", "sugiere", "posible", "puede que", "si se aprueba")
+                hedge_words = ("aunque", "pero", "sin embargo", "a pesar")
+                certainty_words = ("confirmado", "aprobado", "anuncio", "compra de",
+                                   "lanza", "adquisición", "partnership", "alianza")
+                has_speculative = any(w in reasoning_lower for w in speculative_words)
+                has_hedge = any(w in reasoning_lower for w in hedge_words)
+                has_certainty = any(w in reasoning_lower for w in certainty_words)
+                if has_speculative and has_hedge and not has_certainty:
+                    original_conf = analysis.get("confidence", 0)
+                    analysis["confidence"] = original_conf - 5
+                    event_confidence = analysis["confidence"]
+                    logger.info(
+                        f"   ⚠️ Speculative penalty: reasoning especulativo+hedge "
+                        f"(conf {original_conf}→{event_confidence}): {event.get('title', '')[:50]}"
+                    )
+
+            # ── Filtro 2: Tendencia de mercado (7d) por activo ────────────
+            # En bear market del activo, exigir más confianza para predicciones UP
+            if direction == "up":
+                ctx = self.price_fetcher.get_price_context(primary_asset)
+                change_7d = ctx.get("change_7d_pct", 0)
+                if change_7d <= -10:
+                    required_conf = 80
+                elif change_7d <= -5:
+                    required_conf = 75
+                else:
+                    required_conf = 70
+                if event_confidence < required_conf:
+                    logger.info(
+                        f"   ⏭️ Bear filter: {primary_asset} {change_7d:+.1f}% en 7d → "
+                        f"requiere conf>={required_conf}, tiene {event_confidence}: "
+                        f"{event.get('title', '')[:50]}"
+                    )
+                    continue
+
+            # ── Filtro 3: Fuentes con bajo accuracy en UP ─────────────────
+            if direction == "up":
+                source = event.get("source", "")
+                low_accuracy_up_sources = {"AMBCrypto", "U.Today"}
+                if source in low_accuracy_up_sources:
+                    original_conf = analysis.get("confidence", 0)
+                    analysis["confidence"] = min(original_conf, 65)
+                    if analysis["confidence"] < 70:
+                        logger.info(
+                            f"   ⏭️ Source filter: {source} tiene bajo accuracy UP "
+                            f"(conf {original_conf}→{analysis['confidence']}): "
+                            f"{event.get('title', '')[:50]}"
+                        )
+                        continue
+
+            # ── Filtro 4: Títulos especulativos / clickbait ───────────────
+            title_lower = (event.get("title") or "").lower()
+            speculative_title_patterns = (
+                "can it reach", "can it hit", "is next", "eyes ",
+                "analyst eyes", "analyst predicts", "analyst says",
+                "could ", "what it means", "what about",
+                "suggests", "metrics suggest", "signals show",
+                "outpacing", "outperform",
+            )
+            if any(p in title_lower for p in speculative_title_patterns):
+                if direction == "up":
+                    logger.info(
+                        f"   ⏭️ Title filter: patrón especulativo detectado en UP: "
+                        f"{event.get('title', '')[:60]}"
+                    )
+                    continue
+
             current_price = self.price_fetcher.get_price(primary_asset)
             if current_price is None or current_price <= 0:
                 logger.warning(
@@ -556,18 +627,15 @@ class AnalysisPipeline:
                 continue
 
             # Momentum check: si el precio ya se movió >2.5% en la dirección
-            # predicha en las últimas 4h, la noticia probablemente describe un
-            # movimiento pasado ("sell the news") → reducir confidence o descartar
-            direction = analysis.get("direction", "neutral")
+            # predicha en las últimas 4h → reducir confidence o descartar
             recent_change = self.price_fetcher.get_recent_change(primary_asset, hours=4)
             if recent_change is not None and direction in ("up", "down"):
                 already_moved_same_dir = (
-                    (direction in ("up", "bullish", "positive", "alza") and recent_change >= 2.5)
-                    or (direction in ("down", "bearish", "negative", "baja") and recent_change <= -2.5)
+                    (direction == "up" and recent_change >= 2.5)
+                    or (direction == "down" and recent_change <= -2.5)
                 )
                 if already_moved_same_dir:
                     original_conf = analysis.get("confidence", 0)
-                    # Penalizar confidence proporcionalmente al movimiento
                     penalty = min(25, int(abs(recent_change) * 5))
                     new_conf = original_conf - penalty
                     if new_conf < 55:
