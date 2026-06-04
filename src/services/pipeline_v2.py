@@ -506,7 +506,7 @@ class AnalysisPipeline:
 
             event_score = event.get("score", 0)
             event_confidence = analysis.get("confidence", 0)
-            if event_score < 60 or event_confidence < 70:
+            if event_score < 60 or event_confidence < 65:
                 logger.info(
                     f"   ⏭️ No guardada (score={event_score}, conf={event_confidence}): "
                     f"{event.get('title', '')[:55]}"
@@ -568,20 +568,29 @@ class AnalysisPipeline:
                         f"(conf {original_conf}→{event_confidence}): {event.get('title', '')[:50]}"
                     )
 
-            # ── Filtro 2: Tendencia de mercado (7d) por activo ────────────
-            # En bear market del activo, exigir más confianza para predicciones UP
+            # ── Filtro 2: Tendencia de mercado por activo + mercado general ──
+            # En bear market, exigir más confianza para predicciones UP.
+            # Usa tanto la tendencia del activo como la de BTC (proxy del mercado).
             if direction == "up":
                 ctx = self.price_fetcher.get_price_context(primary_asset)
                 change_7d = ctx.get("change_7d_pct", 0)
-                if change_7d <= -10:
+
+                btc_ctx = self.price_fetcher.get_price_context("BTC") if primary_asset != "BTC" else ctx
+                btc_7d = btc_ctx.get("change_7d_pct", 0)
+
+                asset_bearish = change_7d <= -5
+                market_bearish = btc_7d <= -5
+
+                if asset_bearish and market_bearish:
                     required_conf = 80
-                elif change_7d <= -5:
+                elif asset_bearish or market_bearish:
                     required_conf = 75
                 else:
-                    required_conf = 70
+                    required_conf = 65
+
                 if event_confidence < required_conf:
                     logger.info(
-                        f"   ⏭️ Bear filter: {primary_asset} {change_7d:+.1f}% en 7d → "
+                        f"   ⏭️ Bear filter: {primary_asset} {change_7d:+.1f}% / BTC {btc_7d:+.1f}% en 7d → "
                         f"requiere conf>={required_conf}, tiene {event_confidence}: "
                         f"{event.get('title', '')[:50]}"
                     )

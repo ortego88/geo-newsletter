@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("price_signals")
 
-THRESHOLD_PCT = 3.0
+THRESHOLD_PCT = 2.5
 COOLDOWN_SECONDS = 4 * 3600
 TOP_ASSETS = ["BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK"]
 
