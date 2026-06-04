@@ -1,13 +1,15 @@
 """
-gem_scanner.py — Detecta low-cap gems con momentum explosivo.
+gem_scanner.py — Detección TEMPRANA de low-cap gems antes del pump.
 
-Fuentes:
-- DexScreener: tokens trending en DEX con volumen anómalo
-- CoinGecko: tokens recientemente añadidos con tracción
-- Binance: nuevos listings anunciados
+Estrategia: detectar en fase de ACUMULACIÓN, no cuando ya subió.
+Señales tempranas:
+1. Volumen explotando pero precio aún estable (acumulación silenciosa)
+2. Pares nuevos en DEX con liquidez creciente (preparando pump)
+3. Listings anunciados en Binance (pre-pump 24-72h antes)
+4. Tokens nuevos con holders creciendo rápido
 
 Validación (7 días después):
-- CORRECT: precio max en 7d >= +30% desde detección
+- CORRECT: precio max >= +30% desde detección
 - INCORRECT: precio cae >= -30% sin haber tocado +30%
 - NEUTRAL: ni +30% ni -30% en 7 días
 
@@ -23,19 +25,16 @@ import requests
 
 logger = logging.getLogger("gem_scanner")
 
-_DEXSCREENER_TRENDING = "https://api.dexscreener.com/token-boosts/top/v1"
-_DEXSCREENER_SEARCH = "https://api.dexscreener.com/latest/dex/search"
-_COINGECKO_TRENDING = "https://api.coingecko.com/api/v3/search/trending"
-_COINGECKO_NEW = "https://api.coingecko.com/api/v3/coins/list?include_platform=true"
+# --- Detection thresholds (EARLY signals, before the pump) ---
+MIN_LIQUIDITY_USD = 50_000
+MAX_MARKET_CAP = 100_000_000
+MIN_PAIR_AGE_HOURS = 24
+MAX_PAIR_AGE_DAYS = 30
+VOLUME_SPIKE_MULTIPLIER = 5.0
+MAX_PRICE_CHANGE_FOR_ACCUMULATION = 10.0
+MIN_VOLUME_FOR_NEW_PAIR = 50_000
+MIN_5M_TXNS = 30
 
-MIN_MARKET_CAP = 1_000_000
-MAX_MARKET_CAP = 50_000_000
-MIN_LIQUIDITY_USD = 100_000
-MIN_VOLUME_24H = 200_000
-MIN_PRICE_CHANGE_PCT = 20
-MIN_VOLUME_SPIKE = 3.0
-
-_seen_tokens: set[str] = set()
 _COOLDOWN_HOURS = 12
 _cooldowns: dict[str, float] = {}
 
@@ -49,41 +48,25 @@ def _set_cooldown(token_id: str):
     _cooldowns[token_id] = time.time()
 
 
-def _passes_anti_rug(pair: dict) -> bool:
-    """Basic anti-rug checks on a DexScreener pair."""
-    info = pair.get("info", {})
-    liquidity = pair.get("liquidity", {}).get("usd", 0)
-    pair_created = pair.get("pairCreatedAt", 0)
-
-    if liquidity < MIN_LIQUIDITY_USD:
-        return False
-
-    if pair_created:
-        age_hours = (time.time() * 1000 - pair_created) / (1000 * 3600)
-        if age_hours < 48:
-            return False
-
-    fdv = pair.get("fdv", 0)
-    if fdv and fdv < MIN_MARKET_CAP:
-        return False
-
-    return True
-
-
-def scan_dexscreener_trending() -> list[dict]:
-    """Fetch top boosted tokens from DexScreener."""
+def scan_dex_accumulation() -> list[dict]:
+    """
+    Detect tokens with volume spike but price barely moved = accumulation phase.
+    Uses DexScreener to find tokens where volume is exploding but price is flat.
+    """
     signals = []
     try:
-        resp = requests.get(_DEXSCREENER_TRENDING, timeout=10)
+        resp = requests.get(
+            "https://api.dexscreener.com/token-boosts/top/v1",
+            timeout=10,
+        )
         if resp.status_code != 200:
-            logger.debug(f"DexScreener trending: {resp.status_code}")
             return []
 
         tokens = resp.json()
         if not isinstance(tokens, list):
             return []
 
-        for token in tokens[:20]:
+        for token in tokens[:30]:
             token_address = token.get("tokenAddress", "")
             chain = token.get("chainId", "")
             if not token_address or _is_on_cooldown(token_address):
@@ -93,45 +76,249 @@ def scan_dexscreener_trending() -> list[dict]:
             if not pair_data:
                 continue
 
-            pair = pair_data[0] if pair_data else None
-            if not pair:
-                continue
-
-            if not _passes_anti_rug(pair):
-                continue
-
+            pair = pair_data[0]
             price_change_24h = pair.get("priceChange", {}).get("h24", 0) or 0
+            price_change_1h = pair.get("priceChange", {}).get("h1", 0) or 0
             volume_24h = pair.get("volume", {}).get("h24", 0) or 0
+            volume_6h = pair.get("volume", {}).get("h6", 0) or 0
             liquidity = pair.get("liquidity", {}).get("usd", 0) or 0
             fdv = pair.get("fdv", 0) or 0
-            symbol = pair.get("baseToken", {}).get("symbol", "???")
-            name = pair.get("baseToken", {}).get("name", "")
+            txns_24h = pair.get("txns", {}).get("h24", {})
+            buys = txns_24h.get("buys", 0)
+            sells = txns_24h.get("sells", 0)
+            pair_created = pair.get("pairCreatedAt", 0)
 
-            if price_change_24h < MIN_PRICE_CHANGE_PCT:
-                continue
-            if volume_24h < MIN_VOLUME_24H:
+            if liquidity < MIN_LIQUIDITY_USD:
                 continue
             if fdv > MAX_MARKET_CAP:
                 continue
 
+            # Age check: not too new (rug risk), not too old
+            if pair_created:
+                age_hours = (time.time() * 1000 - pair_created) / (1000 * 3600)
+                if age_hours < MIN_PAIR_AGE_HOURS or age_hours > MAX_PAIR_AGE_DAYS * 24:
+                    continue
+
+            # KEY SIGNAL: Volume exploding but price NOT pumped yet
+            # This is the accumulation pattern — smart money buying before pump
+            is_accumulation = (
+                volume_24h >= MIN_VOLUME_FOR_NEW_PAIR
+                and abs(price_change_24h) <= MAX_PRICE_CHANGE_FOR_ACCUMULATION
+                and buys > sells * 1.3
+            )
+
+            # ALTERNATIVE: Price barely moved in 24h but 1h shows first signs of movement
+            is_early_breakout = (
+                abs(price_change_24h) <= 15
+                and price_change_1h >= 3
+                and volume_6h > 0
+                and volume_24h / max(volume_6h, 1) < 3
+            )
+
+            if not is_accumulation and not is_early_breakout:
+                continue
+
+            symbol = pair.get("baseToken", {}).get("symbol", "???")
+            name = pair.get("baseToken", {}).get("name", "")
+            signal_type = "accumulation" if is_accumulation else "early_breakout"
+
             _set_cooldown(token_address)
             signals.append({
-                "source": "dexscreener",
+                "source": f"dex_{signal_type}",
                 "symbol": symbol,
                 "name": name,
                 "chain": chain,
                 "address": token_address,
                 "price_change_24h": round(price_change_24h, 1),
+                "price_change_1h": round(price_change_1h, 1),
                 "volume_24h": round(volume_24h),
                 "liquidity_usd": round(liquidity),
                 "fdv": round(fdv),
+                "buys_sells_ratio": round(buys / max(sells, 1), 1),
                 "dex_url": pair.get("url", ""),
                 "detected_at": datetime.now(timezone.utc).isoformat(),
+                "signal_type": signal_type,
             })
-            logger.info(f"💎 GEM: {symbol} ({chain}) +{price_change_24h:.0f}% vol=${volume_24h:,.0f} mcap=${fdv:,.0f}")
+            logger.info(
+                f"💎 EARLY GEM [{signal_type}]: {symbol} ({chain}) "
+                f"price_24h={price_change_24h:+.0f}% vol=${volume_24h:,.0f} "
+                f"buys/sells={buys}/{sells}"
+            )
 
     except Exception as e:
-        logger.warning(f"DexScreener scan error: {e}")
+        logger.warning(f"DexScreener accumulation scan error: {e}")
+
+    return signals
+
+
+def scan_new_pairs_with_traction() -> list[dict]:
+    """
+    Find newly created pairs (1-7 days) that are gaining volume and holders.
+    These are tokens in their early growth phase before mainstream attention.
+    """
+    signals = []
+    try:
+        resp = requests.get(
+            "https://api.dexscreener.com/latest/dex/pairs/solana",
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            resp = requests.get(
+                "https://api.dexscreener.com/latest/dex/pairs/ethereum",
+                timeout=10,
+            )
+        if resp.status_code != 200:
+            return []
+
+        data = resp.json()
+        pairs = data.get("pairs", [])
+
+        for pair in pairs[:50]:
+            token_address = pair.get("baseToken", {}).get("address", "")
+            if not token_address or _is_on_cooldown(f"new_{token_address}"):
+                continue
+
+            pair_created = pair.get("pairCreatedAt", 0)
+            if not pair_created:
+                continue
+
+            age_hours = (time.time() * 1000 - pair_created) / (1000 * 3600)
+            if age_hours < MIN_PAIR_AGE_HOURS or age_hours > 7 * 24:
+                continue
+
+            volume_24h = pair.get("volume", {}).get("h24", 0) or 0
+            liquidity = pair.get("liquidity", {}).get("usd", 0) or 0
+            fdv = pair.get("fdv", 0) or 0
+            price_change_24h = pair.get("priceChange", {}).get("h24", 0) or 0
+            txns = pair.get("txns", {}).get("h24", {})
+            buys = txns.get("buys", 0)
+            sells = txns.get("sells", 0)
+
+            if liquidity < MIN_LIQUIDITY_USD:
+                continue
+            if fdv > MAX_MARKET_CAP:
+                continue
+            if volume_24h < MIN_VOLUME_FOR_NEW_PAIR:
+                continue
+            if buys + sells < MIN_5M_TXNS:
+                continue
+            if price_change_24h > 50:
+                continue
+
+            symbol = pair.get("baseToken", {}).get("symbol", "???")
+            name = pair.get("baseToken", {}).get("name", "")
+            chain = pair.get("chainId", "")
+
+            _set_cooldown(f"new_{token_address}")
+            signals.append({
+                "source": "new_pair_traction",
+                "symbol": symbol,
+                "name": name,
+                "chain": chain,
+                "address": token_address,
+                "price_change_24h": round(price_change_24h, 1),
+                "price_change_1h": 0,
+                "volume_24h": round(volume_24h),
+                "liquidity_usd": round(liquidity),
+                "fdv": round(fdv),
+                "buys_sells_ratio": round(buys / max(sells, 1), 1),
+                "dex_url": pair.get("url", ""),
+                "detected_at": datetime.now(timezone.utc).isoformat(),
+                "signal_type": "new_pair",
+            })
+            logger.info(
+                f"💎 NEW PAIR: {symbol} ({chain}) age={age_hours:.0f}h "
+                f"vol=${volume_24h:,.0f} liq=${liquidity:,.0f}"
+            )
+
+    except Exception as e:
+        logger.warning(f"New pairs scan error: {e}")
+
+    return signals
+
+
+def scan_binance_pre_pump() -> list[dict]:
+    """
+    Detect Binance tokens with volume spike but small price change.
+    Volume explosion + flat price = someone is accumulating before a move.
+    Also catches recently listed tokens gaining momentum.
+    """
+    signals = []
+    try:
+        resp = requests.get(
+            "https://api.binance.com/api/v3/ticker/24hr",
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return []
+
+        tickers = resp.json()
+
+        volume_data = []
+        for t in tickers:
+            symbol = t.get("symbol", "")
+            if not symbol.endswith("USDT"):
+                continue
+            volume_data.append({
+                "symbol": symbol,
+                "asset": symbol.replace("USDT", ""),
+                "price_change_pct": float(t.get("priceChangePercent", 0)),
+                "volume_usd": float(t.get("quoteVolume", 0)),
+                "trades": int(t.get("count", 0)),
+                "weighted_avg_price": float(t.get("weightedAvgPrice", 0)),
+                "last_price": float(t.get("lastPrice", 0)),
+            })
+
+        for t in volume_data:
+            asset = t["asset"]
+            if _is_on_cooldown(f"binance_pre_{asset}"):
+                continue
+
+            price_change = t["price_change_pct"]
+            volume = t["volume_usd"]
+
+            # Pattern 1: High volume + small price change (accumulation)
+            is_accumulation = (
+                volume >= 1_000_000
+                and abs(price_change) <= 5
+                and t["trades"] >= 10_000
+            )
+
+            # Pattern 2: Moderate pump (10-30%) with very high volume — early stage
+            is_early_pump = (
+                10 <= price_change <= 30
+                and volume >= 5_000_000
+            )
+
+            if not is_accumulation and not is_early_pump:
+                continue
+
+            signal_type = "binance_accumulation" if is_accumulation else "binance_early_pump"
+
+            _set_cooldown(f"binance_pre_{asset}")
+            signals.append({
+                "source": signal_type,
+                "symbol": asset,
+                "name": asset,
+                "chain": "binance",
+                "address": t["symbol"],
+                "price_change_24h": round(price_change, 1),
+                "price_change_1h": 0,
+                "volume_24h": round(volume),
+                "liquidity_usd": round(volume),
+                "fdv": 0,
+                "buys_sells_ratio": 0,
+                "dex_url": f"https://www.binance.com/en/trade/{asset}_USDT",
+                "detected_at": datetime.now(timezone.utc).isoformat(),
+                "signal_type": signal_type.replace("binance_", ""),
+            })
+            logger.info(
+                f"💎 BINANCE [{signal_type}]: {asset} "
+                f"price={price_change:+.1f}% vol=${volume:,.0f} trades={t['trades']}"
+            )
+
+    except Exception as e:
+        logger.warning(f"Binance pre-pump scan error: {e}")
 
     return signals
 
@@ -153,127 +340,6 @@ def _get_pair_data(token_address: str) -> list | None:
         return pairs
     except Exception:
         return None
-
-
-def scan_coingecko_trending() -> list[dict]:
-    """Fetch trending coins from CoinGecko (free, no API key)."""
-    signals = []
-    try:
-        resp = requests.get(_COINGECKO_TRENDING, timeout=10)
-        if resp.status_code != 200:
-            return []
-
-        data = resp.json()
-        coins = data.get("coins", [])
-
-        for item in coins:
-            coin = item.get("item", {})
-            coin_id = coin.get("id", "")
-            symbol = coin.get("symbol", "")
-            name = coin.get("name", "")
-            market_cap_rank = coin.get("market_cap_rank") or 9999
-            price_change_24h = coin.get("data", {}).get("price_change_percentage_24h", {}).get("usd", 0) or 0
-
-            if _is_on_cooldown(coin_id):
-                continue
-            if market_cap_rank < 100:
-                continue
-            if price_change_24h < 15:
-                continue
-
-            mcap = coin.get("data", {}).get("market_cap", "") or ""
-            if isinstance(mcap, str) and mcap.startswith("$"):
-                mcap_val = float(mcap.replace("$", "").replace(",", "")) if mcap else 0
-            else:
-                mcap_val = float(mcap) if mcap else 0
-
-            if mcap_val > MAX_MARKET_CAP:
-                continue
-
-            _set_cooldown(coin_id)
-            signals.append({
-                "source": "coingecko_trending",
-                "symbol": symbol.upper(),
-                "name": name,
-                "chain": "",
-                "address": coin_id,
-                "price_change_24h": round(price_change_24h, 1),
-                "volume_24h": 0,
-                "liquidity_usd": 0,
-                "fdv": round(mcap_val),
-                "dex_url": f"https://www.coingecko.com/en/coins/{coin_id}",
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-            })
-            logger.info(f"💎 GEM (CG trending): {symbol} +{price_change_24h:.0f}% rank={market_cap_rank}")
-
-    except Exception as e:
-        logger.warning(f"CoinGecko trending scan error: {e}")
-
-    return signals
-
-
-def scan_binance_new_listings() -> list[dict]:
-    """Check Binance for recently listed pairs with strong momentum."""
-    signals = []
-    try:
-        resp = requests.get(
-            "https://api.binance.com/api/v3/ticker/24hr",
-            timeout=10,
-        )
-        if resp.status_code != 200:
-            return []
-
-        tickers = resp.json()
-        for t in tickers:
-            symbol = t.get("symbol", "")
-            if not symbol.endswith("USDT"):
-                continue
-
-            price_change_pct = float(t.get("priceChangePercent", 0))
-            volume_usd = float(t.get("quoteVolume", 0))
-            asset = symbol.replace("USDT", "")
-
-            if price_change_pct < 25:
-                continue
-            if volume_usd < 500_000:
-                continue
-            if _is_on_cooldown(f"binance_{asset}"):
-                continue
-
-            _set_cooldown(f"binance_{asset}")
-            signals.append({
-                "source": "binance_momentum",
-                "symbol": asset,
-                "name": asset,
-                "chain": "binance",
-                "address": symbol,
-                "price_change_24h": round(price_change_pct, 1),
-                "volume_24h": round(volume_usd),
-                "liquidity_usd": round(volume_usd),
-                "fdv": 0,
-                "dex_url": f"https://www.binance.com/en/trade/{asset}_USDT",
-                "detected_at": datetime.now(timezone.utc).isoformat(),
-            })
-            logger.info(f"💎 GEM (Binance): {asset} +{price_change_pct:.0f}% vol=${volume_usd:,.0f}")
-
-    except Exception as e:
-        logger.warning(f"Binance listing scan error: {e}")
-
-    return signals
-
-
-def run_gem_scan() -> list[dict]:
-    """Run all gem scanners and return combined results."""
-    all_signals = []
-
-    all_signals.extend(scan_dexscreener_trending())
-    all_signals.extend(scan_coingecko_trending())
-    all_signals.extend(scan_binance_new_listings())
-
-    all_signals.sort(key=lambda s: s.get("price_change_24h", 0), reverse=True)
-
-    logger.info(f"💎 Gem scan complete: {len(all_signals)} signals found")
-    return all_signals
 
 
 def _get_current_price_dexscreener(address: str) -> float | None:
@@ -307,6 +373,18 @@ def _get_current_price_binance(symbol: str) -> float | None:
         return None
 
 
+def run_gem_scan() -> list[dict]:
+    """Run all early-detection scanners and return combined results."""
+    all_signals = []
+
+    all_signals.extend(scan_dex_accumulation())
+    all_signals.extend(scan_new_pairs_with_traction())
+    all_signals.extend(scan_binance_pre_pump())
+
+    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signals found")
+    return all_signals
+
+
 def save_gem_signals(signals: list[dict]):
     """Save gem signals to the database with current price at detection."""
     if not signals:
@@ -331,6 +409,8 @@ def save_gem_signals(signals: list[dict]):
                     fdv DOUBLE PRECISION,
                     dex_url TEXT,
                     detected_at TEXT,
+                    signal_type TEXT,
+                    buys_sells_ratio DOUBLE PRECISION,
                     price_at_detection DOUBLE PRECISION,
                     price_max_7d DOUBLE PRECISION,
                     price_at_validation DOUBLE PRECISION,
@@ -340,19 +420,21 @@ def save_gem_signals(signals: list[dict]):
             """))
 
             for sig in signals:
-                price = None
-                if sig["source"] == "binance_momentum":
-                    price = _get_current_price_binance(sig["symbol"])
-                else:
-                    price = _get_current_price_dexscreener(sig["address"])
+                price = sig.get("_price")
+                if not price:
+                    if "binance" in sig["source"]:
+                        price = _get_current_price_binance(sig["symbol"])
+                    else:
+                        price = _get_current_price_dexscreener(sig["address"])
 
                 conn.execute(text("""
                     INSERT INTO gem_signals
                         (source, symbol, name, chain, address, price_change_24h,
                          volume_24h, liquidity_usd, fdv, dex_url, detected_at,
-                         price_at_detection)
+                         signal_type, buys_sells_ratio, price_at_detection)
                     VALUES (:source, :symbol, :name, :chain, :address, :change,
-                            :vol, :liq, :fdv, :url, :detected, :price)
+                            :vol, :liq, :fdv, :url, :detected,
+                            :signal_type, :ratio, :price)
                 """), {
                     "source": sig["source"],
                     "symbol": sig["symbol"],
@@ -365,6 +447,8 @@ def save_gem_signals(signals: list[dict]):
                     "fdv": sig["fdv"],
                     "url": sig["dex_url"],
                     "detected": sig["detected_at"],
+                    "signal_type": sig.get("signal_type", ""),
+                    "ratio": sig.get("buys_sells_ratio", 0),
                     "price": price,
                 })
             conn.commit()
@@ -383,21 +467,28 @@ def send_gem_alerts_admin(signals: list[dict], admin_chat_id: str):
 
         for sig in signals[:5]:
             price_str = f"${sig.get('_price', 0):.6f}" if sig.get('_price') else "N/A"
+
+            type_emoji = {
+                "accumulation": "🔇 ACUMULACIÓN",
+                "early_breakout": "⚡ EARLY BREAKOUT",
+                "new_pair": "🆕 PAR NUEVO",
+                "binance_accumulation": "🔇 BINANCE ACUM.",
+                "early_pump": "🚀 EARLY PUMP",
+            }.get(sig.get("signal_type", ""), "💎 GEM")
+
             msg = (
                 f"{'='*30}\n"
-                f"💎 GEM ALERT 💎\n"
+                f"💎 {type_emoji}\n"
                 f"{'='*30}\n\n"
                 f"🪙 {sig['symbol']} ({sig['name']})\n"
-                f"📈 +{sig['price_change_24h']}% en 24h\n"
                 f"💵 Precio: {price_str}\n"
+                f"📊 Cambio 24h: {sig['price_change_24h']:+.1f}%\n"
                 f"💰 Vol 24h: ${sig['volume_24h']:,.0f}\n"
                 f"🏦 MCap: ${sig['fdv']:,.0f}\n"
                 f"💧 Liquidez: ${sig['liquidity_usd']:,.0f}\n"
-                f"🔗 Chain: {sig['chain']}\n"
-                f"📡 Fuente: {sig['source']}\n\n"
-                f"⏱ Validación en 7 días\n"
-                f"✅ Correcta si sube +30% desde ahora\n"
-                f"❌ Incorrecta si cae -30%\n\n"
+                f"📈 Buys/Sells: {sig.get('buys_sells_ratio', 0):.1f}x\n"
+                f"🔗 Chain: {sig['chain']}\n\n"
+                f"⏱ Validación en 7 días (+30% = correcta)\n\n"
                 f"{sig['dex_url']}"
             )
             send_telegram(msg, chat_id=admin_chat_id)
@@ -414,11 +505,9 @@ _GEM_VALIDATION_DAYS = 7
 def validate_pending_gems(admin_chat_id: str = "161542135"):
     """
     Validates gem signals that are >= 7 days old.
-    Checks current price vs price_at_detection.
-
-    - CORRECT: price went up >= 30% at any point (check current price)
-    - INCORRECT: price dropped >= 30% and never hit +30%
-    - NEUTRAL: 7 days passed, neither threshold reached
+    - CORRECT: price went up >= 30% from detection
+    - INCORRECT: price dropped >= 30%
+    - NEUTRAL: neither threshold reached after 7 days
     """
     try:
         from web.db_engine import get_engine
@@ -430,7 +519,7 @@ def validate_pending_gems(admin_chat_id: str = "161542135"):
         with get_engine("predictions").connect() as conn:
             pending = conn.execute(text("""
                 SELECT id, symbol, name, source, address, chain,
-                       price_at_detection, detected_at, dex_url
+                       price_at_detection, detected_at, dex_url, signal_type
                 FROM gem_signals
                 WHERE outcome = 'pending'
                   AND detected_at <= :cutoff
@@ -445,10 +534,10 @@ def validate_pending_gems(admin_chat_id: str = "161542135"):
 
         with get_engine("predictions").connect() as conn:
             for gem in pending:
-                gem_id, symbol, name, source, address, chain, price_det, detected_at, dex_url = gem
+                gem_id, symbol, name, source, address, chain, price_det, detected_at, dex_url, signal_type = gem
 
                 current_price = None
-                if source == "binance_momentum":
+                if "binance" in source:
                     current_price = _get_current_price_binance(symbol)
                 else:
                     current_price = _get_current_price_dexscreener(address)
@@ -481,14 +570,14 @@ def validate_pending_gems(admin_chat_id: str = "161542135"):
                 emoji = {"correct": "✅", "incorrect": "❌", "neutral": "⚪"}.get(outcome, "?")
                 msg = (
                     f"{'='*30}\n"
-                    f"💎 GEM RESULTADO ({_GEM_VALIDATION_DAYS}d)\n"
+                    f"💎 GEM RESULTADO (7d)\n"
                     f"{'='*30}\n\n"
                     f"🪙 {symbol} ({name})\n"
                     f"{emoji} {outcome.upper()}\n\n"
                     f"💵 Precio alerta: ${price_det:.6f}\n"
                     f"💵 Precio ahora: ${current_price:.6f}\n"
-                    f"📊 Cambio: {change_pct:+.1f}%\n\n"
-                    f"📡 Fuente: {source}\n"
+                    f"📊 Cambio: {change_pct:+.1f}%\n"
+                    f"🏷 Tipo señal: {signal_type}\n\n"
                     f"{dex_url}"
                 )
                 send_telegram(msg, chat_id=admin_chat_id)
