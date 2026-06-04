@@ -35,8 +35,26 @@ MAX_PRICE_CHANGE_FOR_ACCUMULATION = 10.0
 MIN_VOLUME_FOR_NEW_PAIR = 50_000
 MIN_5M_TXNS = 30
 
-_COOLDOWN_HOURS = 12
+_COOLDOWN_HOURS = 24
 _cooldowns: dict[str, float] = {}
+
+# Tokens that are NEVER gems (stablecoins, fiat, wrapped, top 30, commodities)
+_BLACKLIST = {
+    # Stablecoins
+    "USDT", "USDC", "BUSD", "DAI", "TUSD", "FDUSD", "USDP", "USDD",
+    "USD1", "PYUSD", "GUSD", "FRAX", "LUSD", "CRVUSD", "GHO", "EURC",
+    # Fiat / wrapped fiat
+    "EUR", "USD", "GBP", "JPY", "BRL", "ARS", "TRY",
+    # Commodities tokenized
+    "XAUT", "PAXG",
+    # Top coins (already tracked in main pipeline, not gems)
+    "BTC", "ETH", "BNB", "XRP", "SOL", "ADA", "DOGE", "TRX", "TON",
+    "LINK", "AVAX", "SHIB", "DOT", "SUI", "LTC", "HBAR", "UNI",
+    "ATOM", "XLM", "NEAR", "ARB", "OP", "MATIC", "ICP", "FIL",
+    "BCH", "ETC", "WBTC", "WETH", "STETH", "LIDO",
+    # Wrapped / derivative tokens
+    "WBNB", "WMATIC", "WSOL",
+}
 
 
 def _is_on_cooldown(token_id: str) -> bool:
@@ -119,6 +137,8 @@ def scan_dex_accumulation() -> list[dict]:
                 continue
 
             symbol = pair.get("baseToken", {}).get("symbol", "???")
+            if symbol.upper() in _BLACKLIST:
+                continue
             name = pair.get("baseToken", {}).get("name", "")
             signal_type = "accumulation" if is_accumulation else "early_breakout"
 
@@ -206,6 +226,8 @@ def scan_new_pairs_with_traction() -> list[dict]:
                 continue
 
             symbol = pair.get("baseToken", {}).get("symbol", "???")
+            if symbol.upper() in _BLACKLIST:
+                continue
             name = pair.get("baseToken", {}).get("name", "")
             chain = pair.get("chainId", "")
 
@@ -271,26 +293,33 @@ def scan_binance_pre_pump() -> list[dict]:
 
         for t in volume_data:
             asset = t["asset"]
+            if asset.upper() in _BLACKLIST:
+                continue
             if _is_on_cooldown(f"binance_pre_{asset}"):
                 continue
 
             price_change = t["price_change_pct"]
             volume = t["volume_usd"]
 
+            # Skip very high volume tokens (these are established coins, not gems)
+            if volume > 100_000_000:
+                continue
+
             # Pattern 1: High volume + small price change (accumulation)
-            # Only flag tokens with unusually high trade count relative to volume
-            # (lots of small buys = retail accumulation before pump)
+            # Lots of small buys = retail accumulation before pump
+            # Stricter: volume $5-100M, very flat price, high trade density
             is_accumulation = (
-                volume >= 5_000_000
-                and abs(price_change) <= 3
-                and t["trades"] >= 50_000
-                and t["trades"] / (volume / 1_000_000) >= 20
+                5_000_000 <= volume <= 100_000_000
+                and abs(price_change) <= 2
+                and t["trades"] >= 80_000
+                and t["trades"] / (volume / 1_000_000) >= 25
             )
 
-            # Pattern 2: Moderate pump (15-30%) with very high volume — early stage
+            # Pattern 2: Early pump (15-30%) with high volume — catching it early
             is_early_pump = (
                 15 <= price_change <= 30
-                and volume >= 10_000_000
+                and 5_000_000 <= volume <= 100_000_000
+                and t["trades"] >= 50_000
             )
 
             if not is_accumulation and not is_early_pump:
@@ -385,9 +414,9 @@ def run_gem_scan() -> list[dict]:
     all_signals.extend(scan_binance_pre_pump())
 
     all_signals.sort(key=lambda s: s.get("volume_24h", 0), reverse=True)
-    all_signals = all_signals[:5]
+    all_signals = all_signals[:2]
 
-    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signals (capped at 5)")
+    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signals (max 2/cycle)")
     return all_signals
 
 
