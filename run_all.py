@@ -348,11 +348,11 @@ def start_scheduler():
         id="pipeline_cycle",
         next_run_time=datetime.now(),
     )
-    # Gem scanner: every 2 hours (max ~12 signals/day)
+    # Gem scanner: every 4 hours (max 1 signal/cycle = ~6 checks/day)
     scheduler.add_job(
         run_gem_scan_cycle,
         "interval",
-        hours=2,
+        hours=4,
         id="gem_scan",
         next_run_time=datetime.now(),
     )

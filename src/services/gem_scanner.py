@@ -330,21 +330,21 @@ def scan_binance_pre_pump() -> list[dict]:
             if volume > 100_000_000:
                 continue
 
-            # Pattern 1: High volume + small price change (accumulation)
-            # Lots of small buys = retail accumulation before pump
-            # Stricter: volume $5-100M, very flat price, high trade density
+            # Pattern 1: Extreme trade density with flat price (institutional accumulation)
+            # Only triggers for truly anomalous activity: >150K trades with barely any price move
+            trade_density = t["trades"] / max(volume / 1_000_000, 0.1)
             is_accumulation = (
-                5_000_000 <= volume <= 100_000_000
-                and abs(price_change) <= 2
-                and t["trades"] >= 80_000
-                and t["trades"] / (volume / 1_000_000) >= 25
+                5_000_000 <= volume <= 80_000_000
+                and abs(price_change) <= 1.5
+                and t["trades"] >= 150_000
+                and trade_density >= 40
             )
 
-            # Pattern 2: Early pump (15-30%) with high volume — catching it early
+            # Pattern 2: Strong early pump (20-30%) with extreme volume — first hours of breakout
             is_early_pump = (
-                15 <= price_change <= 30
-                and 5_000_000 <= volume <= 100_000_000
-                and t["trades"] >= 50_000
+                20 <= price_change <= 30
+                and 10_000_000 <= volume <= 80_000_000
+                and t["trades"] >= 100_000
             )
 
             if not is_accumulation and not is_early_pump:
@@ -441,7 +441,10 @@ def run_gem_scan() -> list[dict]:
     all_signals.sort(key=lambda s: s.get("volume_24h", 0), reverse=True)
     all_signals = all_signals[:1]
 
-    logger.info(f"💎 Gem scan complete: {len(all_signals)} early signal (max 1/cycle)")
+    if all_signals:
+        logger.info(f"💎 Gem scan: 1 signal found → {all_signals[0]['symbol']}")
+    else:
+        logger.info("💎 Gem scan: nothing exceptional today")
     return all_signals
 
 
