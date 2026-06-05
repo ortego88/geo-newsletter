@@ -26,6 +26,21 @@ _cache: dict = {}
 _cache_time: dict = {}
 _CACHE_TTL = 180  # 3 min cache to avoid rate limits
 
+# 30-min cooldown per asset+signal_type to prevent duplicate alerts
+# from the same event appearing in consecutive pipeline cycles
+_signal_cooldowns: dict[str, float] = {}
+_SIGNAL_COOLDOWN_SECS = 30 * 60
+
+
+def _signal_on_cooldown(asset: str, signal_type: str) -> bool:
+    key = f"{asset}_{signal_type}"
+    last = _signal_cooldowns.get(key, 0)
+    return (time.time() - last) < _SIGNAL_COOLDOWN_SECS
+
+
+def _signal_set_cooldown(asset: str, signal_type: str):
+    _signal_cooldowns[f"{asset}_{signal_type}"] = time.time()
+
 
 def _cached(key: str, fn, ttl: int = _CACHE_TTL):
     now = time.time()
@@ -446,14 +461,19 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "down", confidence, reasoning, "liquidation_cascade", liq["long_liquidations_usd"]))
 
-    # Filter: only UP signals if very high confidence (≥80)
+    # Filter None (cooldown) and UP signals below 80% confidence
+    signals = [s for s in signals if s is not None]
     signals = [s for s in signals if s["analysis"]["direction"] == "down" or s["analysis"]["confidence"] >= 80]
 
     logger.info(f"🔬 Microstructure scan: {len(signals)} signals found")
     return signals
 
 
-def _build_signal(asset: str, direction: str, confidence: int, reasoning: str, source: str, value) -> dict:
+def _build_signal(asset: str, direction: str, confidence: int, reasoning: str, source: str, value) -> dict | None:
+    """Returns None if this asset+source is on cooldown (same event, next cycle)."""
+    if _signal_on_cooldown(asset, source):
+        return None
+    _signal_set_cooldown(asset, source)
     return {
         "title": f"Señal de microestructura: {asset} — {direction.upper()} (funding/orderbook)",
         "description": reasoning,
