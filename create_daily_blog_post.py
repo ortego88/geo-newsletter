@@ -119,6 +119,15 @@ def _slugify(text):
     return text.strip('-')
 
 
+def _strip_code_fences(text: str) -> str:
+    """Remove markdown code fences like ```html ... ``` that AI sometimes adds."""
+    import re
+    text = text.strip()
+    text = re.sub(r'^```html?\s*', '', text)
+    text = re.sub(r'\s*```\s*$', '', text)
+    return text.strip()
+
+
 def generate_content_with_ai(topic):
     """Genera contenido usando Claude o GPT."""
     prompt = f"""
@@ -135,6 +144,7 @@ FORMATO REQUERIDO:
 - AI-friendly: Escribe datos concretos, estadísticas, ejemplos específicos que puedan ser citados
 - HTML: Devuelve el contenido en HTML simple (p, h2, h3, ul, ol, strong, a)
 
+IMPORTANTE: Devuelve SOLO el HTML puro, sin bloques de código markdown, sin ```html, sin ```.
 NO incluyas el título principal (H1), solo el contenido del artículo.
 """
 
@@ -149,7 +159,7 @@ NO incluyas el título principal (H1), solo el contenido del artículo.
                 max_tokens=3000,
                 messages=[{"role": "user", "content": prompt}]
             )
-            content = response.content[0].text
+            content = _strip_code_fences(response.content[0].text)
             print("✅ Contenido generado con Claude")
             return content
     except Exception as e:
@@ -166,7 +176,7 @@ NO incluyas el título principal (H1), solo el contenido del artículo.
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=2000
             )
-            content = response.choices[0].message.content
+            content = _strip_code_fences(response.choices[0].message.content)
             print("✅ Contenido generado con GPT")
             return content
     except Exception as e:
