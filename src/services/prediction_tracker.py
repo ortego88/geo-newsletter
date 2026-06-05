@@ -24,8 +24,9 @@ logger = logging.getLogger("prediction_tracker")
 # Si en las 24h siguientes el precio se mueve >= 1% en la dirección predicha → CORRECT
 # Si se mueve >= 1% en la dirección opuesta → INCORRECT
 # Si no alcanza 1% en ninguna dirección al finalizar las 24h → NEUTRAL
-_THRESHOLD_PCT = 3.0  # 3% — umbral para considerar la predicción correcta (exige movimiento real)
+_THRESHOLD_PCT = 1.0  # 1% — umbral mínimo para correcto (en 6h los movimientos son pequeños)
 _INCORRECT_THRESHOLD_PCT = 5.0  # 5% — requiere movimiento fuerte en dirección contraria para marcar como incorrecta
+                                  # (3% es rebote normal en crypto, no invalida una predicción)
 
 # Ventana de evaluación en horas
 _EVALUATION_WINDOW_HOURS = 24
