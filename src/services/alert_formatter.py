@@ -420,10 +420,26 @@ def format_alert(event: dict, analysis: dict) -> str:
     return "\n".join(lines)
 
 
+def _format_price(price: float) -> str:
+    """Format a price with appropriate decimal places."""
+    if price <= 0:
+        return "N/A"
+    if price >= 1000:
+        return f"${price:,.2f}"
+    if price >= 1:
+        return f"${price:.4f}"
+    if price >= 0.01:
+        return f"${price:.4f}"
+    if price >= 0.0001:
+        return f"${price:.6f}"
+    return f"${price:.8f}"
+
+
 def format_telegram_alert(event: dict, analysis: dict, language: str = "es") -> str:
     """
     Genera un mensaje compacto para Telegram en texto plano.
     Soporta español (es) e inglés (en).
+    Uses price_at_prediction from event if available, otherwise fetches live.
     """
     fetcher = AssetPriceFetcher()
     is_en = language == "en"
@@ -511,12 +527,17 @@ def format_telegram_alert(event: dict, analysis: dict, language: str = "es") -> 
     lines.append("")
     lines.append(f"{direction_label}")
 
-    # Primary asset line
+    # Primary asset line — use stored price_at_prediction if available
     if affected_assets:
         asset = affected_assets[0].upper()
         icon = ASSET_ICONS.get(asset, "💹")
         name = ASSET_NAMES.get(asset, asset)
-        price_str = fetcher.get_formatted_price(asset)
+        stored_price = event.get("price_at_prediction") or event.get("_price_at_prediction")
+        if stored_price and stored_price > 0:
+            price_str = _format_price(float(stored_price))
+        else:
+            live_price = fetcher.get_price(asset)
+            price_str = _format_price(live_price) if live_price and live_price > 0 else "N/A"
         asset_label = "Asset" if is_en else "Activo"
         lines.append(f"{asset_label}: {name} ({price_str})")
 

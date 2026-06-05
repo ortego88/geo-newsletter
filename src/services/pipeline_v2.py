@@ -666,6 +666,7 @@ class AnalysisPipeline:
             prediction_id = self.tracker.save_prediction(event, current_price)
             if prediction_id:
                 event["prediction_id"] = prediction_id
+                event["price_at_prediction"] = current_price
                 logger.info(
                     f"   ✅ Predicción #{prediction_id} guardada: {primary_asset} @ {current_price:.2f} ({analysis.get('direction', 'unknown')})"
                 )

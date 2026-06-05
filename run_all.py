@@ -285,6 +285,7 @@ def run_pipeline_cycle():
                     pred_id = tracker.save_prediction(pe, price_now)
                     if pred_id:
                         pe["prediction_id"] = pred_id
+                        pe["price_at_prediction"] = price_now
                         events.append(pe)
                         saved_count += 1
 
