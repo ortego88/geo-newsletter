@@ -311,57 +311,69 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "up", confidence, reasoning, "funding_extreme_short", f["rate_pct"]))
 
-    # 2. Order book + large trades scan for major assets
-    MAJOR_ASSETS = [
-        ("BTCUSDT", "BTC"), ("ETHUSDT", "ETH"), ("SOLUSDT", "SOL"),
-        ("XRPUSDT", "XRP"), ("BNBUSDT", "BNB"), ("ADAUSDT", "ADA"),
+    # 2. Order book + large trades scan
+    # Thresholds adapted per asset tier:
+    # Tier 1 (BTC/ETH): $200K min trade
+    # Tier 2 (SOL/XRP/BNB/ADA/DOGE): $50K min trade
+    # Tier 3 (memecoins PEPE/SHIB): $20K min trade
+    LARGE_TRADE_ASSETS = [
+        ("BTCUSDT",  "BTC",  200_000, 3_000_000),
+        ("ETHUSDT",  "ETH",  200_000, 3_000_000),
+        ("SOLUSDT",  "SOL",   50_000,   500_000),
+        ("XRPUSDT",  "XRP",   50_000,   500_000),
+        ("BNBUSDT",  "BNB",   50_000,   500_000),
+        ("ADAUSDT",  "ADA",   50_000,   500_000),
+        ("DOGEUSDT", "DOGE",  20_000,   200_000),
+        ("AVAXUSDT", "AVAX",  50_000,   500_000),
+        ("DOTUSDT",  "DOT",   50_000,   500_000),
+        ("SHIBUSDT", "SHIB",  20_000,   200_000),
+        ("PEPEUSDT", "PEPE",  20_000,   200_000),
     ]
-    for sym, asset in MAJOR_ASSETS:
-        # Order book imbalance
-        ob = get_order_book_imbalance(sym)
-        if ob and ob["strong_sell_pressure"] and ob["ask_volume_usd"] > 2_000_000:
-            confidence = 72
+
+    for sym, asset, min_trade, whale_threshold in LARGE_TRADE_ASSETS:
+        # Order book imbalance (only for tier 1)
+        if min_trade >= 200_000:
+            ob = get_order_book_imbalance(sym)
+            if ob and ob["strong_sell_pressure"] and ob["ask_volume_usd"] > 2_000_000:
+                confidence = 72
+                reasoning = (
+                    f"Presión vendedora fuerte en el libro de órdenes de {asset}. "
+                    f"Ratio bid/ask: {ob['bid_ratio']}/{ob['ask_ratio']}. "
+                    f"Volumen en ventas: ${ob['ask_volume_usd']:,}."
+                )
+                signals.append(_build_signal(asset, "down", confidence, reasoning, "orderbook_sell_wall", ob["bid_ratio"]))
+
+        # Large trades — real-time activity
+        lt = get_large_trades(sym, min_usd=min_trade)
+        if not lt:
+            continue
+
+        if lt["whale_dump"] or (lt["large_sell_count"] >= 5 and lt["large_sell_usd"] > whale_threshold):
+            confidence = 78
             reasoning = (
-                f"Presión vendedora fuerte en el libro de órdenes de {asset}. "
-                f"Ratio bid/ask: {ob['bid_ratio']}/{ob['ask_ratio']}. "
-                f"Volumen en ventas: ${ob['ask_volume_usd']:,}. Resistencia inmediata al alza."
+                f"Ventas institucionales detectadas en {asset}: "
+                f"{lt['large_sell_count']} ventas grandes (${lt['large_sell_usd']:,} total) "
+                f"en los últimos 5 minutos. Distribución activa — presión bajista inminente."
             )
-            signals.append(_build_signal(asset, "down", confidence, reasoning, "orderbook_sell_wall", ob["bid_ratio"]))
+            signals.append(_build_signal(asset, "down", confidence, reasoning, "whale_dump", lt["large_sell_usd"]))
 
-        # Large trades — real-time whale activity
-        # $200K threshold captures institutional-sized trades in all market caps
-        lt = get_large_trades(sym, min_usd=200_000)
-        if lt:
-            if lt["whale_dump"]:
-                # 3+ trades >$500K selling in 5 min = $5M+ distribution
-                confidence = 78
-                reasoning = (
-                    f"Actividad de ballena detectada en {asset}: "
-                    f"{lt['large_sell_count']} ventas grandes (${lt['large_sell_usd']:,} total) "
-                    f"en los últimos 5 minutos. "
-                    f"Distribución institucional activa — presión bajista inminente."
-                )
-                signals.append(_build_signal(asset, "down", confidence, reasoning, "whale_dump", lt["large_sell_usd"]))
+        elif lt["sell_dominance"] or (lt["large_sell_usd"] > lt["large_buy_usd"] * 2.5 and lt["large_sell_usd"] > whale_threshold * 0.5):
+            confidence = 70
+            reasoning = (
+                f"Dominio vendedor en {asset}: "
+                f"${lt['large_sell_usd']:,} en ventas vs ${lt['large_buy_usd']:,} en compras (5 min). "
+                f"Presión bajista sostenida."
+            )
+            signals.append(_build_signal(asset, "down", confidence, reasoning, "large_sell_dominance", lt["large_sell_usd"]))
 
-            elif lt["sell_dominance"]:
-                # Sell side dominant with large trades
-                confidence = 70
-                reasoning = (
-                    f"Dominio vendedor en grandes trades de {asset}: "
-                    f"${lt['large_sell_usd']:,} en ventas vs ${lt['large_buy_usd']:,} en compras (últimos 5 min). "
-                    f"Presión bajista sostenida por grandes actores."
-                )
-                signals.append(_build_signal(asset, "down", confidence, reasoning, "large_sell_dominance", lt["large_sell_usd"]))
-
-            elif lt["whale_accumulation"]:
-                # 3+ large buys = institutional accumulation
-                confidence = 75
-                reasoning = (
-                    f"Acumulación institucional en {asset}: "
-                    f"{lt['large_buy_count']} compras grandes (${lt['large_buy_usd']:,} total) "
-                    f"en los últimos 5 minutos. Demanda institucional activa."
-                )
-                signals.append(_build_signal(asset, "up", confidence, reasoning, "whale_accumulation", lt["large_buy_usd"]))
+        elif lt["whale_accumulation"] or (lt["large_buy_count"] >= 5 and lt["large_buy_usd"] > whale_threshold):
+            confidence = 75
+            reasoning = (
+                f"Acumulación institucional en {asset}: "
+                f"{lt['large_buy_count']} compras grandes (${lt['large_buy_usd']:,} total) "
+                f"en los últimos 5 minutos. Demanda institucional activa."
+            )
+            signals.append(_build_signal(asset, "up", confidence, reasoning, "whale_accumulation", lt["large_buy_usd"]))
 
     # 3. Liquidation cascades
     for sym, asset in MAJOR_ASSETS[:3]:  # BTC, ETH, SOL only (futures data)

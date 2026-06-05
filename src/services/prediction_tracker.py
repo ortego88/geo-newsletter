@@ -247,6 +247,22 @@ class PredictionTracker:
         except Exception:
             verify_at = None
 
+        # Derive signal_type from source for analytics
+        raw_source = event.get("source", "")
+        if "microstructure" in raw_source:
+            if "whale" in raw_source:
+                signal_type = "whale_trade"
+            elif "funding" in raw_source:
+                signal_type = "funding_rate"
+            elif "liquidation" in raw_source:
+                signal_type = "liquidation"
+            else:
+                signal_type = "microstructure"
+        elif raw_source in ("price_signal", "Price Monitor"):
+            signal_type = "price_signal"
+        else:
+            signal_type = "news"
+
         try:
             with self._get_conn() as conn:
                 result = conn.execute(text("""
@@ -254,11 +270,11 @@ class PredictionTracker:
                     (event_id, title, category, asset, direction, impact_percent,
                      timeframe, timeframe_minutes, confidence, reasoning,
                      price_at_prediction, predicted_at, outcome, score, source, verify_at,
-                     source_url, verification_window_hours)
+                     source_url, verification_window_hours, signal_type)
                     VALUES (:event_id, :title, :category, :asset, :direction, :impact_percent,
                             :timeframe, :timeframe_minutes, :confidence, :reasoning,
                             :price, :predicted_at, 'pending', :score, :source, :verify_at,
-                            :source_url, :verification_window_hours)
+                            :source_url, :verification_window_hours, :signal_type)
                     RETURNING id
                 """), {
                     "event_id": event_id, "title": title, "category": category,
@@ -268,6 +284,7 @@ class PredictionTracker:
                     "price": current_price, "predicted_at": predicted_at.isoformat(),
                     "score": score, "source": source, "verify_at": verify_at,
                     "source_url": source_url, "verification_window_hours": verification_window_hours,
+                    "signal_type": signal_type,
                 })
                 conn.commit()
                 prediction_id = result.fetchone()[0]

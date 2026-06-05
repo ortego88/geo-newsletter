@@ -520,8 +520,23 @@ def format_telegram_alert(event: dict, analysis: dict, language: str = "es") -> 
         criticality = "BAJA"
         alert_icon = "🟢"
 
+    # Signal type badge for analytics tracking
+    raw_source = event.get("source", "")
+    if "whale" in raw_source:
+        signal_badge = "🐋 BALLENA"
+    elif "funding" in raw_source:
+        signal_badge = "📊 FUNDING"
+    elif "liquidation" in raw_source:
+        signal_badge = "💥 LIQUIDACIONES"
+    elif "orderbook" in raw_source:
+        signal_badge = "📖 ORDER BOOK"
+    elif "microstructure" in raw_source:
+        signal_badge = "🔬 MICROESTRUCTURA"
+    else:
+        signal_badge = "📰 NOTICIA"
+
     lines = []
-    lines.append(f"{alert_icon} {category} — score {score}/100")
+    lines.append(f"{alert_icon} {signal_badge} — score {score}/100")
     lines.append("")
     lines.append(f"📍 {title}")
     lines.append("")
