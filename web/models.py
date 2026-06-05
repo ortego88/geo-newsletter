@@ -97,7 +97,7 @@ PLANS = {
             "Alertas ilimitadas diarias",
             "Soporte prioritario por email",
             "Resumen semanal",
-            "Acceso prioritario a la app",
+            "Acceso prioritario a nuevas funcionalidades",
         ],
         "features_en": [
             "65+ cryptocurrencies",
@@ -106,7 +106,7 @@ PLANS = {
             "Unlimited daily alerts",
             "Priority email support",
             "Weekly digest",
-            "Priority app access",
+            "Priority access to new features",
         ],
     },
 }

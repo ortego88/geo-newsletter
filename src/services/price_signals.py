@@ -37,6 +37,33 @@ ALL_ASSETS = [
 _cycle_index = 0
 
 _cooldowns: dict[str, float] = {}
+_COOLDOWN_FILE = "/tmp/price_signal_cooldowns.json"
+
+
+def _load_cooldowns():
+    global _cooldowns
+    try:
+        import json
+        with open(_COOLDOWN_FILE) as f:
+            raw = json.load(f)
+        now = time.time()
+        _cooldowns = {k: v for k, v in raw.items() if now - v < COOLDOWN_SECONDS}
+    except (FileNotFoundError, Exception):
+        _cooldowns = {}
+
+
+def _save_cooldowns():
+    import json
+    now = time.time()
+    active = {k: v for k, v in _cooldowns.items() if now - v < COOLDOWN_SECONDS}
+    try:
+        with open(_COOLDOWN_FILE, "w") as f:
+            json.dump(active, f)
+    except Exception:
+        pass
+
+
+_load_cooldowns()
 
 
 def _is_on_cooldown(asset: str) -> bool:
@@ -46,6 +73,7 @@ def _is_on_cooldown(asset: str) -> bool:
 
 def _set_cooldown(asset: str):
     _cooldowns[asset] = time.time()
+    _save_cooldowns()
 
 
 _batch_cache: dict[str, float] = {}
