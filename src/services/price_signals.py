@@ -16,7 +16,9 @@ from datetime import datetime, timezone
 logger = logging.getLogger("price_signals")
 
 THRESHOLD_PCT = 2.5
-COOLDOWN_SECONDS = 8 * 3600  # 8h cooldown per asset — prevents same asset spamming twice a day
+# Price-based cooldown: only re-alert when price moves >5% from last alert price
+# This prevents spam regardless of time — the signal only fires when something NEW happens
+COOLDOWN_PRICE_MOVE_PCT = 5.0
 
 # All tracked crypto assets — rotated in batches to avoid API rate limits
 ALL_ASSETS = [
@@ -36,29 +38,26 @@ ALL_ASSETS = [
 
 _cycle_index = 0
 
-_cooldowns: dict[str, float] = {}
+# Stores the price at which we last alerted for each asset
+_last_alert_price: dict[str, float] = {}
 _COOLDOWN_FILE = "/tmp/price_signal_cooldowns.json"
 
 
 def _load_cooldowns():
-    global _cooldowns
+    global _last_alert_price
     try:
         import json
         with open(_COOLDOWN_FILE) as f:
-            raw = json.load(f)
-        now = time.time()
-        _cooldowns = {k: v for k, v in raw.items() if now - v < COOLDOWN_SECONDS}
+            _last_alert_price = json.load(f)
     except (FileNotFoundError, Exception):
-        _cooldowns = {}
+        _last_alert_price = {}
 
 
 def _save_cooldowns():
     import json
-    now = time.time()
-    active = {k: v for k, v in _cooldowns.items() if now - v < COOLDOWN_SECONDS}
     try:
         with open(_COOLDOWN_FILE, "w") as f:
-            json.dump(active, f)
+            json.dump(_last_alert_price, f)
     except Exception:
         pass
 
@@ -66,17 +65,25 @@ def _save_cooldowns():
 _load_cooldowns()
 
 
-def _is_on_cooldown(asset: str) -> bool:
-    last = _cooldowns.get(asset, 0)
-    return (time.time() - last) < COOLDOWN_SECONDS
+def _is_on_cooldown(asset: str, current_price: float = 0) -> bool:
+    """Re-alert only if price moved >5% from last alert. No time-based blocking."""
+    last_price = _last_alert_price.get(asset, 0)
+    if last_price <= 0:
+        return False  # Never alerted → go ahead
+    if current_price <= 0:
+        return True   # Can't verify → be conservative
+    move_pct = abs((current_price - last_price) / last_price) * 100
+    return move_pct < COOLDOWN_PRICE_MOVE_PCT
 
 
-def _set_cooldown(asset: str):
-    _cooldowns[asset] = time.time()
+def _set_cooldown(asset: str, price: float = 0):
+    if price > 0:
+        _last_alert_price[asset] = price
     _save_cooldowns()
 
 
-_batch_cache: dict[str, float] = {}
+_batch_cache: dict[str, float] = {}   # asset → 24h change pct
+_price_cache: dict[str, float] = {}   # asset → current price USD
 _batch_cache_time: float = 0
 
 
@@ -108,10 +115,14 @@ def _refresh_batch_cache(assets: list[str]):
 
         data = resp.json()
         _batch_cache = {}
+        _price_cache = {}
         for cid, values in data.items():
             asset = id_to_asset.get(cid)
-            if asset and "usd_24h_change" in values:
-                _batch_cache[asset] = values["usd_24h_change"]
+            if asset:
+                if "usd_24h_change" in values:
+                    _batch_cache[asset] = values["usd_24h_change"]
+                if "usd" in values and values["usd"]:
+                    _price_cache[asset] = float(values["usd"])
 
         _batch_cache_time = _time.time()
         logger.info(f"📊 Price cache refreshed: {len(_batch_cache)} assets")
@@ -149,14 +160,15 @@ def check_price_signals() -> list[dict]:
     logger.info(f"📊 Price signals: checking {len(assets_to_check)} assets ({len(_batch_cache)} in cache)")
 
     for asset in assets_to_check:
-        if _is_on_cooldown(asset):
-            continue
-
         change = _get_24h_change(asset)
         if change is None:
             continue
-
         if abs(change) < THRESHOLD_PCT:
+            continue
+
+        # Get current price to check price-based cooldown
+        current_price = _price_cache.get(asset.upper(), 0)
+        if _is_on_cooldown(asset, current_price):
             continue
 
         if change <= -THRESHOLD_PCT:
@@ -189,7 +201,7 @@ def check_price_signals() -> list[dict]:
             "_change_pct": change,
         }
         signals.append(event)
-        _set_cooldown(asset)
-        logger.info(f"📊 Price signal: {asset} {change:+.1f}% (score={score})")
+        _set_cooldown(asset, current_price)
+        logger.info(f"📊 Price signal: {asset} {change:+.1f}% @ ${current_price} (score={score})")
 
     return signals
