@@ -614,10 +614,11 @@ def create_app():
         """Adds or updates contact in Brevo (async, best-effort)."""
         brevo_key = os.getenv("BREVO_API_KEY", "")
         if not brevo_key:
+            _logger.warning("Brevo sync skipped: BREVO_API_KEY not set")
             return
         try:
             import requests as _req
-            _req.post(
+            resp = _req.post(
                 "https://api.brevo.com/v3/contacts",
                 headers={"api-key": brevo_key, "Content-Type": "application/json"},
                 json={
@@ -628,8 +629,9 @@ def create_app():
                 },
                 timeout=5,
             )
+            _logger.info(f"Brevo sync {email}: {resp.status_code} {resp.text[:100]}")
         except Exception as e:
-            _logger.debug(f"Brevo sync failed: {e}")
+            _logger.warning(f"Brevo sync failed: {e}")
 
     @main_bp.route("/api/fcm-token", methods=["POST"])
     def register_fcm_token():
