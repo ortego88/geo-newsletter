@@ -71,11 +71,23 @@ def get_funding_rate(symbol: str = "BTCUSDT") -> dict | None:
 
 
 def get_funding_rates_all() -> list[dict]:
-    """Gets funding rates for all major tracked assets."""
+    """Gets funding rates for all 65 tracked assets that have futures on Binance."""
     FUTURES_SYMBOLS = [
-        "BTCUSDT", "ETHUSDT", "XRPUSDT", "SOLUSDT", "BNBUSDT",
-        "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT",
-        "SUIUSDT", "NEARUSDT", "TONUSDT", "SHIBUSDT", "UNIUSDT",
+        # Top caps
+        "BTCUSDT","ETHUSDT","XRPUSDT","SOLUSDT","BNBUSDT","ADAUSDT","DOGEUSDT",
+        "TRXUSDT","TONUSDT","LINKUSDT","AVAXUSDT","SHIBUSDT","DOTUSDT","SUIUSDT",
+        "LTCUSDT","HBARUSDT","UNIUSDT","ATOMUSDT","XLMUSDT","NEARUSDT",
+        # Mid caps
+        "ARBUSDT","OPUSDT","ICPUSDT","FILUSDT","IMXUSDT","STXUSDT",
+        # DeFi/AI
+        "AAVEUSDT","MKRUSDT","CRVUSDT","LDOUSDT","DYDXUSDT","SNXUSDT",
+        "PENDLEUSDT","ONDOUSDT","FETUSDT","RENDERUSDT","INJUSDT","TAOUSDT",
+        # Gaming
+        "AXSUSDT","SANDUSDT","MANAUSDT","GALAUSDT","ENJUSDT",
+        # Memecoins
+        "PEPEUSDT","WIFUSDT","FLOKIUSDT","BONKUSDT",
+        # Others
+        "VETUSDT","THETAUSDT","FTMUSDT","RUNEUSDT","GRTUSDT","KASUSDT",
     ]
     def fetch():
         resp = requests.get(
@@ -311,28 +323,73 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "up", confidence, reasoning, "funding_extreme_short", f["rate_pct"]))
 
-    # 2. Order book + large trades scan
-    # Thresholds adapted per asset tier:
-    # Tier 1 (BTC/ETH): $200K min trade
-    # Tier 2 (SOL/XRP/BNB/ADA/DOGE): $50K min trade
-    # Tier 3 (memecoins PEPE/SHIB): $20K min trade
+    # 2. Order book + large trades scan for all 65 assets
+    # min_trade: minimum single trade size to count
+    # whale_threshold: total volume needed to trigger signal
     LARGE_TRADE_ASSETS = [
-        ("BTCUSDT",  "BTC",  200_000, 3_000_000),
-        ("ETHUSDT",  "ETH",  200_000, 3_000_000),
-        ("SOLUSDT",  "SOL",   50_000,   500_000),
-        ("XRPUSDT",  "XRP",   50_000,   500_000),
-        ("BNBUSDT",  "BNB",   50_000,   500_000),
-        ("ADAUSDT",  "ADA",   50_000,   500_000),
-        ("DOGEUSDT", "DOGE",  20_000,   200_000),
-        ("AVAXUSDT", "AVAX",  50_000,   500_000),
-        ("DOTUSDT",  "DOT",   50_000,   500_000),
-        ("SHIBUSDT", "SHIB",  20_000,   200_000),
-        ("PEPEUSDT", "PEPE",  20_000,   200_000),
+        # Tier 1 — major caps (high liquidity, large trades)
+        ("BTCUSDT",   "BTC",   200_000, 3_000_000),
+        ("ETHUSDT",   "ETH",   200_000, 3_000_000),
+        ("BNBUSDT",   "BNB",    50_000,   800_000),
+        # Tier 2 — large altcoins
+        ("SOLUSDT",   "SOL",    50_000,   500_000),
+        ("XRPUSDT",   "XRP",    50_000,   500_000),
+        ("ADAUSDT",   "ADA",    30_000,   300_000),
+        ("TRXUSDT",   "TRX",    30_000,   300_000),
+        ("TONUSDT",   "TON",    30_000,   300_000),
+        ("LINKUSDT",  "LINK",   30_000,   300_000),
+        ("AVAXUSDT",  "AVAX",   30_000,   300_000),
+        ("DOTUSDT",   "DOT",    30_000,   300_000),
+        ("LTCUSDT",   "LTC",    30_000,   300_000),
+        ("SUIUSDT",   "SUI",    20_000,   200_000),
+        ("NEARUSDT",  "NEAR",   20_000,   200_000),
+        ("ATOMUSDT",  "ATOM",   20_000,   200_000),
+        ("XLMUSDT",   "XLM",    20_000,   200_000),
+        ("UNIUSDT",   "UNI",    20_000,   200_000),
+        ("ARBUSDT",   "ARB",    20_000,   200_000),
+        ("OPUSDT",    "OP",     20_000,   200_000),
+        ("ICPUSDT",   "ICP",    20_000,   200_000),
+        ("FILUSDT",   "FIL",    20_000,   200_000),
+        ("HBARUSDT",  "HBAR",   20_000,   200_000),
+        ("IMXUSDT",   "IMX",    20_000,   200_000),
+        ("STXUSDT",   "STX",    20_000,   200_000),
+        # Tier 3 — DeFi / AI
+        ("AAVEUSDT",  "AAVE",   20_000,   200_000),
+        ("CRVUSDT",   "CRV",    15_000,   150_000),
+        ("LDOUSDT",   "LDO",    15_000,   150_000),
+        ("DYDXUSDT",  "DYDX",   15_000,   150_000),
+        ("SNXUSDT",   "SNX",    15_000,   150_000),
+        ("PENDLEUSDT","PENDLE", 15_000,   150_000),
+        ("FETUSDT",   "FET",    15_000,   150_000),
+        ("RENDERUSDT","RENDER", 15_000,   150_000),
+        ("INJUSDT",   "INJ",    15_000,   150_000),
+        ("TAOUSDT",   "TAO",    15_000,   150_000),
+        ("ONDOUSDT",  "ONDO",   15_000,   150_000),
+        # Tier 4 — Gaming
+        ("AXSUSDT",   "AXS",    10_000,   100_000),
+        ("SANDUSDT",  "SAND",   10_000,   100_000),
+        ("MANAUSDT",  "MANA",   10_000,   100_000),
+        ("GALAUSDT",  "GALA",   10_000,   100_000),
+        ("ENJUSDT",   "ENJ",    10_000,   100_000),
+        # Tier 5 — Memecoins & small caps
+        ("DOGEUSDT",  "DOGE",   20_000,   200_000),
+        ("SHIBUSDT",  "SHIB",   10_000,   100_000),
+        ("PEPEUSDT",  "PEPE",   10_000,   100_000),
+        ("WIFUSDT",   "WIF",    10_000,   100_000),
+        ("FLOKIUSDT", "FLOKI",  10_000,   100_000),
+        ("BONKUSDT",  "BONK",   10_000,   100_000),
+        # Others
+        ("VETUSDT",   "VET",    10_000,   100_000),
+        ("THETAUSDT", "THETA",  10_000,   100_000),
+        ("FTMUSDT",   "FTM",    10_000,   100_000),
+        ("RUNEUSDT",  "RUNE",   15_000,   150_000),
+        ("GRTUSDT",   "GRT",    10_000,   100_000),
+        ("KASUSDT",   "KAS",    10_000,   100_000),
     ]
 
     for sym, asset, min_trade, whale_threshold in LARGE_TRADE_ASSETS:
-        # Order book imbalance (only for tier 1)
-        if min_trade >= 200_000:
+        # Order book imbalance (only for BTC and ETH — meaningful depth)
+        if sym in ("BTCUSDT", "ETHUSDT"):
             ob = get_order_book_imbalance(sym)
             if ob and ob["strong_sell_pressure"] and ob["ask_volume_usd"] > 2_000_000:
                 confidence = 72
