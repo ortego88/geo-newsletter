@@ -135,6 +135,7 @@ def _to_madrid_str(dt_str) -> str:
 def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
     app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 604800  # 7 days cache for static files
     app.config["GTM_ID"] = os.getenv("GTM_ID", "")
     app.config["GA4_ID"] = os.getenv("GA4_ID", "")
     app.config["SESSION_COOKIE_SECURE"] = True

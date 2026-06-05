@@ -1,11 +1,9 @@
-<!-- Trianio Brand: Favicon + Fonts (optimized) + Compiled Tailwind -->
+<!-- Trianio Brand: Favicon + Self-hosted Fonts + Compiled Tailwind -->
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-<!-- Fonts: preload primary, swap to avoid render block -->
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
+<!-- Preload critical fonts (self-hosted, no external DNS lookup) -->
+<link rel="preload" href="/static/fonts/dm-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/dm-serif-display-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/css/fonts.css">
 <!-- Compiled Tailwind (static, no runtime JS) -->
 <link rel="stylesheet" href="/static/css/tailwind.min.css">
 <!-- Consent Mode v2 (inline, minimal) -->
