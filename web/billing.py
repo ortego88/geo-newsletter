@@ -12,6 +12,14 @@ billing_bp = Blueprint("billing", __name__)
 
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholder")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+# Live Stripe price IDs
+STRIPE_PRICE_IDS = {
+    "basic":   {"monthly": "price_1TezhcB3AvOaSpMMtbU5ngRd", "yearly": "price_1TezhdB3AvOaSpMMm4roa8mG"},
+    "premium": {"monthly": "price_1TezheB3AvOaSpMMcgZV2kJ5", "yearly": "price_1TezheB3AvOaSpMMjzV9QlXf"},
+    "pro":     {"monthly": "price_1TezhfB3AvOaSpMM6zrXI4gO", "yearly": "price_1TezhgB3AvOaSpMMoSGPnGTT"},
+}
 
 
 def _get_user_payment_method(user_id: int):
@@ -290,3 +298,183 @@ def cancel():
             "info",
         )
     return redirect(url_for("dashboard_web.subscription"))
+
+
+@billing_bp.route("/stripe/checkout", methods=["POST"])
+@login_required
+def stripe_checkout():
+    """Creates a Stripe Checkout session and redirects to hosted payment page."""
+    if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith("sk_live_"):
+        flash("Pagos en producción no configurados.", "error")
+        return redirect(url_for("billing.pricing"))
+
+    plan = request.form.get("plan", "basic")
+    cycle = request.form.get("cycle", "monthly")
+    is_trial = request.form.get("is_trial") == "1"
+
+    if plan not in STRIPE_PRICE_IDS:
+        flash("Plan no válido", "error")
+        return redirect(url_for("billing.pricing"))
+
+    price_id = STRIPE_PRICE_IDS[plan][cycle]
+
+    try:
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+
+        params = {
+            "mode": "subscription",
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "success_url": url_for("billing.stripe_success", _external=True) + "?session_id={CHECKOUT_SESSION_ID}",
+            "cancel_url": url_for("billing.pricing", _external=True),
+            "customer_email": current_user.email,
+            "metadata": {
+                "user_id": str(current_user.id),
+                "plan": plan,
+                "cycle": cycle,
+            },
+            "subscription_data": {
+                "metadata": {"user_id": str(current_user.id), "plan": plan},
+            },
+        }
+
+        if is_trial:
+            params["subscription_data"]["trial_period_days"] = 7
+
+        session = stripe.checkout.Session.create(**params)
+        return redirect(session.url, code=303)
+
+    except Exception as e:
+        logger.error(f"Stripe checkout error: {e}")
+        flash("Error al procesar el pago. Inténtalo de nuevo.", "error")
+        return redirect(url_for("billing.pricing"))
+
+
+@billing_bp.route("/stripe/success")
+@login_required
+def stripe_success():
+    """Callback after successful Stripe Checkout."""
+    session_id = request.args.get("session_id", "")
+    if not session_id or not STRIPE_SECRET_KEY:
+        return redirect(url_for("billing.success"))
+
+    try:
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+        session = stripe.checkout.Session.retrieve(session_id)
+        meta = session.get("metadata", {})
+        plan = meta.get("plan", "basic")
+        cycle = meta.get("cycle", "monthly")
+
+        period_end = (
+            datetime.now(timezone.utc) + (
+                timedelta(days=365) if cycle == "yearly" else timedelta(days=30)
+            )
+        ).isoformat()
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        with get_conn() as conn:
+            existing = conn.execute(
+                text("SELECT id FROM subscriptions WHERE user_id=:uid"),
+                {"uid": current_user.id}
+            ).fetchone()
+            if existing:
+                conn.execute(text("""
+                    UPDATE subscriptions SET plan=:plan, billing_cycle=:cycle,
+                    status='active', trial_ends_at=NULL, current_period_end=:period, updated_at=:now
+                    WHERE user_id=:uid
+                """), {"plan": plan, "cycle": cycle, "period": period_end, "now": now_iso, "uid": current_user.id})
+            else:
+                conn.execute(text("""
+                    INSERT INTO subscriptions
+                    (user_id,plan,billing_cycle,status,current_period_end,created_at,updated_at)
+                    VALUES (:uid,:plan,:cycle,'active',:period,:now,:now)
+                """), {"uid": current_user.id, "plan": plan, "cycle": cycle, "period": period_end, "now": now_iso})
+            conn.commit()
+
+        flash("✅ Suscripción activada correctamente", "success")
+    except Exception as e:
+        logger.error(f"Stripe success callback error: {e}")
+
+    return redirect(url_for("billing.success"))
+
+
+@billing_bp.route("/stripe/webhook", methods=["POST"])
+def stripe_webhook():
+    """Handles Stripe webhook events (subscription renewals, cancellations)."""
+    payload = request.get_data()
+    sig = request.headers.get("Stripe-Signature", "")
+
+    try:
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+    except Exception as e:
+        logger.warning(f"Stripe webhook validation failed: {e}")
+        return "Invalid signature", 400
+
+    etype = event["type"]
+    data = event["data"]["object"]
+
+    if etype == "invoice.payment_succeeded":
+        customer_email = data.get("customer_email", "")
+        if customer_email:
+            _handle_payment_succeeded(customer_email, data)
+
+    elif etype in ("customer.subscription.deleted", "customer.subscription.updated"):
+        _handle_subscription_updated(data)
+
+    return "ok", 200
+
+
+def _handle_payment_succeeded(email: str, invoice: dict):
+    try:
+        lines = invoice.get("lines", {}).get("data", [])
+        period_end = None
+        if lines:
+            ts = lines[0].get("period", {}).get("end", 0)
+            if ts:
+                period_end = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+
+        with get_conn() as conn:
+            user = conn.execute(
+                text("SELECT id FROM users WHERE email=:email"), {"email": email}
+            ).fetchone()
+            if user and period_end:
+                conn.execute(text("""
+                    UPDATE subscriptions SET status='active', current_period_end=:period, updated_at=:now
+                    WHERE user_id=:uid
+                """), {"period": period_end, "now": datetime.now(timezone.utc).isoformat(), "uid": user[0]})
+                conn.commit()
+                logger.info(f"Payment succeeded for {email}")
+    except Exception as e:
+        logger.error(f"Error handling payment succeeded: {e}")
+
+
+def _handle_subscription_updated(subscription: dict):
+    try:
+        status = subscription.get("status", "")
+        customer_id = subscription.get("customer", "")
+        if not customer_id:
+            return
+
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+        customer = stripe.Customer.retrieve(customer_id)
+        email = customer.get("email", "")
+        if not email:
+            return
+
+        db_status = "active" if status == "active" else "cancelled"
+        with get_conn() as conn:
+            user = conn.execute(
+                text("SELECT id FROM users WHERE email=:email"), {"email": email}
+            ).fetchone()
+            if user:
+                conn.execute(text(
+                    "UPDATE subscriptions SET status=:status, updated_at=:now WHERE user_id=:uid"
+                ), {"status": db_status, "now": datetime.now(timezone.utc).isoformat(), "uid": user[0]})
+                conn.commit()
+                logger.info(f"Subscription {status} for {email}")
+    except Exception as e:
+        logger.error(f"Error handling subscription update: {e}")
