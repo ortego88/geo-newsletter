@@ -13,7 +13,7 @@ from web.db_engine import get_engine
 
 PLANS = {
     "basic": {
-        "name": "Básica",
+        "name": "Básico",
         "name_en": "Basic",
         "price_monthly": 19.99,
         "price_yearly": 119.99,

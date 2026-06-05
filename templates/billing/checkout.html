@@ -44,7 +44,7 @@
               {{ p_val.name }} — {{ p_val.price_monthly }}€/mes (mensual)
             </option>
             <option value="{{ p_key }}__yearly" {% if p_key == plan and billing_cycle == 'yearly' %}selected{% endif %}>
-              {{ p_val.name }} — {{ "%.2f"|format(p_val.price_yearly / 12) }}€/mes · {{ p_val.price_yearly }}€/año ✦ Ahorra 2 meses
+              {{ p_val.name }} — {{ plans_yearly_monthly[p_key] }}€/mes · {{ p_val.price_yearly }}€/año ✦ Ahorra 2 meses
             </option>
             {% endfor %}
           </select>

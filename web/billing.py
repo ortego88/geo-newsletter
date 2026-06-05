@@ -53,6 +53,7 @@ def subscribe(plan):
         return redirect(url_for("billing.pricing"))
     plan_config = PLANS[plan]
     billing_cycle = request.args.get("cycle", "monthly")
+    plans_yearly_monthly = {k: round(v["price_yearly"] / 12, 2) for k, v in PLANS.items()}
     return render_template(
         "billing/checkout.html",
         plan=plan,
@@ -60,6 +61,7 @@ def subscribe(plan):
         billing_cycle=billing_cycle,
         stripe_pk=STRIPE_PUBLISHABLE_KEY,
         plans=PLANS,
+        plans_yearly_monthly=plans_yearly_monthly,
     )
 
 
@@ -73,6 +75,7 @@ def checkout_trial():
     next_step = request.args.get("next_step", "")
     trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
     has_payment_method = _get_user_payment_method(current_user.id) is not None
+    plans_yearly_monthly = {k: round(v["price_yearly"] / 12, 2) for k, v in PLANS.items()}
     return render_template(
         "billing/checkout.html",
         plan=plan,
@@ -84,6 +87,7 @@ def checkout_trial():
         has_payment_method=has_payment_method,
         next_step=next_step,
         plans=PLANS,
+        plans_yearly_monthly=plans_yearly_monthly,
     )
 
 
