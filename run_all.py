@@ -259,26 +259,7 @@ def run_pipeline_cycle():
 
         # Price signals based on 24h change: DISABLED.
         # Describing past price movement doesn't predict future direction.
-        # Active sources: news via Claude (>=70% conf) + microstructure signals.
-
-        # Market microstructure signals (funding rates, order book, liquidations)
-        try:
-            from src.services.market_microstructure import scan_microstructure_signals
-            micro_signals = scan_microstructure_signals()
-            for ms in micro_signals:
-                asset = ms.get("suggested_asset", "")
-                price_now = get_price(asset) or 0.0
-                if price_now <= 0:
-                    continue
-                pred_id = tracker.save_prediction(ms, price_now)
-                if pred_id:
-                    ms["prediction_id"] = pred_id
-                    ms["price_at_prediction"] = price_now
-                    events.append(ms)
-            if micro_signals:
-                logger.info(f"🔬 {len(micro_signals)} señales de microestructura guardadas")
-        except Exception as e:
-            logger.warning(f"Error en microstructure signals: {e}")
+        # Active sources: news via Claude (>=70% conf) + microstructure (separate 3-min job)
 
         if not events:
             return
@@ -338,6 +319,37 @@ def run_gem_scan_cycle():
         logger.warning(f"Error en gem scan: {e}")
 
 
+def run_microstructure_cycle():
+    """
+    Runs every 3 minutes to catch whale trades/funding rate signals.
+    Separate from the 10-min news pipeline to avoid missing short-lived events.
+    """
+    try:
+        from src.services.market_microstructure import scan_microstructure_signals
+        from src.services.real_price_fetcher import get_price
+        micro_signals = scan_microstructure_signals()
+        if not micro_signals:
+            return
+
+        events = []
+        for ms in micro_signals:
+            asset = ms.get("suggested_asset", "")
+            price_now = get_price(asset) or 0.0
+            if price_now <= 0:
+                continue
+            pred_id = tracker.save_prediction(ms, price_now)
+            if pred_id:
+                ms["prediction_id"] = pred_id
+                ms["price_at_prediction"] = price_now
+                events.append(ms)
+
+        if events:
+            logger.info(f"🔬 {len(events)} señales de microestructura guardadas")
+            _send_pipeline_alerts(events)
+    except Exception as e:
+        logger.warning(f"Error en microstructure cycle: {e}")
+
+
 def start_scheduler():
     validator.start()
     scheduler = BackgroundScheduler()
@@ -346,6 +358,14 @@ def start_scheduler():
         "interval",
         minutes=10,
         id="pipeline_cycle",
+        next_run_time=datetime.now(),
+    )
+    # Microstructure: every 3 minutes (whale trades window = 3 min, no blind spots)
+    scheduler.add_job(
+        run_microstructure_cycle,
+        "interval",
+        minutes=3,
+        id="microstructure_cycle",
         next_run_time=datetime.now(),
     )
     # Gem scanner: every 4 hours (max 1 signal/cycle = ~6 checks/day)

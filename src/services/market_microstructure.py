@@ -266,7 +266,7 @@ def get_large_trades(symbol: str = "BTCUSDT", min_usd: float = 200_000) -> dict 
 
         trades = resp.json()
         now_ms = time.time() * 1000
-        window_ms = 5 * 60 * 1000  # last 5 minutes
+        window_ms = 3 * 60 * 1000  # last 3 minutes (scanner runs every 3 min)
 
         recent = [t for t in trades if now_ms - t["time"] <= window_ms]
         if not recent:
