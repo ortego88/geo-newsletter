@@ -14,11 +14,20 @@ STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_placeholde
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-# Live Stripe price IDs
+# Stripe price IDs — live by default, overridable via env for staging/test
 STRIPE_PRICE_IDS = {
-    "basic":   {"monthly": "price_1TezhcB3AvOaSpMMtbU5ngRd", "yearly": "price_1TezhdB3AvOaSpMMm4roa8mG"},
-    "premium": {"monthly": "price_1TezheB3AvOaSpMMcgZV2kJ5", "yearly": "price_1TezheB3AvOaSpMMjzV9QlXf"},
-    "pro":     {"monthly": "price_1TezhfB3AvOaSpMM6zrXI4gO", "yearly": "price_1TezhgB3AvOaSpMMoSGPnGTT"},
+    "basic": {
+        "monthly": os.getenv("STRIPE_PRICE_BASIC_MONTHLY", "price_1TezhcB3AvOaSpMMtbU5ngRd"),
+        "yearly":  os.getenv("STRIPE_PRICE_BASIC_YEARLY",  "price_1TezhdB3AvOaSpMMm4roa8mG"),
+    },
+    "premium": {
+        "monthly": os.getenv("STRIPE_PRICE_PREMIUM_MONTHLY", "price_1TezheB3AvOaSpMMcgZV2kJ5"),
+        "yearly":  os.getenv("STRIPE_PRICE_PREMIUM_YEARLY",  "price_1TezheB3AvOaSpMMjzV9QlXf"),
+    },
+    "pro": {
+        "monthly": os.getenv("STRIPE_PRICE_PRO_MONTHLY", "price_1TezhfB3AvOaSpMM6zrXI4gO"),
+        "yearly":  os.getenv("STRIPE_PRICE_PRO_YEARLY",  "price_1TezhgB3AvOaSpMMoSGPnGTT"),
+    },
 }
 
 
