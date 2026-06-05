@@ -180,16 +180,16 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events (score >= 60, confidence >= 65)
+    # Step 1: filter alertable events (score >= 60, confidence >= 60)
     resolved = [
         e for e in events
         if e.get("score", 0) >= 60
         and e.get("analysis")
-        and e.get("analysis", {}).get("confidence", 0) >= 65
+        and e.get("analysis", {}).get("confidence", 0) >= 60
     ]
 
     if not resolved:
-        logger.info("Sin eventos con score >= 60 y confidence >= 65 para alertar")
+        logger.info("Sin eventos con score >= 60 y confidence >= 60 para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
@@ -264,7 +264,7 @@ def run_pipeline_cycle():
                 logger.info(f"📊 {len(price_events)} señales de precio → analizando con Claude...")
                 batch_results = analyze_events_batch(price_events)
                 for pe, analysis in zip(price_events, batch_results):
-                    if analysis is None or analysis.get("confidence", 0) < 65:
+                    if analysis is None or analysis.get("confidence", 0) < 60:
                         continue
                     pe["analysis"] = analysis
                     assets = analysis.get("most_affected_assets", [])
