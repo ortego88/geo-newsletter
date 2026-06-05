@@ -257,79 +257,9 @@ def run_pipeline_cycle():
             events = []
             logger.info("Sin eventos de noticias en este ciclo.")
 
-        # Check for price-based signals (large movements)
-        # Hard cap: max 3 price signals per cycle to prevent spam when cooldowns expire together.
-        # Prioritize largest moves.
-        MAX_PRICE_SIGNALS_PER_CYCLE = 3
-
-        try:
-            from src.services.price_signals import check_price_signals
-            from src.services.real_price_fetcher import get_price
-            price_events = check_price_signals()
-            if price_events:
-                # Sort by absolute change descending, take only the top 3
-                price_events = sorted(price_events, key=lambda e: abs(e.get("_change_pct", 0)), reverse=True)
-                price_events = price_events[:MAX_PRICE_SIGNALS_PER_CYCLE]
-                if len(price_events) == MAX_PRICE_SIGNALS_PER_CYCLE:
-                    logger.info(f"📊 Price signals capped at {MAX_PRICE_SIGNALS_PER_CYCLE}/cycle (largest moves selected)")
-                saved_count = 0
-                large_moves = [pe for pe in price_events if abs(pe.get("_change_pct", 0)) >= 5]
-                moderate_moves = [pe for pe in price_events if abs(pe.get("_change_pct", 0)) < 5]
-
-                for pe in large_moves:
-                    asset = pe.get("suggested_asset", "")
-                    change = pe.get("_change_pct", 0)
-                    # Get price twice with a short gap to avoid stale cache collisions
-                    price_now = get_price(asset) or 0.0
-                    if price_now <= 0:
-                        continue
-                    # Sanity check: price must be within 5x of the batch cache implied price
-                    # (batch cache stores 24h change, we can estimate rough range)
-                    # If price seems wildly wrong (e.g. ADA price stored for GRT), skip
-                    batch_change = pe.get("_change_pct", 0)
-                    if batch_change != 0:
-                        # Price 24h ago = price_now / (1 + change/100)
-                        implied_prev = price_now / (1 + batch_change / 100)
-                        if implied_prev <= 0 or (price_now / implied_prev) > 20 or (implied_prev / price_now) > 20:
-                            logger.warning(f"Price sanity check failed for {asset}: price={price_now}, change={batch_change}% — skipping")
-                            continue
-                    direction = "down" if change < 0 else "up"
-                    pe["analysis"] = {
-                        "direction": direction,
-                        "confidence": 70,
-                        "most_affected_assets": [asset],
-                        "timeframe": "hours",
-                        "reasoning": f"{asset} {'pierde' if change < 0 else 'gana'} {abs(change):.1f}% en 24h — movimiento en curso",
-                        "signal_strength": "high" if abs(change) >= 8 else "medium",
-                        "verification_window_hours": 6,
-                    }
-                    pred_id = tracker.save_prediction(pe, price_now)
-                    if pred_id:
-                        pe["prediction_id"] = pred_id
-                        pe["price_at_prediction"] = price_now
-                        events.append(pe)
-                        saved_count += 1
-
-                if moderate_moves:
-                    from src.services.claude_analyzer import analyze_events_batch
-                    batch_results = analyze_events_batch(moderate_moves)
-                    for pe, analysis in zip(moderate_moves, batch_results):
-                        if analysis is None or analysis.get("confidence", 0) < 70:
-                            continue
-                        pe["analysis"] = analysis
-                        asset = pe.get("suggested_asset", "")
-                        price_now = get_price(asset) or 0.0
-                        if price_now <= 0:
-                            continue
-                        pred_id = tracker.save_prediction(pe, price_now)
-                        if pred_id:
-                            pe["prediction_id"] = pred_id
-                            events.append(pe)
-                            saved_count += 1
-
-                logger.info(f"📊 {saved_count} señales de precio guardadas ({len(large_moves)} directas, {len(moderate_moves)} via Claude)")
-        except Exception as e:
-            logger.warning(f"Error en price_signals: {e}")
+        # Price signals based on 24h change: DISABLED.
+        # Describing past price movement doesn't predict future direction.
+        # Active sources: news via Claude (>=70% conf) + microstructure signals.
 
         # Market microstructure signals (funding rates, order book, liquidations)
         try:
