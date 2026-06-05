@@ -113,42 +113,19 @@
           </div>
         {% endif %}
 
-        <form method="POST" action="/subscribe/process" id="payment-form" class="space-y-4">
+        <!-- Stripe Checkout: redirects to Stripe hosted payment page -->
+        <form method="POST" action="/stripe/checkout" id="payment-form" class="space-y-4">
           <input type="hidden" name="plan" value="{{ plan }}">
-          <input type="hidden" name="billing_cycle" value="{{ billing_cycle }}">
+          <input type="hidden" name="cycle" value="{{ billing_cycle }}">
           <input type="hidden" name="is_trial" value="{% if is_trial %}1{% else %}0{% endif %}">
-          <input type="hidden" name="next_step" value="{{ next_step or '' }}">
-          <input type="hidden" name="stripe_token" id="stripe-token" value="">
 
-          <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">Número de tarjeta</label>
-            <input type="text" name="card_number" id="card-number" maxlength="19"
-              placeholder="4242 4242 4242 4242"
-              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-              oninput="formatCardNumber(this)">
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Caducidad</label>
-              <input type="text" name="card_expiry" maxlength="5"
-                placeholder="MM/AA"
-                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
-                oninput="formatExpiry(this)">
+          <!-- Stripe logo + security notice -->
+          <div class="bg-slate-900/50 rounded-xl border border-slate-700 p-5 text-center">
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <svg class="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="currentColor"><path d="M13.479 9.883c-1.626-.604-2.512-1.067-2.512-1.803 0-.622.511-1.024 1.306-1.024 1.56 0 3.143.582 4.24 1.134l.618-3.803C16.047 3.78 14.336 3 12.177 3 9.282 3 7.196 4.631 7.196 7.16c0 2.286 1.646 3.469 4.077 4.314 1.74.625 2.328 1.064 2.328 1.803 0 .657-.556 1.089-1.458 1.089-1.357 0-3.28-.62-4.55-1.35l-.638 3.852C8.2 17.725 10.112 18.5 12.44 18.5c3.115 0 5.15-1.536 5.15-4.204 0-2.344-1.474-3.499-4.111-4.413z"/></svg>
+              <span class="text-slate-300 text-sm font-medium">Pago seguro con Stripe</span>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">CVC</label>
-              <input type="text" name="card_cvc" maxlength="4"
-                placeholder="123"
-                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">Nombre en la tarjeta</label>
-            <input type="text" name="card_name"
-              placeholder="Tu nombre completo"
-              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+            <p class="text-slate-500 text-xs">Serás redirigido a la página de pago de Stripe. Tu información de tarjeta nunca pasa por nuestros servidores.</p>
           </div>
 
           <!-- Terms & Conditions checkbox -->
@@ -169,18 +146,11 @@
           <button type="submit" id="submit-btn" disabled
             class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 rounded-xl transition mt-2 opacity-50 cursor-not-allowed">
             {% if is_trial %}
-              Iniciar prueba gratuita
+              Iniciar prueba gratuita →
             {% else %}
-              <span id="submit-btn-text">Confirmar pago — {{ plan_config.price_monthly }}€</span>
+              Continuar al pago — {{ plan_config.price_monthly }}€/mes →
             {% endif %}
           </button>
-
-          <div class="text-center">
-            <p class="text-slate-500 text-xs">— o —</p>
-            <button type="button" class="w-full mt-3 bg-[#003087] hover:bg-[#002475] text-white font-semibold py-3 rounded-xl transition opacity-60 cursor-not-allowed" disabled>
-              <span class="text-[#009cde]">Pay</span><span class="text-white">Pal</span> — Próximamente
-            </button>
-          </div>
         </form>
 
         <p class="mt-4 text-center text-xs text-slate-600 flex items-center justify-center gap-1">
