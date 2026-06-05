@@ -242,6 +242,22 @@ def create_app():
                 where = f"WHERE UPPER(asset) IN ({available_in_clause}) AND predicted_at <= :delay_cutoff"
                 params: dict = {"delay_cutoff": delay_cutoff}
 
+                # Only show predictions from after the user's registration date
+                user_created_at = current_user.created_at if hasattr(current_user, 'created_at') else None
+                if not user_created_at:
+                    try:
+                        with get_conn() as app_conn:
+                            row = app_conn.execute(
+                                text("SELECT created_at FROM users WHERE id = :uid"),
+                                {"uid": current_user.id}
+                            ).fetchone()
+                            user_created_at = row[0] if row else None
+                    except Exception:
+                        pass
+                if user_created_at:
+                    where += " AND predicted_at >= :user_since"
+                    params["user_since"] = str(user_created_at)[:19]
+
                 # Time filter
                 if time_filter == "24h":
                     cutoff = datetime.utcnow() - timedelta(hours=24)

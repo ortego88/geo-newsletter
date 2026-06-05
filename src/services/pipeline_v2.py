@@ -506,7 +506,7 @@ class AnalysisPipeline:
 
             event_score = event.get("score", 0)
             event_confidence = analysis.get("confidence", 0)
-            if event_score < 60 or event_confidence < 60:
+            if event_score < 60 or event_confidence < 70:
                 logger.info(
                     f"   ⏭️ No guardada (score={event_score}, conf={event_confidence}): "
                     f"{event.get('title', '')[:55]}"
@@ -582,11 +582,11 @@ class AnalysisPipeline:
                 market_bearish = btc_7d <= -5
 
                 if asset_bearish and market_bearish:
-                    required_conf = 80
+                    required_conf = 90  # almost impossible — block UP in full bear market
                 elif asset_bearish or market_bearish:
-                    required_conf = 75
+                    required_conf = 85
                 else:
-                    required_conf = 60
+                    required_conf = 80  # UP always needs 80+
 
                 if event_confidence < required_conf:
                     logger.info(

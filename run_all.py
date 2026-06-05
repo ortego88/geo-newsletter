@@ -180,16 +180,20 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events (score >= 60, confidence >= 60)
-    resolved = [
-        e for e in events
-        if e.get("score", 0) >= 60
-        and e.get("analysis")
-        and e.get("analysis", {}).get("confidence", 0) >= 60
-    ]
+    # Step 1: filter alertable events
+    # DOWN requires confidence >= 70, UP requires confidence >= 80 (much harder to predict)
+    resolved = []
+    for e in events:
+        if not e.get("analysis") or e.get("score", 0) < 60:
+            continue
+        conf = e.get("analysis", {}).get("confidence", 0)
+        direction = e.get("analysis", {}).get("direction", "")
+        min_conf = 80 if direction == "up" else 70
+        if conf >= min_conf:
+            resolved.append(e)
 
     if not resolved:
-        logger.info("Sin eventos con score >= 60 y confidence >= 60 para alertar")
+        logger.info("Sin eventos con confianza suficiente (DOWN≥70, UP≥80) para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
@@ -304,7 +308,7 @@ def run_pipeline_cycle():
                     from src.services.claude_analyzer import analyze_events_batch
                     batch_results = analyze_events_batch(moderate_moves)
                     for pe, analysis in zip(moderate_moves, batch_results):
-                        if analysis is None or analysis.get("confidence", 0) < 60:
+                        if analysis is None or analysis.get("confidence", 0) < 70:
                             continue
                         pe["analysis"] = analysis
                         asset = pe.get("suggested_asset", "")
