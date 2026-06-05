@@ -321,8 +321,8 @@ def cancel():
 @login_required
 def stripe_checkout():
     """Creates a Stripe Checkout session and redirects to hosted payment page."""
-    if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith("sk_live_"):
-        flash("Pagos en producción no configurados.", "error")
+    if not STRIPE_SECRET_KEY or not STRIPE_SECRET_KEY.startswith(("sk_live_", "sk_test_")):
+        flash("Pagos no configurados. Contacta con soporte.", "error")
         return redirect(url_for("billing.pricing"))
 
     plan = request.form.get("plan", "basic")
