@@ -433,7 +433,7 @@ def scan_microstructure_signals() -> list[dict]:
             signals.append(_build_signal(asset, "up", confidence, reasoning, "whale_accumulation", lt["large_buy_usd"]))
 
     # 3. Liquidation cascades
-    for sym, asset in MAJOR_ASSETS[:3]:  # BTC, ETH, SOL only (futures data)
+    for sym, asset in [("BTCUSDT","BTC"), ("ETHUSDT","ETH"), ("SOLUSDT","SOL")]:
         liq = get_liquidations_24h(sym)
         if not liq:
             continue
