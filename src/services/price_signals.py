@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 logger = logging.getLogger("price_signals")
 
 THRESHOLD_PCT = 2.5
-COOLDOWN_SECONDS = 4 * 3600
+COOLDOWN_SECONDS = 8 * 3600  # 8h cooldown per asset — prevents same asset spamming twice a day
 
 # All tracked crypto assets — rotated in batches to avoid API rate limits
 ALL_ASSETS = [
