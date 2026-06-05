@@ -113,17 +113,19 @@
   <!-- SIMULATOR -->
   <!-- Best performers (last 7 days) -->
   {% if best_performers and (best_performers.best_gain.pct > 0 or best_performers.best_avoided.pct > 0) %}
+  {% set has_gain = best_performers.best_gain.pct > 0 %}
+  {% set has_avoided = best_performers.best_avoided.pct > 0 %}
   <section class="py-12 px-6">
     <div class="max-w-4xl mx-auto">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {% if best_performers.best_gain.pct > 0 %}
+      <div class="grid grid-cols-1 {% if has_gain and has_avoided %}md:grid-cols-2{% endif %} gap-4 {% if not (has_gain and has_avoided) %}max-w-sm mx-auto{% endif %}">
+        {% if has_gain %}
         <div class="bg-gradient-to-br from-emerald-900/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 text-center">
           <p class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="landing.best_gain_label">Mejor rentabilidad 7 días</p>
           <p class="text-4xl font-extrabold text-white mb-1">+{{ best_performers.best_gain.pct }}%</p>
           <p class="text-slate-400 text-sm">{{ best_performers.best_gain.asset }} <span data-i18n="landing.best_gain_suffix">siguiendo las alertas</span></p>
         </div>
         {% endif %}
-        {% if best_performers.best_avoided.pct > 0 %}
+        {% if has_avoided %}
         <div class="bg-gradient-to-br from-amber-900/30 to-slate-900 border border-amber-500/30 rounded-2xl p-6 text-center">
           <p class="text-amber-400 text-xs font-bold uppercase tracking-widest mb-2" data-i18n="landing.best_avoided_label">Mayores pérdidas evitadas 7 días</p>
           <p class="text-4xl font-extrabold text-white mb-1">-{{ best_performers.best_avoided.pct }}%</p>
