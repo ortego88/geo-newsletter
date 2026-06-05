@@ -219,6 +219,65 @@ def get_open_interest_change(symbol: str = "BTCUSDT") -> dict | None:
     return _cached(f"oi_{symbol}", fetch, ttl=300)
 
 
+def get_large_trades(symbol: str = "BTCUSDT", min_usd: float = 200_000) -> dict | None:
+    """
+    Detects large individual trades in the last ~500 trades on Binance spot.
+    A single trade >$500K is unusual and indicates institutional activity.
+    Multiple large sells in a short window = distribution signal.
+
+    Binance spot shows real buying/selling pressure (not just derivatives).
+    isBuyerMaker=True means the buyer was the passive side → SELL order hit the book.
+    """
+    def fetch():
+        resp = requests.get(
+            f"{_BINANCE_SPOT}/trades",
+            params={"symbol": symbol, "limit": 500},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return None
+
+        trades = resp.json()
+        now_ms = time.time() * 1000
+        window_ms = 5 * 60 * 1000  # last 5 minutes
+
+        recent = [t for t in trades if now_ms - t["time"] <= window_ms]
+        if not recent:
+            return None
+
+        large_sells = []
+        large_buys = []
+
+        for t in recent:
+            usd = float(t["qty"]) * float(t["price"])
+            if usd < min_usd:
+                continue
+            # isBuyerMaker=True → seller initiated (aggressive sell)
+            if t["isBuyerMaker"]:
+                large_sells.append(usd)
+            else:
+                large_buys.append(usd)
+
+        total_sell_usd = sum(large_sells)
+        total_buy_usd = sum(large_buys)
+        sell_count = len(large_sells)
+        buy_count = len(large_buys)
+
+        return {
+            "symbol": symbol,
+            "window_minutes": 5,
+            "large_sell_usd": round(total_sell_usd),
+            "large_buy_usd": round(total_buy_usd),
+            "large_sell_count": sell_count,
+            "large_buy_count": buy_count,
+            "sell_dominance": total_sell_usd > total_buy_usd * 2.5 and total_sell_usd > 2_000_000,
+            "buy_dominance": total_buy_usd > total_sell_usd * 2.5 and total_buy_usd > 2_000_000,
+            "whale_dump": sell_count >= 5 and total_sell_usd > 3_000_000,
+            "whale_accumulation": buy_count >= 5 and total_buy_usd > 3_000_000,
+        }
+    return _cached(f"large_trades_{symbol}", fetch, ttl=60)
+
+
 def scan_microstructure_signals() -> list[dict]:
     """
     Main function: scans all microstructure signals and returns
@@ -252,14 +311,15 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "up", confidence, reasoning, "funding_extreme_short", f["rate_pct"]))
 
-    # 2. Order book scan for major assets
-    MAJOR_ASSETS = [("BTCUSDT", "BTC"), ("ETHUSDT", "ETH"), ("SOLUSDT", "SOL")]
+    # 2. Order book + large trades scan for major assets
+    MAJOR_ASSETS = [
+        ("BTCUSDT", "BTC"), ("ETHUSDT", "ETH"), ("SOLUSDT", "SOL"),
+        ("XRPUSDT", "XRP"), ("BNBUSDT", "BNB"), ("ADAUSDT", "ADA"),
+    ]
     for sym, asset in MAJOR_ASSETS:
+        # Order book imbalance
         ob = get_order_book_imbalance(sym)
-        if not ob:
-            continue
-        if ob["strong_sell_pressure"] and ob["ask_volume_usd"] > 2_000_000:
-            # Strong ask wall with large volume
+        if ob and ob["strong_sell_pressure"] and ob["ask_volume_usd"] > 2_000_000:
             confidence = 72
             reasoning = (
                 f"Presión vendedora fuerte en el libro de órdenes de {asset}. "
@@ -268,13 +328,47 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "down", confidence, reasoning, "orderbook_sell_wall", ob["bid_ratio"]))
 
+        # Large trades — real-time whale activity
+        # $200K threshold captures institutional-sized trades in all market caps
+        lt = get_large_trades(sym, min_usd=200_000)
+        if lt:
+            if lt["whale_dump"]:
+                # 3+ trades >$500K selling in 5 min = $5M+ distribution
+                confidence = 78
+                reasoning = (
+                    f"Actividad de ballena detectada en {asset}: "
+                    f"{lt['large_sell_count']} ventas grandes (${lt['large_sell_usd']:,} total) "
+                    f"en los últimos 5 minutos. "
+                    f"Distribución institucional activa — presión bajista inminente."
+                )
+                signals.append(_build_signal(asset, "down", confidence, reasoning, "whale_dump", lt["large_sell_usd"]))
+
+            elif lt["sell_dominance"]:
+                # Sell side dominant with large trades
+                confidence = 70
+                reasoning = (
+                    f"Dominio vendedor en grandes trades de {asset}: "
+                    f"${lt['large_sell_usd']:,} en ventas vs ${lt['large_buy_usd']:,} en compras (últimos 5 min). "
+                    f"Presión bajista sostenida por grandes actores."
+                )
+                signals.append(_build_signal(asset, "down", confidence, reasoning, "large_sell_dominance", lt["large_sell_usd"]))
+
+            elif lt["whale_accumulation"]:
+                # 3+ large buys = institutional accumulation
+                confidence = 75
+                reasoning = (
+                    f"Acumulación institucional en {asset}: "
+                    f"{lt['large_buy_count']} compras grandes (${lt['large_buy_usd']:,} total) "
+                    f"en los últimos 5 minutos. Demanda institucional activa."
+                )
+                signals.append(_build_signal(asset, "up", confidence, reasoning, "whale_accumulation", lt["large_buy_usd"]))
+
     # 3. Liquidation cascades
-    for sym, asset in MAJOR_ASSETS:
+    for sym, asset in MAJOR_ASSETS[:3]:  # BTC, ETH, SOL only (futures data)
         liq = get_liquidations_24h(sym)
         if not liq:
             continue
         if liq.get("cascade_down") and liq["long_liquidations_usd"] > 10_000_000:
-            # $10M+ in long liquidations = cascade is large enough to matter
             confidence = 75
             reasoning = (
                 f"Cascade de liquidaciones en largo en {asset}: "
