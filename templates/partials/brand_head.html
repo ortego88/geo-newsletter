@@ -1,31 +1,14 @@
-<!-- Trianio Brand: Favicon + Fonts + Tailwind -->
+<!-- Trianio Brand: Favicon + Fonts (optimized) + Compiled Tailwind -->
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        emerald: {
-          300: '#F5D98A',
-          400: '#E8B84B',
-          500: '#C8922A',
-          600: '#A87720',
-          700: '#8A6018',
-        }
-      },
-      fontFamily: {
-        'display': ['"DM Serif Display"', 'serif'],
-        'mono': ['"DM Mono"', 'monospace'],
-        'sans': ['"DM Sans"', 'sans-serif'],
-      }
-    }
-  }
-}
-</script>
-<!-- Consent Mode v2 + GA4 + GTM -->
+<!-- Fonts: preload primary, swap to avoid render block -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
+<!-- Compiled Tailwind (static, no runtime JS) -->
+<link rel="stylesheet" href="/static/css/tailwind.min.css">
+<!-- Consent Mode v2 (inline, minimal) -->
 <script>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
@@ -39,14 +22,13 @@ gtag('consent', 'default', {
 gtag('js', new Date());
 gtag('config', 'G-CH7MJ5C6VC');
 </script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-CH7MJ5C6VC"></script>
-<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+<!-- GA4 + GTM deferred -->
+<script defer src="https://www.googletagmanager.com/gtag/js?id=G-CH7MJ5C6VC"></script>
+<script defer>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.defer=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-P5XZX4DR');</script>
-<!-- End Google Tag Manager -->
 <script src="/static/js/datalayer.js" defer></script>
 <script src="/static/js/push.js" defer></script>
 <style>

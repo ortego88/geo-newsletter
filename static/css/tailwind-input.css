@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@source "../../templates";
+@source "../js";
+
+@theme {
+  --color-emerald-300: #F5D98A;
+  --color-emerald-400: #E8B84B;
+  --color-emerald-500: #C8922A;
+  --color-emerald-600: #A87720;
+  --color-emerald-700: #8A6018;
+  --font-family-display: "DM Serif Display", serif;
+  --font-family-mono: "DM Mono", monospace;
+  --font-family-sans: "DM Sans", sans-serif;
+}
