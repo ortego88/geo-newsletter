@@ -17,7 +17,24 @@ logger = logging.getLogger("price_signals")
 
 THRESHOLD_PCT = 2.5
 COOLDOWN_SECONDS = 4 * 3600
-TOP_ASSETS = ["BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK"]
+
+# All tracked crypto assets — rotated in batches to avoid API rate limits
+ALL_ASSETS = [
+    # Tier 1: Top coins (checked every cycle)
+    "BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK",
+    # Tier 2: Mid caps (rotated)
+    "SHIB", "TON", "TRX", "LTC", "HBAR", "UNI", "ATOM", "XLM", "NEAR",
+    "ARB", "OP", "MATIC", "SUI", "ICP", "FIL", "IMX", "STX", "MNT",
+    # Tier 3: DeFi, AI, Gaming (rotated)
+    "AAVE", "MKR", "CRV", "LDO", "DYDX", "SNX", "PENDLE", "JUPITER",
+    "FET", "RENDER", "INJ", "TAO", "ONDO", "AIOZ",
+    "AXS", "SAND", "MANA", "GALA", "ENJ",
+    # Tier 4: Memecoins & others (rotated)
+    "PEPE", "WIF", "FLOKI", "BONK",
+    "CRO", "OKB", "GT", "VET", "THETA", "FTM", "EOS", "RUNE", "GRT", "KAS",
+]
+
+_cycle_index = 0
 
 _cooldowns: dict[str, float] = {}
 
@@ -53,15 +70,30 @@ def _get_24h_change(asset: str) -> float | None:
         return None
 
 
+def _get_current_batch() -> list[str]:
+    """Returns the current batch of assets to check this cycle.
+    Tier 1 (top 10) is checked every cycle. Others rotate in batches of 15."""
+    global _cycle_index
+    tier1 = ALL_ASSETS[:10]
+    rest = ALL_ASSETS[10:]
+    batch_size = 15
+    start = (_cycle_index * batch_size) % max(len(rest), 1)
+    batch = rest[start:start + batch_size]
+    _cycle_index += 1
+    return tier1 + batch
+
+
 def check_price_signals() -> list[dict]:
     """
-    Checks top assets for significant price movements (>= THRESHOLD_PCT).
-    Returns synthetic events in article format so they go through the normal
-    pipeline (Claude analysis, scoring, etc.) — NOT pre-analyzed.
+    Checks assets for significant price movements (>= THRESHOLD_PCT).
+    Top 10 checked every cycle, rest rotated in batches.
+    Returns synthetic events for Claude analysis.
     """
     signals = []
+    assets_to_check = _get_current_batch()
+    logger.info(f"📊 Price signals: checking {len(assets_to_check)} assets")
 
-    for asset in TOP_ASSETS:
+    for asset in assets_to_check:
         if _is_on_cooldown(asset):
             continue
 
