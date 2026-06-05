@@ -91,10 +91,33 @@ def _set_cooldown(token_id: str):
     _save_cooldowns()
 
 
-def scan_dex_accumulation() -> list[dict]:
+def _volume_spike_ratio(volume_1h: float, volume_6h: float, volume_24h: float) -> float:
     """
-    Detect tokens with volume spike but price barely moved = accumulation phase.
-    Uses DexScreener to find tokens where volume is exploding but price is flat.
+    Calculates volume anomaly score comparing recent 1h vs baseline (6h avg per hour).
+    A ratio >5x means the last hour had 5x more volume than the hourly average.
+    This is the core signal for pre-pump accumulation detection.
+    """
+    if volume_6h <= 0 or volume_24h <= 0:
+        return 0
+    baseline_per_hour = volume_6h / 6
+    if baseline_per_hour <= 0:
+        return 0
+    return volume_1h / baseline_per_hour
+
+
+def scan_dex_volume_anomaly() -> list[dict]:
+    """
+    Detects tokens where volume in the last 1h is anomalously high vs their
+    recent baseline (6h average per hour), while price has NOT pumped yet.
+
+    Signal logic:
+    - Volume spike ratio >= 5x: extraordinary accumulation
+    - Price change 1h < 8%: hasn't pumped yet (still early)
+    - Buys > Sells * 1.5: clear net buying pressure
+    - Liquidity >= $50K: not a rug
+    - Token age >= 48h: reduces rug risk
+
+    This pattern typically precedes pumps by 30-180 minutes.
     """
     signals = []
     try:
@@ -109,7 +132,7 @@ def scan_dex_accumulation() -> list[dict]:
         if not isinstance(tokens, list):
             return []
 
-        for token in tokens[:30]:
+        for token in tokens[:40]:
             token_address = token.get("tokenAddress", "")
             chain = token.get("chainId", "")
             if not token_address or _is_on_cooldown(token_address):
@@ -120,52 +143,62 @@ def scan_dex_accumulation() -> list[dict]:
                 continue
 
             pair = pair_data[0]
-            price_change_24h = pair.get("priceChange", {}).get("h24", 0) or 0
-            price_change_1h = pair.get("priceChange", {}).get("h1", 0) or 0
-            volume_24h = pair.get("volume", {}).get("h24", 0) or 0
+            volume_1h = pair.get("volume", {}).get("h1", 0) or 0
             volume_6h = pair.get("volume", {}).get("h6", 0) or 0
+            volume_24h = pair.get("volume", {}).get("h24", 0) or 0
+            price_change_1h = pair.get("priceChange", {}).get("h1", 0) or 0
+            price_change_24h = pair.get("priceChange", {}).get("h24", 0) or 0
             liquidity = pair.get("liquidity", {}).get("usd", 0) or 0
             fdv = pair.get("fdv", 0) or 0
+            txns_1h = pair.get("txns", {}).get("h1", {})
             txns_24h = pair.get("txns", {}).get("h24", {})
-            buys = txns_24h.get("buys", 0)
-            sells = txns_24h.get("sells", 0)
+            buys_1h = txns_1h.get("buys", 0)
+            sells_1h = txns_1h.get("sells", 0)
+            buys_24h = txns_24h.get("buys", 0)
+            sells_24h = txns_24h.get("sells", 0)
             pair_created = pair.get("pairCreatedAt", 0)
 
+            # Basic filters
             if liquidity < MIN_LIQUIDITY_USD:
                 continue
             if fdv > MAX_MARKET_CAP:
                 continue
+            if volume_1h < 10_000:  # min $10K in last hour to matter
+                continue
 
-            # Age check: not too new (rug risk), not too old
+            # Age check
             if pair_created:
                 age_hours = (time.time() * 1000 - pair_created) / (1000 * 3600)
                 if age_hours < MIN_PAIR_AGE_HOURS or age_hours > MAX_PAIR_AGE_DAYS * 24:
                     continue
 
-            # KEY SIGNAL: Volume exploding but price NOT pumped yet
-            # This is the accumulation pattern — smart money buying before pump
-            is_accumulation = (
-                volume_24h >= MIN_VOLUME_FOR_NEW_PAIR
-                and abs(price_change_24h) <= MAX_PRICE_CHANGE_FOR_ACCUMULATION
-                and buys > sells * 1.3
-            )
-
-            # ALTERNATIVE: Price barely moved in 24h but 1h shows first signs of movement
-            is_early_breakout = (
-                abs(price_change_24h) <= 15
-                and price_change_1h >= 3
-                and volume_6h > 0
-                and volume_24h / max(volume_6h, 1) < 3
-            )
-
-            if not is_accumulation and not is_early_breakout:
-                continue
-
             symbol = pair.get("baseToken", {}).get("symbol", "???")
             if symbol.upper() in _BLACKLIST:
                 continue
             name = pair.get("baseToken", {}).get("name", "")
-            signal_type = "accumulation" if is_accumulation else "early_breakout"
+
+            # CORE SIGNAL: Volume anomaly ratio
+            spike_ratio = _volume_spike_ratio(volume_1h, volume_6h, volume_24h)
+
+            # Signal 1: Pure volume anomaly (5x+) with flat price = pre-pump accumulation
+            is_volume_anomaly = (
+                spike_ratio >= 5.0
+                and abs(price_change_1h) < 8
+                and buys_1h > sells_1h * 1.5
+            )
+
+            # Signal 2: Volume anomaly (3x+) with very skewed buy/sell ratio = smart money entry
+            is_smart_money = (
+                spike_ratio >= 3.0
+                and buys_1h > sells_1h * 2.5  # 2.5x more buys than sells
+                and abs(price_change_1h) < 5
+                and volume_1h > 20_000
+            )
+
+            if not is_volume_anomaly and not is_smart_money:
+                continue
+
+            signal_type = "volume_anomaly" if is_volume_anomaly else "smart_money_entry"
 
             _set_cooldown(token_address)
             signals.append({
@@ -177,21 +210,23 @@ def scan_dex_accumulation() -> list[dict]:
                 "price_change_24h": round(price_change_24h, 1),
                 "price_change_1h": round(price_change_1h, 1),
                 "volume_24h": round(volume_24h),
+                "volume_1h": round(volume_1h),
                 "liquidity_usd": round(liquidity),
                 "fdv": round(fdv),
-                "buys_sells_ratio": round(buys / max(sells, 1), 1),
+                "buys_sells_ratio": round(buys_1h / max(sells_1h, 1), 1),
+                "spike_ratio": round(spike_ratio, 1),
                 "dex_url": pair.get("url", ""),
                 "detected_at": datetime.now(timezone.utc).isoformat(),
                 "signal_type": signal_type,
             })
             logger.info(
-                f"💎 EARLY GEM [{signal_type}]: {symbol} ({chain}) "
-                f"price_24h={price_change_24h:+.0f}% vol=${volume_24h:,.0f} "
-                f"buys/sells={buys}/{sells}"
+                f"💎 GEM [{signal_type}]: {symbol} ({chain}) "
+                f"spike={spike_ratio:.1f}x vol_1h=${volume_1h:,.0f} "
+                f"buys/sells={buys_1h}/{sells_1h} price_1h={price_change_1h:+.1f}%"
             )
 
     except Exception as e:
-        logger.warning(f"DexScreener accumulation scan error: {e}")
+        logger.warning(f"DexScreener volume anomaly scan error: {e}")
 
     return signals
 
@@ -431,20 +466,22 @@ def _get_current_price_binance(symbol: str) -> float | None:
 
 
 def run_gem_scan() -> list[dict]:
-    """Run all early-detection scanners and return combined results (max 5 per cycle)."""
+    """Run all early-detection scanners and return the best signal per cycle."""
     all_signals = []
 
-    all_signals.extend(scan_dex_accumulation())
+    all_signals.extend(scan_dex_volume_anomaly())
     all_signals.extend(scan_new_pairs_with_traction())
     all_signals.extend(scan_binance_pre_pump())
 
-    all_signals.sort(key=lambda s: s.get("volume_24h", 0), reverse=True)
+    # Sort by spike ratio first (most anomalous), then by volume
+    all_signals.sort(key=lambda s: (s.get("spike_ratio", 0), s.get("volume_24h", 0)), reverse=True)
     all_signals = all_signals[:1]
 
     if all_signals:
-        logger.info(f"💎 Gem scan: 1 signal found → {all_signals[0]['symbol']}")
+        s = all_signals[0]
+        logger.info(f"💎 Gem scan: {s['symbol']} spike={s.get('spike_ratio', 0):.1f}x vol_1h=${s.get('volume_1h', 0):,.0f}")
     else:
-        logger.info("💎 Gem scan: nothing exceptional today")
+        logger.info("💎 Gem scan: nothing exceptional this cycle")
     return all_signals
 
 
@@ -528,30 +565,35 @@ def send_gem_alerts_admin(signals: list[dict], admin_chat_id: str):
     try:
         from src.services.telegram_sender import send_telegram
 
-        for sig in signals[:5]:
+        for sig in signals[:2]:
             price_str = f"${sig.get('_price', 0):.6f}" if sig.get('_price') else "N/A"
 
-            type_emoji = {
-                "accumulation": "🔇 ACUMULACIÓN",
-                "early_breakout": "⚡ EARLY BREAKOUT",
+            type_labels = {
+                "volume_anomaly": "📊 ANOMALÍA DE VOLUMEN",
+                "smart_money_entry": "🧠 SMART MONEY",
                 "new_pair": "🆕 PAR NUEVO",
                 "binance_accumulation": "🔇 BINANCE ACUM.",
-                "early_pump": "🚀 EARLY PUMP",
-            }.get(sig.get("signal_type", ""), "💎 GEM")
+                "early_pump": "🚀 BINANCE EARLY PUMP",
+            }
+            type_label = type_labels.get(sig.get("signal_type", ""), "💎 GEM")
+
+            spike = sig.get("spike_ratio", 0)
+            vol_1h = sig.get("volume_1h", 0)
 
             msg = (
                 f"{'='*30}\n"
-                f"💎 {type_emoji}\n"
+                f"💎 GEM ALERT — {type_label}\n"
                 f"{'='*30}\n\n"
                 f"🪙 {sig['symbol']} ({sig['name']})\n"
                 f"💵 Precio: {price_str}\n"
-                f"📊 Cambio 24h: {sig['price_change_24h']:+.1f}%\n"
-                f"💰 Vol 24h: ${sig['volume_24h']:,.0f}\n"
-                f"🏦 MCap: ${sig['fdv']:,.0f}\n"
-                f"💧 Liquidez: ${sig['liquidity_usd']:,.0f}\n"
-                f"📈 Buys/Sells: {sig.get('buys_sells_ratio', 0):.1f}x\n"
+                f"📊 Cambio 1h: {sig.get('price_change_1h', 0):+.1f}% | 24h: {sig['price_change_24h']:+.1f}%\n"
+                f"⚡ Spike volumen: {spike:.1f}x la media\n"
+                f"💰 Vol 1h: ${vol_1h:,.0f} | Vol 24h: ${sig['volume_24h']:,.0f}\n"
+                f"📈 Buys/Sells (1h): {sig.get('buys_sells_ratio', 0):.1f}x\n"
+                f"🏦 MCap: ${sig['fdv']:,.0f} | Liquidez: ${sig['liquidity_usd']:,.0f}\n"
                 f"🔗 Chain: {sig['chain']}\n\n"
-                f"⏱ Validación en 7 días (+30% = correcta)\n\n"
+                f"⏱ Validación en 7 días (+30% = correcta)\n"
+                f"📡 Solo visible para el admin\n\n"
                 f"{sig['dex_url']}"
             )
             send_telegram(msg, chat_id=admin_chat_id)
