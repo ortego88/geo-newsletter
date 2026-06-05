@@ -48,26 +48,52 @@ def _set_cooldown(asset: str):
     _cooldowns[asset] = time.time()
 
 
-def _get_24h_change(asset: str) -> float | None:
-    """Gets 24h % change for a crypto asset via CoinGecko."""
+_batch_cache: dict[str, float] = {}
+_batch_cache_time: float = 0
+
+
+def _refresh_batch_cache(assets: list[str]):
+    """Fetch 24h changes for all assets in one CoinGecko API call."""
+    global _batch_cache, _batch_cache_time
+    import time as _time
+    if _time.time() - _batch_cache_time < 300:
+        return
+
     try:
         from src.services.real_price_fetcher import CRYPTO_IDS
         import requests
 
-        coin_id = CRYPTO_IDS.get(asset.upper())
-        if not coin_id:
-            return None
+        coin_ids = []
+        id_to_asset = {}
+        for a in assets:
+            cid = CRYPTO_IDS.get(a.upper())
+            if cid:
+                coin_ids.append(cid)
+                id_to_asset[cid] = a.upper()
 
-        url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true"
-        resp = requests.get(url, timeout=10)
+        ids_str = ",".join(coin_ids)
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids_str}&vs_currencies=usd&include_24hr_change=true"
+        resp = requests.get(url, timeout=15)
         if resp.status_code != 200:
-            return None
+            logger.warning(f"CoinGecko batch failed: {resp.status_code}")
+            return
 
-        data = resp.json().get(coin_id, {})
-        return data.get("usd_24h_change")
+        data = resp.json()
+        _batch_cache = {}
+        for cid, values in data.items():
+            asset = id_to_asset.get(cid)
+            if asset and "usd_24h_change" in values:
+                _batch_cache[asset] = values["usd_24h_change"]
+
+        _batch_cache_time = _time.time()
+        logger.info(f"📊 Price cache refreshed: {len(_batch_cache)} assets")
     except Exception as e:
-        logger.debug(f"Error fetching 24h change for {asset}: {e}")
-        return None
+        logger.warning(f"Error refreshing price batch: {e}")
+
+
+def _get_24h_change(asset: str) -> float | None:
+    """Gets 24h % change from the batch cache."""
+    return _batch_cache.get(asset.upper())
 
 
 def _get_current_batch() -> list[str]:
@@ -86,12 +112,13 @@ def _get_current_batch() -> list[str]:
 def check_price_signals() -> list[dict]:
     """
     Checks assets for significant price movements (>= THRESHOLD_PCT).
-    Top 10 checked every cycle, rest rotated in batches.
+    All assets fetched in one batch API call, then filtered.
     Returns synthetic events for Claude analysis.
     """
     signals = []
+    _refresh_batch_cache(ALL_ASSETS)
     assets_to_check = _get_current_batch()
-    logger.info(f"📊 Price signals: checking {len(assets_to_check)} assets")
+    logger.info(f"📊 Price signals: checking {len(assets_to_check)} assets ({len(_batch_cache)} in cache)")
 
     for asset in assets_to_check:
         if _is_on_cooldown(asset):
