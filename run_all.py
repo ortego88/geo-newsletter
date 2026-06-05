@@ -325,6 +325,25 @@ def run_pipeline_cycle():
         except Exception as e:
             logger.warning(f"Error en price_signals: {e}")
 
+        # Market microstructure signals (funding rates, order book, liquidations)
+        try:
+            from src.services.market_microstructure import scan_microstructure_signals
+            micro_signals = scan_microstructure_signals()
+            for ms in micro_signals:
+                asset = ms.get("suggested_asset", "")
+                price_now = get_price(asset) or 0.0
+                if price_now <= 0:
+                    continue
+                pred_id = tracker.save_prediction(ms, price_now)
+                if pred_id:
+                    ms["prediction_id"] = pred_id
+                    ms["price_at_prediction"] = price_now
+                    events.append(ms)
+            if micro_signals:
+                logger.info(f"🔬 {len(micro_signals)} señales de microestructura guardadas")
+        except Exception as e:
+            logger.warning(f"Error en microstructure signals: {e}")
+
         if not events:
             return
         logger.info(f"✅ {len(events)} eventos relevantes encontrados")
