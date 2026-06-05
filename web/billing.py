@@ -261,13 +261,12 @@ def success():
 @login_required
 def cancel():
     """
-    Marca la suscripción como 'cancelled_pending' para cancelación al final del período.
-    El usuario mantiene acceso hasta que expire trial_ends_at o current_period_end.
+    Cancels subscription at period end. Cancels in Stripe first, then updates DB.
+    User keeps access until trial/period ends — no immediate cancellation.
     """
     with get_conn() as conn:
-        # Obtener la suscripción actual
         sub_row = conn.execute(
-            text("SELECT status, trial_ends_at, current_period_end FROM subscriptions WHERE user_id=:uid"),
+            text("SELECT status, trial_ends_at, current_period_end, stripe_subscription_id FROM subscriptions WHERE user_id=:uid"),
             {"uid": current_user.id}
         ).fetchone()
 
@@ -275,28 +274,33 @@ def cancel():
             flash("No tienes una suscripción activa para cancelar.", "error")
             return redirect(url_for("dashboard_web.subscription"))
 
-        status, trial_ends, period_end = sub_row
+        status, trial_ends, period_end, stripe_sub_id = sub_row
+        end_date = trial_ends if status == "trial" else period_end
 
-        # Determinar fecha de cancelación efectiva
-        end_date = trial_ends if status == 'trial' else period_end
+    # Cancel in Stripe (at period end, not immediately)
+    if stripe_sub_id and STRIPE_SECRET_KEY:
+        try:
+            import stripe
+            stripe.api_key = STRIPE_SECRET_KEY
+            stripe.Subscription.modify(stripe_sub_id, cancel_at_period_end=True)
+            logger.info(f"Stripe subscription {stripe_sub_id} set to cancel at period end for user {current_user.id}")
+        except Exception as e:
+            logger.error(f"Error cancelling Stripe subscription: {e}")
+            flash("Error al cancelar en Stripe. Contacta con soporte.", "error")
+            return redirect(url_for("dashboard_web.subscription"))
 
-        # Marcar como cancelada pero mantener activa hasta el final
+    # Update DB
+    with get_conn() as conn:
         conn.execute(
-            text("UPDATE subscriptions SET status='cancelled_pending' WHERE user_id=:uid"),
-            {"uid": current_user.id},
+            text("UPDATE subscriptions SET status='cancelled_pending', updated_at=:now WHERE user_id=:uid"),
+            {"now": datetime.now(timezone.utc).isoformat(), "uid": current_user.id},
         )
         conn.commit()
 
     if end_date:
-        flash(
-            f"Suscripción cancelada. Mantendrás el acceso hasta el {end_date[:10]}.",
-            "info",
-        )
+        flash(f"Suscripción cancelada. Mantendrás el acceso hasta el {end_date[:10]}.", "info")
     else:
-        flash(
-            "Suscripción cancelada. Mantendrás el acceso hasta el final del período actual.",
-            "info",
-        )
+        flash("Suscripción cancelada. Mantendrás el acceso hasta el final del período.", "info")
     return redirect(url_for("dashboard_web.subscription"))
 
 
@@ -338,8 +342,10 @@ def stripe_checkout():
             },
         }
 
-        if is_trial:
-            params["subscription_data"]["trial_period_days"] = 7
+        # Always use trial_period_days=7 for new signups
+        # Stripe won't charge until trial ends; user can cancel anytime before
+        params["subscription_data"]["trial_period_days"] = 7
+        params["payment_method_collection"] = "always"
 
         session = stripe.checkout.Session.create(**params)
         return redirect(session.url, code=303)
@@ -365,12 +371,10 @@ def stripe_success():
         meta = session.get("metadata", {})
         plan = meta.get("plan", "basic")
         cycle = meta.get("cycle", "monthly")
+        stripe_sub_id = session.get("subscription", "")
+        stripe_customer_id = session.get("customer", "")
 
-        period_end = (
-            datetime.now(timezone.utc) + (
-                timedelta(days=365) if cycle == "yearly" else timedelta(days=30)
-            )
-        ).isoformat()
+        trial_end = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
         now_iso = datetime.now(timezone.utc).isoformat()
 
         with get_conn() as conn:
@@ -381,18 +385,25 @@ def stripe_success():
             if existing:
                 conn.execute(text("""
                     UPDATE subscriptions SET plan=:plan, billing_cycle=:cycle,
-                    status='active', trial_ends_at=NULL, current_period_end=:period, updated_at=:now
+                    status='trial', trial_ends_at=:trial, current_period_end=:trial,
+                    stripe_subscription_id=:sub_id, stripe_customer_id=:cust_id,
+                    updated_at=:now
                     WHERE user_id=:uid
-                """), {"plan": plan, "cycle": cycle, "period": period_end, "now": now_iso, "uid": current_user.id})
+                """), {"plan": plan, "cycle": cycle, "trial": trial_end,
+                       "sub_id": stripe_sub_id, "cust_id": stripe_customer_id,
+                       "now": now_iso, "uid": current_user.id})
             else:
                 conn.execute(text("""
                     INSERT INTO subscriptions
-                    (user_id,plan,billing_cycle,status,current_period_end,created_at,updated_at)
-                    VALUES (:uid,:plan,:cycle,'active',:period,:now,:now)
-                """), {"uid": current_user.id, "plan": plan, "cycle": cycle, "period": period_end, "now": now_iso})
+                    (user_id,plan,billing_cycle,status,trial_ends_at,current_period_end,
+                     stripe_subscription_id,stripe_customer_id,created_at,updated_at)
+                    VALUES (:uid,:plan,:cycle,'trial',:trial,:trial,:sub_id,:cust_id,:now,:now)
+                """), {"uid": current_user.id, "plan": plan, "cycle": cycle,
+                       "trial": trial_end, "sub_id": stripe_sub_id,
+                       "cust_id": stripe_customer_id, "now": now_iso})
             conn.commit()
 
-        flash("✅ Suscripción activada correctamente", "success")
+        flash("✅ Prueba gratuita de 7 días activada. No se te cobrará hasta que finalice.", "success")
     except Exception as e:
         logger.error(f"Stripe success callback error: {e}")
 
@@ -421,7 +432,13 @@ def stripe_webhook():
         if customer_email:
             _handle_payment_succeeded(customer_email, data)
 
-    elif etype in ("customer.subscription.deleted", "customer.subscription.updated"):
+    elif etype == "customer.subscription.trial_will_end":
+        pass  # Could send reminder email here
+
+    elif etype == "customer.subscription.deleted":
+        _handle_subscription_deleted(data)
+
+    elif etype == "customer.subscription.updated":
         _handle_subscription_updated(data)
 
     return "ok", 200
@@ -465,7 +482,14 @@ def _handle_subscription_updated(subscription: dict):
         if not email:
             return
 
-        db_status = "active" if status == "active" else "cancelled"
+        # Map Stripe status to our status
+        if status == "active":
+            db_status = "active"
+        elif status in ("canceled", "unpaid", "incomplete_expired"):
+            db_status = "cancelled"
+        else:
+            db_status = status  # trial, past_due, etc
+
         with get_conn() as conn:
             user = conn.execute(
                 text("SELECT id FROM users WHERE email=:email"), {"email": email}
@@ -475,6 +499,34 @@ def _handle_subscription_updated(subscription: dict):
                     "UPDATE subscriptions SET status=:status, updated_at=:now WHERE user_id=:uid"
                 ), {"status": db_status, "now": datetime.now(timezone.utc).isoformat(), "uid": user[0]})
                 conn.commit()
-                logger.info(f"Subscription {status} for {email}")
+                logger.info(f"Subscription updated for {email}: {status} → {db_status}")
     except Exception as e:
         logger.error(f"Error handling subscription update: {e}")
+
+
+def _handle_subscription_deleted(subscription: dict):
+    """Immediately cancels access when Stripe confirms subscription deleted."""
+    try:
+        customer_id = subscription.get("customer", "")
+        if not customer_id:
+            return
+
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+        customer = stripe.Customer.retrieve(customer_id)
+        email = customer.get("email", "")
+        if not email:
+            return
+
+        with get_conn() as conn:
+            user = conn.execute(
+                text("SELECT id FROM users WHERE email=:email"), {"email": email}
+            ).fetchone()
+            if user:
+                conn.execute(text(
+                    "UPDATE subscriptions SET status='cancelled', updated_at=:now WHERE user_id=:uid"
+                ), {"now": datetime.now(timezone.utc).isoformat(), "uid": user[0]})
+                conn.commit()
+                logger.info(f"Subscription deleted/cancelled for {email}")
+    except Exception as e:
+        logger.error(f"Error handling subscription deleted: {e}")
