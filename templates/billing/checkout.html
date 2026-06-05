@@ -48,14 +48,27 @@
         </div>
         {% endif %}
 
+        <!-- Plan selector -->
+        <div class="mb-4">
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-wide">Plan</label>
+          <select id="plan-selector" onchange="changePlan(this.value)"
+            class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
+            {% for p_key, p_val in plans.items() %}
+            <option value="{{ p_key }}" {% if p_key == plan %}selected{% endif %}>
+              {{ p_val.name }} — desde {{ p_val.price_monthly }}€/mes
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
         <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-700">
           <div>
-            <p class="font-semibold text-white">Plan {{ plan_config.name }}</p>
+            <p class="font-semibold text-white" id="plan-name-display">Plan {{ plan_config.name }}</p>
             <p class="text-slate-400 text-sm" id="billing-cycle-label">Facturación mensual</p>
           </div>
           <div class="text-right">
             <p class="text-white font-bold" id="price-display">{{ plan_config.price_monthly }}€/mes</p>
-            <p class="text-slate-500 text-xs line-through">{{ plan_config.original_price }}€</p>
+            <p class="text-slate-500 text-xs line-through" id="original-price-display">{{ plan_config.original_price }}€</p>
           </div>
         </div>
 
@@ -70,7 +83,7 @@
           </div>
           <div class="flex justify-between text-sm mt-2">
             <span class="text-slate-400">Después del período de prueba</span>
-            <span class="text-slate-300">{{ plan_config.price_monthly }}€/mes</span>
+            <span class="text-slate-300" id="after-trial-price">{{ plan_config.price_monthly }}€/mes</span>
           </div>
         {% else %}
           <div class="flex justify-between text-sm mt-2">
@@ -138,7 +151,7 @@
               y la
               <a href="/privacy" target="_blank" class="text-emerald-400 hover:text-emerald-300 underline font-medium">Política de Privacidad</a>.
               {% if is_trial %}
-              Entiendo que tras el período de prueba de 7 días se cargará automáticamente {{ plan_config.price_monthly }}€/mes salvo que cancele antes.
+              Entiendo que tras el período de prueba de 7 días se cargará automáticamente <span id="trial-price-text">{{ plan_config.price_monthly }}€/mes</span> salvo que cancele antes.
               {% endif %}
             </label>
           </div>
@@ -148,7 +161,7 @@
             {% if is_trial %}
               Iniciar prueba gratuita →
             {% else %}
-              Continuar al pago — {{ plan_config.price_monthly }}€/mes →
+              <span id="submit-btn-text">Continuar al pago — {{ plan_config.price_monthly }}€/mes</span> →
             {% endif %}
           </button>
         </form>
@@ -161,9 +174,32 @@
   </main>
 
   <script>
+    var PLANS_DATA = {
+      {% for p_key, p_val in plans.items() %}
+      '{{ p_key }}': { monthly: {{ p_val.price_monthly }}, yearly: {{ p_val.price_yearly }}, original: {{ p_val.original_price }}, name: '{{ p_val.name }}' },
+      {% endfor %}
+    };
+    var currentPlan = '{{ plan }}';
     var PRICE_MONTHLY = {{ plan_config.price_monthly|tojson }};
     var PRICE_YEARLY = {{ plan_config.price_yearly|tojson }};
     var currentCycle = '{{ billing_cycle }}';
+
+    function changePlan(newPlan) {
+      if (!PLANS_DATA[newPlan]) return;
+      currentPlan = newPlan;
+      PRICE_MONTHLY = PLANS_DATA[newPlan].monthly;
+      PRICE_YEARLY = PLANS_DATA[newPlan].yearly;
+      var planInput = document.querySelector('input[name="plan"]');
+      if (planInput) planInput.value = newPlan;
+      var planNameDisplay = document.getElementById('plan-name-display');
+      if (planNameDisplay) planNameDisplay.textContent = 'Plan ' + PLANS_DATA[newPlan].name;
+      var originalDisplay = document.getElementById('original-price-display');
+      if (originalDisplay) originalDisplay.textContent = PLANS_DATA[newPlan].original + '€';
+      setCycle(currentCycle);
+    }
+
+    // Initialize correct cycle on page load
+    document.addEventListener('DOMContentLoaded', function() { setCycle(currentCycle); });
 
     function setCycle(cycle) {
       currentCycle = cycle;
@@ -178,6 +214,8 @@
       var renewalText = document.getElementById('renewal-text');
       var submitBtnText = document.getElementById('submit-btn-text');
 
+      var trialPriceText = document.getElementById('trial-price-text');
+      var afterTrialPrice = document.getElementById('after-trial-price');
       if (cycle === 'yearly') {
         if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
         if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
@@ -185,7 +223,9 @@
         if (cycleLabel) cycleLabel.textContent = 'Facturación anual';
         if (totalPrice) totalPrice.textContent = PRICE_YEARLY + '€';
         if (renewalText) renewalText.textContent = 'Renovación automática anual';
-        if (submitBtnText) submitBtnText.textContent = 'Confirmar pago — ' + PRICE_YEARLY + '€';
+        if (submitBtnText) submitBtnText.textContent = 'Continuar al pago — ' + PRICE_YEARLY + '€/año';
+        if (trialPriceText) trialPriceText.textContent = PRICE_YEARLY + '€/año';
+        if (afterTrialPrice) afterTrialPrice.textContent = PRICE_YEARLY + '€/año';
       } else {
         if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
         if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
@@ -193,7 +233,9 @@
         if (cycleLabel) cycleLabel.textContent = 'Facturación mensual';
         if (totalPrice) totalPrice.textContent = PRICE_MONTHLY + '€';
         if (renewalText) renewalText.textContent = 'Renovación automática mensual';
-        if (submitBtnText) submitBtnText.textContent = 'Confirmar pago — ' + PRICE_MONTHLY + '€';
+        if (submitBtnText) submitBtnText.textContent = 'Continuar al pago — ' + PRICE_MONTHLY + '€/mes';
+        if (trialPriceText) trialPriceText.textContent = PRICE_MONTHLY + '€/mes';
+        if (afterTrialPrice) afterTrialPrice.textContent = PRICE_MONTHLY + '€/mes';
       }
     }
 

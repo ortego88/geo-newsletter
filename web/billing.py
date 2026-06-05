@@ -59,6 +59,7 @@ def subscribe(plan):
         plan_config=plan_config,
         billing_cycle=billing_cycle,
         stripe_pk=STRIPE_PUBLISHABLE_KEY,
+        plans=PLANS,
     )
 
 
@@ -82,6 +83,7 @@ def checkout_trial():
         trial_end_date=trial_end_date,
         has_payment_method=has_payment_method,
         next_step=next_step,
+        plans=PLANS,
     )
 
 

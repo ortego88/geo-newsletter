@@ -269,9 +269,20 @@ def run_pipeline_cycle():
                 for pe in large_moves:
                     asset = pe.get("suggested_asset", "")
                     change = pe.get("_change_pct", 0)
+                    # Get price twice with a short gap to avoid stale cache collisions
                     price_now = get_price(asset) or 0.0
                     if price_now <= 0:
                         continue
+                    # Sanity check: price must be within 5x of the batch cache implied price
+                    # (batch cache stores 24h change, we can estimate rough range)
+                    # If price seems wildly wrong (e.g. ADA price stored for GRT), skip
+                    batch_change = pe.get("_change_pct", 0)
+                    if batch_change != 0:
+                        # Price 24h ago = price_now / (1 + change/100)
+                        implied_prev = price_now / (1 + batch_change / 100)
+                        if implied_prev <= 0 or (price_now / implied_prev) > 20 or (implied_prev / price_now) > 20:
+                            logger.warning(f"Price sanity check failed for {asset}: price={price_now}, change={batch_change}% — skipping")
+                            continue
                     direction = "down" if change < 0 else "up"
                     pe["analysis"] = {
                         "direction": direction,
