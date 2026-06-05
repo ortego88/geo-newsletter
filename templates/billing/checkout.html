@@ -34,28 +34,17 @@
       <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
         <h2 class="font-bold text-white text-lg mb-5">Resumen del pedido</h2>
 
-        {% if not is_trial %}
-        <!-- Billing cycle toggle -->
-        <div class="flex items-center gap-2 mb-4 bg-slate-900/50 rounded-xl p-1">
-          <button type="button" id="btn-monthly" onclick="setCycle('monthly')"
-            class="flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white">
-            Mensual
-          </button>
-          <button type="button" id="btn-yearly" onclick="setCycle('yearly')"
-            class="flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white">
-            Anual <span class="text-emerald-400 text-xs">-2 meses</span>
-          </button>
-        </div>
-        {% endif %}
-
-        <!-- Plan selector -->
+        <!-- Plan + cycle selector unified -->
         <div class="mb-4">
-          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-wide">Plan</label>
-          <select id="plan-selector" onchange="changePlan(this.value)"
+          <label class="block text-xs text-slate-400 mb-2 uppercase tracking-wide">Plan y facturación</label>
+          <select id="plan-cycle-selector" onchange="changePlanCycle(this.value)"
             class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500">
             {% for p_key, p_val in plans.items() %}
-            <option value="{{ p_key }}" {% if p_key == plan %}selected{% endif %}>
-              {{ p_val.name }} — desde {{ p_val.price_monthly }}€/mes
+            <option value="{{ p_key }}__monthly" {% if p_key == plan and billing_cycle == 'monthly' %}selected{% endif %}>
+              {{ p_val.name }} — {{ p_val.price_monthly }}€/mes (mensual)
+            </option>
+            <option value="{{ p_key }}__yearly" {% if p_key == plan and billing_cycle == 'yearly' %}selected{% endif %}>
+              {{ p_val.name }} — {{ "%.2f"|format(p_val.price_yearly / 12) }}€/mes · {{ p_val.price_yearly }}€/año ✦ Ahorra 2 meses
             </option>
             {% endfor %}
           </select>
@@ -184,18 +173,25 @@
     var PRICE_YEARLY = {{ plan_config.price_yearly|tojson }};
     var currentCycle = '{{ billing_cycle }}';
 
-    function changePlan(newPlan) {
+    function changePlanCycle(value) {
+      var parts = value.split('__');
+      if (parts.length !== 2) return;
+      var newPlan = parts[0];
+      var newCycle = parts[1];
       if (!PLANS_DATA[newPlan]) return;
       currentPlan = newPlan;
+      currentCycle = newCycle;
       PRICE_MONTHLY = PLANS_DATA[newPlan].monthly;
       PRICE_YEARLY = PLANS_DATA[newPlan].yearly;
       var planInput = document.querySelector('input[name="plan"]');
       if (planInput) planInput.value = newPlan;
+      var cycleInput = document.querySelector('input[name="cycle"]');
+      if (cycleInput) cycleInput.value = newCycle;
       var planNameDisplay = document.getElementById('plan-name-display');
       if (planNameDisplay) planNameDisplay.textContent = 'Plan ' + PLANS_DATA[newPlan].name;
       var originalDisplay = document.getElementById('original-price-display');
       if (originalDisplay) originalDisplay.textContent = PLANS_DATA[newPlan].original + '€';
-      setCycle(currentCycle);
+      setCycle(newCycle);
     }
 
     // Initialize correct cycle on page load
