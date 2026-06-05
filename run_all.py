@@ -253,30 +253,59 @@ def run_pipeline_cycle():
             events = []
             logger.info("Sin eventos de noticias en este ciclo.")
 
-        # Check for price-based signals (large movements) — these are injected
-        # back into the pipeline as synthetic articles for Claude to analyze
+        # Check for price-based signals (large movements)
+        # These only fire when cooldown is clear (first detection of the move).
+        # >5% moves saved directly (objective fact, first time we see it).
+        # 2.5-5% moves pass through Claude for context validation.
         try:
             from src.services.price_signals import check_price_signals
+            from src.services.real_price_fetcher import get_price
             price_events = check_price_signals()
             if price_events:
-                from src.services.claude_analyzer import analyze_events_batch
-                from src.services.real_price_fetcher import get_price
-                logger.info(f"📊 {len(price_events)} señales de precio → analizando con Claude...")
-                batch_results = analyze_events_batch(price_events)
-                for pe, analysis in zip(price_events, batch_results):
-                    if analysis is None or analysis.get("confidence", 0) < 60:
-                        continue
-                    pe["analysis"] = analysis
-                    assets = analysis.get("most_affected_assets", [])
-                    asset = assets[0] if assets else pe.get("suggested_asset", "")
+                saved_count = 0
+                large_moves = [pe for pe in price_events if abs(pe.get("_change_pct", 0)) >= 5]
+                moderate_moves = [pe for pe in price_events if abs(pe.get("_change_pct", 0)) < 5]
+
+                for pe in large_moves:
+                    asset = pe.get("suggested_asset", "")
+                    change = pe.get("_change_pct", 0)
                     price_now = get_price(asset) or 0.0
                     if price_now <= 0:
                         continue
+                    direction = "down" if change < 0 else "up"
+                    pe["analysis"] = {
+                        "direction": direction,
+                        "confidence": 70,
+                        "most_affected_assets": [asset],
+                        "timeframe": "hours",
+                        "reasoning": f"{asset} {'pierde' if change < 0 else 'gana'} {abs(change):.1f}% en 24h — movimiento en curso",
+                        "signal_strength": "high" if abs(change) >= 8 else "medium",
+                        "verification_window_hours": 6,
+                    }
                     pred_id = tracker.save_prediction(pe, price_now)
                     if pred_id:
                         pe["prediction_id"] = pred_id
                         events.append(pe)
-                logger.info(f"📊 {sum(1 for e in price_events if e.get('prediction_id'))} señales de precio guardadas tras análisis Claude")
+                        saved_count += 1
+
+                if moderate_moves:
+                    from src.services.claude_analyzer import analyze_events_batch
+                    batch_results = analyze_events_batch(moderate_moves)
+                    for pe, analysis in zip(moderate_moves, batch_results):
+                        if analysis is None or analysis.get("confidence", 0) < 60:
+                            continue
+                        pe["analysis"] = analysis
+                        asset = pe.get("suggested_asset", "")
+                        price_now = get_price(asset) or 0.0
+                        if price_now <= 0:
+                            continue
+                        pred_id = tracker.save_prediction(pe, price_now)
+                        if pred_id:
+                            pe["prediction_id"] = pred_id
+                            events.append(pe)
+                            saved_count += 1
+
+                logger.info(f"📊 {saved_count} señales de precio guardadas ({len(large_moves)} directas, {len(moderate_moves)} via Claude)")
         except Exception as e:
             logger.warning(f"Error en price_signals: {e}")
 

@@ -158,6 +158,7 @@ def check_price_signals() -> list[dict]:
             "score": score,
             "category": "CRYPTO",
             "published_at": datetime.now(timezone.utc).isoformat(),
+            "_change_pct": change,
         }
         signals.append(event)
         _set_cooldown(asset)
