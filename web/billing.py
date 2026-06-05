@@ -306,10 +306,14 @@ def cancel():
         )
         conn.commit()
 
-    if end_date:
-        flash(f"Suscripción cancelada. Mantendrás el acceso hasta el {end_date[:10]}.", "info")
-    else:
-        flash("Suscripción cancelada. Mantendrás el acceso hasta el final del período.", "info")
+    access_until = end_date[:10] if end_date else "fin del período"
+    try:
+        from src.services.transactional_email import send_cancellation_email
+        send_cancellation_email(current_user.email, current_user.name or current_user.email, access_until)
+    except Exception:
+        pass
+
+    flash(f"Suscripción cancelada. Mantendrás el acceso hasta el {access_until}.", "info")
     return redirect(url_for("dashboard_web.subscription"))
 
 

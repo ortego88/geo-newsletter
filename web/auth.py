@@ -125,6 +125,14 @@ def register():
             preferred_lang = 'es'
         user = User.create(email, password, name, language=preferred_lang, plan=plan)
         login_user(user, remember=True)
+
+        try:
+            from src.services.transactional_email import send_welcome_email
+            trial_end = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
+            send_welcome_email(email, name, plan, trial_end)
+        except Exception:
+            pass
+
         flash(
             "Cuenta creada. Añade tus datos de pago y después selecciona los activos que quieres monitorear.",
             "info",
