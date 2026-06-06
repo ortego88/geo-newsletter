@@ -208,6 +208,7 @@ def create_app():
                 flash("Debes aceptar los términos.", "error")
                 return render_template("waitlist.html", submitted=False)
 
+            subscribe_newsletter = bool(request.form.get("subscribe_newsletter"))
             try:
                 with get_conn() as conn:
                     exists = conn.execute(
@@ -221,7 +222,8 @@ def create_app():
                         """), {"fn": first_name, "ln": last_name, "email": email,
                                "now": datetime.utcnow().isoformat()})
                         conn.commit()
-                _sync_brevo_contact(email, first_name, last_name)
+                if subscribe_newsletter:
+                    _sync_brevo_contact(email, first_name, last_name)
             except Exception as e:
                 _logger.error(f"Waitlist signup error: {e}")
 

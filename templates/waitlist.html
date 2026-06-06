@@ -18,41 +18,31 @@
         {% for category, message in messages %}
           <div class="mb-6 p-4 rounded-xl text-sm
             {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
-            {% else %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400{% endif %}">
+            {% else %}bg-slate-700 border border-slate-600 text-slate-300{% endif %}">
             {{ message }}
           </div>
         {% endfor %}
       {% endwith %}
 
-      <div class="text-center mb-10">
-        <!-- Logo -->
-        <div class="flex items-center justify-center gap-3 mb-6">
-          <svg class="w-8 h-8" viewBox="0 0 64 64" fill="none">
-            <polygon points="32,6 58,54 6,54" fill="none" stroke="#C8922A" stroke-width="2.5" stroke-linejoin="round"/>
-            <polygon points="32,18 48,46 16,46" fill="none" stroke="#E8B84B" stroke-width="1.5" stroke-linejoin="round" opacity="0.6"/>
-            <circle cx="32" cy="36" r="3" fill="#E8B84B"/>
-            <line x1="32" y1="18" x2="32" y2="33" stroke="#E8B84B" stroke-width="1.5" opacity="0.8"/>
-          </svg>
-          <span class="font-display text-2xl text-white">Trian<span class="text-emerald-400">io</span></span>
-        </div>
+      <div class="text-center mb-6">
         <h1 class="text-3xl font-extrabold text-white mb-3">Lista de espera</h1>
         <p class="text-slate-400">
           Estamos en fase beta, refinando el modelo. Apúntate y te avisamos cuando abramos el acceso.
         </p>
       </div>
 
-      <!-- Stats teaser -->
-      <div class="grid grid-cols-3 gap-3 mb-8">
+      <!-- Stats teaser — 3 cols, 1 row -->
+      <div class="grid grid-cols-3 gap-3 mb-6">
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-          <p class="text-xl font-bold text-emerald-400">65</p>
+          <p class="text-xl font-bold" style="color:#34d399">65</p>
           <p class="text-xs text-slate-500 mt-1">Cryptos</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-          <p class="text-xl font-bold text-emerald-400">3 min</p>
+          <p class="text-xl font-bold" style="color:#34d399">3 min</p>
           <p class="text-xs text-slate-500 mt-1">Latencia</p>
         </div>
         <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
-          <p class="text-xl font-bold text-emerald-400">3</p>
+          <p class="text-xl font-bold" style="color:#34d399">3</p>
           <p class="text-xs text-slate-500 mt-1">Señales</p>
         </div>
       </div>
@@ -65,41 +55,50 @@
             <div>
               <label class="block text-sm text-slate-400 mb-1.5">Nombre</label>
               <input type="text" name="first_name" required placeholder="Daniel"
-                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm">
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-slate-400 transition text-sm">
             </div>
             <div>
               <label class="block text-sm text-slate-400 mb-1.5">Apellidos</label>
               <input type="text" name="last_name" placeholder="Ortego"
-                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm">
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-slate-400 transition text-sm">
             </div>
           </div>
           <div>
             <label class="block text-sm text-slate-400 mb-1.5">Email</label>
             <input type="email" name="email" required placeholder="tu@email.com"
-              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm">
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-slate-400 transition text-sm">
           </div>
-          <div class="flex items-start gap-3 pt-1">
+          <!-- Newsletter opt-in -->
+          <div class="flex items-start gap-3">
+            <input type="checkbox" name="subscribe_newsletter" id="subscribe_newsletter"
+              class="mt-1 w-4 h-4 rounded border-slate-600 cursor-pointer shrink-0">
+            <label for="subscribe_newsletter" class="text-xs text-slate-400 cursor-pointer leading-relaxed">
+              Quiero recibir también el <strong class="text-slate-300">resumen semanal</strong> con los mejores resultados de las alertas.
+            </label>
+          </div>
+          <!-- Terms -->
+          <div class="flex items-start gap-3">
             <input type="checkbox" name="terms" id="terms" required
-              class="mt-1 w-4 h-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 cursor-pointer shrink-0">
+              class="mt-1 w-4 h-4 rounded border-slate-600 cursor-pointer shrink-0">
             <label for="terms" class="text-xs text-slate-400 cursor-pointer leading-relaxed">
-              Acepto los <a href="/terms" target="_blank" class="text-emerald-400 hover:underline">Términos</a> y la <a href="/privacy" target="_blank" class="text-emerald-400 hover:underline">Política de privacidad</a>. Solo usaremos tu email para avisarte del lanzamiento.
+              Acepto los <a href="/terms" target="_blank" class="text-slate-300 hover:underline">Términos</a> y la <a href="/privacy" target="_blank" class="text-slate-300 hover:underline">Política de privacidad</a>.
             </label>
           </div>
           <button type="submit"
-            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition mt-2">
+            class="w-full text-white font-bold py-3 rounded-xl transition mt-2" style="background:#34d399">
             Apuntarme a la lista →
           </button>
         </form>
       </div>
       {% else %}
-      <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
+      <div class="rounded-2xl p-8 text-center border" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.25)">
         <p class="text-4xl mb-4">✓</p>
         <p class="text-xl font-bold text-white mb-2">¡Estás en la lista!</p>
-        <p class="text-slate-400 text-sm">Te avisaremos por email cuando abramos el acceso. Mientras tanto, puedes <a href="/como-funciona" class="text-emerald-400 hover:underline">ver cómo funciona el sistema</a>.</p>
+        <p class="text-slate-400 text-sm">Te avisaremos por email cuando abramos el acceso. Mientras tanto, puedes <a href="/como-funciona" class="hover:underline" style="color:#34d399">ver cómo funciona el sistema</a>.</p>
       </div>
       {% endif %}
 
-      <p class="text-center text-xs text-slate-600 mt-6">
+      <p class="text-center text-xs text-slate-600 mt-5">
         Sin spam. Solo un email cuando abramos. Baja cuando quieras.
       </p>
 
