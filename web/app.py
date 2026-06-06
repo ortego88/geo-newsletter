@@ -189,6 +189,46 @@ def create_app():
             return redirect("/dashboard")
         return render_template("app_home.html")
 
+    @main_bp.route("/como-funciona")
+    def how_it_works():
+        return render_template("how_it_works.html")
+
+    @main_bp.route("/waitlist", methods=["GET", "POST"])
+    def waitlist():
+        if request.method == "POST":
+            first_name = request.form.get("first_name", "").strip()
+            last_name = request.form.get("last_name", "").strip()
+            email = request.form.get("email", "").strip().lower()
+            terms = request.form.get("terms")
+
+            if not first_name or not email or "@" not in email:
+                flash("Por favor, introduce tu nombre y email.", "error")
+                return render_template("waitlist.html", submitted=False)
+            if not terms:
+                flash("Debes aceptar los términos.", "error")
+                return render_template("waitlist.html", submitted=False)
+
+            try:
+                with get_conn() as conn:
+                    exists = conn.execute(
+                        text("SELECT id FROM newsletter_subscribers WHERE email = :email"),
+                        {"email": email}
+                    ).fetchone()
+                    if not exists:
+                        conn.execute(text("""
+                            INSERT INTO newsletter_subscribers (first_name, last_name, email, subscribed_at)
+                            VALUES (:fn, :ln, :email, :now)
+                        """), {"fn": first_name, "ln": last_name, "email": email,
+                               "now": datetime.utcnow().isoformat()})
+                        conn.commit()
+                _sync_brevo_contact(email, first_name, last_name)
+            except Exception as e:
+                _logger.error(f"Waitlist signup error: {e}")
+
+            return render_template("waitlist.html", submitted=True)
+
+        return render_template("waitlist.html", submitted=False)
+
     @main_bp.route("/privacy")
     def privacy():
         return render_template("privacy.html", plans=PLANS)

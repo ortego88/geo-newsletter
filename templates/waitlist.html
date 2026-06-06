@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de espera — Trianio</title>
+  <meta name="description" content="Únete a la lista de espera de Trianio. Alertas crypto con IA antes de que el mercado reaccione.">
+  {% include "partials/brand_head.html" %}
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased min-h-screen flex flex-col">
+  {% include 'partials/nav.html' %}
+
+  <main class="flex-1 flex items-center justify-center px-4 py-20">
+    <div class="w-full max-w-md">
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="mb-6 p-4 rounded-xl text-sm
+            {% if category == 'error' %}bg-red-500/10 border border-red-500/30 text-red-400
+            {% else %}bg-emerald-500/10 border border-emerald-500/30 text-emerald-400{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <div class="text-center mb-10">
+        <!-- Logo -->
+        <div class="flex items-center justify-center gap-3 mb-6">
+          <svg class="w-8 h-8" viewBox="0 0 64 64" fill="none">
+            <polygon points="32,6 58,54 6,54" fill="none" stroke="#C8922A" stroke-width="2.5" stroke-linejoin="round"/>
+            <polygon points="32,18 48,46 16,46" fill="none" stroke="#E8B84B" stroke-width="1.5" stroke-linejoin="round" opacity="0.6"/>
+            <circle cx="32" cy="36" r="3" fill="#E8B84B"/>
+            <line x1="32" y1="18" x2="32" y2="33" stroke="#E8B84B" stroke-width="1.5" opacity="0.8"/>
+          </svg>
+          <span class="font-display text-2xl text-white">Trian<span class="text-emerald-400">io</span></span>
+        </div>
+        <h1 class="text-3xl font-extrabold text-white mb-3">Lista de espera</h1>
+        <p class="text-slate-400">
+          Estamos en fase beta, refinando el modelo. Apúntate y te avisamos cuando abramos el acceso.
+        </p>
+      </div>
+
+      <!-- Stats teaser -->
+      <div class="grid grid-cols-3 gap-3 mb-8">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+          <p class="text-xl font-bold text-emerald-400">65</p>
+          <p class="text-xs text-slate-500 mt-1">Cryptos</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+          <p class="text-xl font-bold text-emerald-400">3 min</p>
+          <p class="text-xs text-slate-500 mt-1">Latencia</p>
+        </div>
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 text-center">
+          <p class="text-xl font-bold text-emerald-400">3</p>
+          <p class="text-xs text-slate-500 mt-1">Señales</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      {% if not submitted %}
+      <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+        <form method="POST" action="/waitlist" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-slate-400 mb-1.5">Nombre</label>
+              <input type="text" name="first_name" required placeholder="Daniel"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm">
+            </div>
+            <div>
+              <label class="block text-sm text-slate-400 mb-1.5">Apellidos</label>
+              <input type="text" name="last_name" placeholder="Ortego"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm">
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-400 mb-1.5">Email</label>
+            <input type="email" name="email" required placeholder="tu@email.com"
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition text-sm">
+          </div>
+          <div class="flex items-start gap-3 pt-1">
+            <input type="checkbox" name="terms" id="terms" required
+              class="mt-1 w-4 h-4 rounded border-slate-600 text-emerald-500 focus:ring-emerald-500 cursor-pointer shrink-0">
+            <label for="terms" class="text-xs text-slate-400 cursor-pointer leading-relaxed">
+              Acepto los <a href="/terms" target="_blank" class="text-emerald-400 hover:underline">Términos</a> y la <a href="/privacy" target="_blank" class="text-emerald-400 hover:underline">Política de privacidad</a>. Solo usaremos tu email para avisarte del lanzamiento.
+            </label>
+          </div>
+          <button type="submit"
+            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition mt-2">
+            Apuntarme a la lista →
+          </button>
+        </form>
+      </div>
+      {% else %}
+      <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
+        <p class="text-4xl mb-4">✓</p>
+        <p class="text-xl font-bold text-white mb-2">¡Estás en la lista!</p>
+        <p class="text-slate-400 text-sm">Te avisaremos por email cuando abramos el acceso. Mientras tanto, puedes <a href="/como-funciona" class="text-emerald-400 hover:underline">ver cómo funciona el sistema</a>.</p>
+      </div>
+      {% endif %}
+
+      <p class="text-center text-xs text-slate-600 mt-6">
+        Sin spam. Solo un email cuando abramos. Baja cuando quieras.
+      </p>
+
+    </div>
+  </main>
+
+  {% include 'partials/cookie_banner.html' %}
+</body>
+</html>

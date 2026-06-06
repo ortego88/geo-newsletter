@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Cómo funciona Trianio? — Alertas crypto con IA</title>
+  <meta name="description" content="Descubre cómo Trianio detecta movimientos de mercado antes que nadie: noticias con IA, microestructura de mercado y análisis de ballenas en tiempo real.">
+  {% include "partials/brand_head.html" %}
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+  {% include 'partials/nav.html' %}
+
+  <main class="max-w-4xl mx-auto px-4 md:px-6 py-20">
+
+    <!-- HEADER -->
+    <div class="text-center mb-16">
+      <span class="inline-block bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest">Transparencia total</span>
+      <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-6 font-display leading-tight">
+        ¿Cómo funciona Trianio?
+      </h1>
+      <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+        Sin caja negra. Te explicamos exactamente qué miramos, cómo lo analizamos y cómo decidimos si enviarte una alerta.
+      </p>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-12">
+      <h2 class="text-2xl font-bold text-white mb-4">El principio básico</h2>
+      <p class="text-slate-400 leading-relaxed mb-4">
+        Los mercados de criptomonedas se mueven antes de que las noticias generalistas lo publiquen. Cuando una ballena vende $5M en BTC en 3 minutos, o cuando los traders apalancados superan un umbral crítico, el precio reacciona en los siguientes minutos u horas.
+      </p>
+      <p class="text-slate-400 leading-relaxed">
+        Trianio monitoriza estas señales en tiempo real, las filtra para eliminar el ruido y te envía solo las que tienen fundamento real. Solo te alertamos cuando tenemos suficiente confianza — preferimos enviarte 5 alertas buenas a la semana que 50 mediocres al día.
+      </p>
+    </div>
+
+    <!-- 3 SIGNAL TYPES -->
+    <h2 class="text-2xl font-bold text-white mb-8">Los tres tipos de señales</h2>
+
+    <!-- Signal 1: News -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-6">
+      <div class="flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-2xl">📰</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-3">
+            <h3 class="text-xl font-bold text-white">Noticias con catalizador (IA)</h3>
+            <span class="bg-blue-500/15 text-blue-400 text-xs font-bold px-3 py-1 rounded-full">Fuente: RSS + Claude</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed mb-4">
+            Monitorizamos más de 50 fuentes de noticias crypto en tiempo real. Cada noticia pasa por Claude Sonnet 4.6 (Anthropic), que evalúa si tiene un catalizador real con impacto predecible en el precio.
+          </p>
+          <div class="bg-slate-900 rounded-xl p-5 mb-4">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">¿Qué genera alerta? ✓</p>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hack confirmado en un protocolo ($100M+)</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Aprobación o rechazo de ETF por un regulador</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Compra institucional confirmada (no rumor)</li>
+              <li class="flex gap-2"><span class="text-emerald-400">✓</span> Outflows masivos de ETFs ($500M+ en una semana)</li>
+            </ul>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 mt-5">¿Qué NO genera alerta? ✗</p>
+            <ul class="space-y-2 text-sm text-slate-500">
+              <li class="flex gap-2"><span class="text-red-400">✗</span> Opiniones de analistas sobre precio futuro</li>
+              <li class="flex gap-2"><span class="text-red-400">✗</span> "Bitcoin podría subir según experto"</li>
+              <li class="flex gap-2"><span class="text-red-400">✗</span> Artículos de análisis técnico genérico</li>
+              <li class="flex gap-2"><span class="text-red-400">✗</span> Noticias que describen movimientos ya ocurridos</li>
+            </ul>
+          </div>
+          <div class="flex gap-4 text-sm">
+            <div class="bg-slate-900 rounded-lg px-4 py-2">
+              <span class="text-slate-500">Confianza mínima</span>
+              <span class="text-white font-bold ml-2">≥70% (bajada) / ≥80% (subida)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signal 2: Funding rate -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-6">
+      <div class="flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-2xl">📊</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-3">
+            <h3 class="text-xl font-bold text-white">Funding rate extremo</h3>
+            <span class="bg-amber-500/15 text-amber-400 text-xs font-bold px-3 py-1 rounded-full">Fuente: Binance Futuros</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed mb-4">
+            En los mercados de futuros perpetuos, cuando demasiados traders van apalancados en la misma dirección, el mercado tiende a ir en sentido contrario para liquidarlos. El <strong class="text-white">funding rate</strong> mide ese sobreapalancamiento.
+          </p>
+          <div class="bg-slate-900 rounded-xl p-5 mb-4">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2">Rango normal</p>
+                <p class="text-slate-300">-0.01% a +0.03% cada 8h</p>
+                <p class="text-slate-500 text-xs mt-1">Sin señal — mercado equilibrado</p>
+              </div>
+              <div>
+                <p class="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">Señal de bajada</p>
+                <p class="text-slate-300">&gt;+0.15% cada 8h</p>
+                <p class="text-slate-500 text-xs mt-1">Mercado masivamente long → corrección probable</p>
+              </div>
+            </div>
+          </div>
+          <p class="text-slate-500 text-sm">
+            Monitorizamos 50+ activos con futuros perpetuos en Binance. Esta señal precede correcciones entre 1 y 6 horas.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signal 3: Large trades -->
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-12">
+      <div class="flex items-start gap-5">
+        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-2xl">🐋</div>
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-3">
+            <h3 class="text-xl font-bold text-white">Grandes trades en tiempo real</h3>
+            <span class="bg-purple-500/15 text-purple-400 text-xs font-bold px-3 py-1 rounded-full">Fuente: Binance Spot</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed mb-4">
+            Cuando una institución o "ballena" vende un volumen muy grande en poco tiempo, el precio suele caer en los minutos siguientes. Detectamos estas operaciones monitorizando los trades individuales grandes en Binance spot.
+          </p>
+          <div class="bg-slate-900 rounded-xl p-5 mb-4">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Umbrales por activo</p>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-slate-300">BTC, ETH</span>
+                <span class="text-slate-400">Trade individual &gt;$200K · $3M total en 3 min</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-300">SOL, XRP, BNB, ADA...</span>
+                <span class="text-slate-400">Trade &gt;$50K · $500K total en 3 min</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-300">DOGE, PEPE, SHIB...</span>
+                <span class="text-slate-400">Trade &gt;$20K · $200K total en 3 min</span>
+              </div>
+            </div>
+          </div>
+          <p class="text-slate-500 text-sm">
+            Esta señal se consulta cada <strong class="text-slate-400">3 minutos</strong> para no perder eventos de corta duración. Cubre 57 de los 65 activos del listado.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- VALIDATION -->
+    <h2 class="text-2xl font-bold text-white mb-6">¿Cómo se valida una predicción?</h2>
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-12">
+      <p class="text-slate-400 mb-6">Cada alerta que enviamos se registra como una predicción y se verifica automáticamente en las siguientes 24 horas.</p>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 text-center">
+          <p class="text-3xl font-bold text-emerald-400 mb-2">✓</p>
+          <p class="text-sm font-semibold text-white mb-1">Correcta</p>
+          <p class="text-xs text-slate-400">El precio se mueve ≥2% en la dirección predicha dentro de 24h</p>
+        </div>
+        <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-5 text-center">
+          <p class="text-3xl font-bold text-red-400 mb-2">✗</p>
+          <p class="text-sm font-semibold text-white mb-1">Incorrecta</p>
+          <p class="text-xs text-slate-400">El precio se mueve ≥2% en dirección contraria antes de la correcta</p>
+        </div>
+        <div class="bg-slate-700/50 border border-slate-600 rounded-xl p-5 text-center">
+          <p class="text-3xl font-bold text-slate-400 mb-2">—</p>
+          <p class="text-sm font-semibold text-white mb-1">Neutral</p>
+          <p class="text-xs text-slate-400">Sin movimiento de ±2% en 24h — no penaliza el accuracy</p>
+        </div>
+      </div>
+      <p class="text-slate-500 text-sm mt-6 text-center">
+        Los resultados son públicos en el <a href="/historial" class="text-emerald-400 hover:underline">historial de predicciones</a>. Sin filtros, sin trampa.
+      </p>
+    </div>
+
+    <!-- COVERAGE -->
+    <h2 class="text-2xl font-bold text-white mb-6">¿Qué activos cubrimos?</h2>
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-12">
+      <p class="text-slate-400 mb-6">Trianio monitoriza <strong class="text-white">65 criptomonedas</strong> en tres fuentes simultáneas.</p>
+      <div class="grid md:grid-cols-3 gap-4 text-center">
+        <div class="bg-slate-900 rounded-xl p-5">
+          <p class="text-3xl font-bold text-white mb-1">65</p>
+          <p class="text-sm text-slate-400">Activos en noticias (Claude)</p>
+        </div>
+        <div class="bg-slate-900 rounded-xl p-5">
+          <p class="text-3xl font-bold text-white mb-1">50+</p>
+          <p class="text-sm text-slate-400">Activos en funding rate</p>
+        </div>
+        <div class="bg-slate-900 rounded-xl p-5">
+          <p class="text-3xl font-bold text-white mb-1">57</p>
+          <p class="text-sm text-slate-400">Activos en large trades</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="bg-gradient-to-br from-emerald-900/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-10 text-center">
+      <h2 class="text-2xl font-bold text-white mb-3">¿Quieres recibir estas alertas?</h2>
+      <p class="text-slate-400 mb-6">Estamos en fase beta. Apúntate a la lista de espera y serás de los primeros en acceder.</p>
+      <a href="/waitlist" class="inline-block bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-8 py-3 rounded-xl transition">
+        Unirme a la lista de espera →
+      </a>
+    </div>
+
+  </main>
+
+  {% include 'partials/cookie_banner.html' %}
+</body>
+</html>
