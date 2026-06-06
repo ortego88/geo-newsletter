@@ -39,25 +39,23 @@
 
     <!-- Signal 1: News -->
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-6">
-      <div class="flex items-start gap-5">
-        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-2xl">📰</div>
-        <div class="flex-1">
-          <div class="flex items-center gap-3 mb-3">
-            <h3 class="text-xl font-bold text-white">Noticias con catalizador (IA)</h3>
+      <div class="flex-1">
+          <div class="flex items-center gap-3 mb-4">
+            <h3 class="text-xl font-bold text-white">1. Noticias con catalizador (IA)</h3>
             <span class="bg-blue-500/15 text-blue-400 text-xs font-bold px-3 py-1 rounded-full">Fuente: RSS + Claude</span>
           </div>
           <p class="text-slate-400 leading-relaxed mb-4">
             Monitorizamos más de 50 fuentes de noticias crypto en tiempo real. Cada noticia pasa por Claude Sonnet 4.6 (Anthropic), que evalúa si tiene un catalizador real con impacto predecible en el precio.
           </p>
           <div class="bg-slate-900 rounded-xl p-5 mb-4">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">¿Qué genera alerta? ✓</p>
+            <p class="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-3">¿Qué genera alerta? ✓</p>
             <ul class="space-y-2 text-sm text-slate-300">
               <li class="flex gap-2"><span class="text-emerald-400">✓</span> Hack confirmado en un protocolo ($100M+)</li>
               <li class="flex gap-2"><span class="text-emerald-400">✓</span> Aprobación o rechazo de ETF por un regulador</li>
               <li class="flex gap-2"><span class="text-emerald-400">✓</span> Compra institucional confirmada (no rumor)</li>
               <li class="flex gap-2"><span class="text-emerald-400">✓</span> Outflows masivos de ETFs ($500M+ en una semana)</li>
             </ul>
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 mt-5">¿Qué NO genera alerta? ✗</p>
+            <p class="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 mt-5">¿Qué NO genera alerta? ✗</p>
             <ul class="space-y-2 text-sm text-slate-500">
               <li class="flex gap-2"><span class="text-red-400">✗</span> Opiniones de analistas sobre precio futuro</li>
               <li class="flex gap-2"><span class="text-red-400">✗</span> "Bitcoin podría subir según experto"</li>
@@ -65,23 +63,18 @@
               <li class="flex gap-2"><span class="text-red-400">✗</span> Noticias que describen movimientos ya ocurridos</li>
             </ul>
           </div>
-          <div class="flex gap-4 text-sm">
-            <div class="bg-slate-900 rounded-lg px-4 py-2">
-              <span class="text-slate-500">Confianza mínima</span>
-              <span class="text-white font-bold ml-2">≥70% (bajada) / ≥80% (subida)</span>
-            </div>
+          <div class="bg-slate-900 rounded-lg px-4 py-2 text-sm inline-block">
+            <span class="text-slate-500">Confianza mínima</span>
+            <span class="text-white font-bold ml-2">≥70% (bajada) / ≥80% (subida)</span>
           </div>
-        </div>
       </div>
     </div>
 
     <!-- Signal 2: Funding rate -->
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-6">
-      <div class="flex items-start gap-5">
-        <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 text-2xl">📊</div>
-        <div class="flex-1">
-          <div class="flex items-center gap-3 mb-3">
-            <h3 class="text-xl font-bold text-white">Funding rate extremo</h3>
+      <div class="flex-1">
+          <div class="flex items-center gap-3 mb-4">
+            <h3 class="text-xl font-bold text-white">2. Funding rate extremo</h3>
             <span class="bg-amber-500/15 text-amber-400 text-xs font-bold px-3 py-1 rounded-full">Fuente: Binance Futuros</span>
           </div>
           <p class="text-slate-400 leading-relaxed mb-4">
@@ -104,17 +97,14 @@
           <p class="text-slate-500 text-sm">
             Monitorizamos 50+ activos con futuros perpetuos en Binance. Esta señal precede correcciones entre 1 y 6 horas.
           </p>
-        </div>
       </div>
     </div>
 
     <!-- Signal 3: Large trades -->
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-12">
-      <div class="flex items-start gap-5">
-        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-2xl">🐋</div>
-        <div class="flex-1">
-          <div class="flex items-center gap-3 mb-3">
-            <h3 class="text-xl font-bold text-white">Grandes trades en tiempo real</h3>
+      <div class="flex-1">
+          <div class="flex items-center gap-3 mb-4">
+            <h3 class="text-xl font-bold text-white">3. Grandes trades en tiempo real</h3>
             <span class="bg-purple-500/15 text-purple-400 text-xs font-bold px-3 py-1 rounded-full">Fuente: Binance Spot</span>
           </div>
           <p class="text-slate-400 leading-relaxed mb-4">
@@ -149,7 +139,7 @@
     <div class="bg-slate-800 border border-slate-700 rounded-2xl p-8 mb-12">
       <p class="text-slate-400 mb-6">Cada alerta que enviamos se registra como una predicción y se verifica automáticamente en las siguientes 24 horas.</p>
       <div class="grid md:grid-cols-3 gap-4">
-        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 text-center">
+        <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-5 text-center">
           <p class="text-3xl font-bold text-emerald-400 mb-2">✓</p>
           <p class="text-sm font-semibold text-white mb-1">Correcta</p>
           <p class="text-xs text-slate-400">El precio se mueve ≥2% en la dirección predicha dentro de 24h</p>
@@ -159,8 +149,8 @@
           <p class="text-sm font-semibold text-white mb-1">Incorrecta</p>
           <p class="text-xs text-slate-400">El precio se mueve ≥2% en dirección contraria antes de la correcta</p>
         </div>
-        <div class="bg-slate-700/50 border border-slate-600 rounded-xl p-5 text-center">
-          <p class="text-3xl font-bold text-slate-400 mb-2">—</p>
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 text-center">
+          <p class="text-3xl font-bold text-amber-400 mb-2">—</p>
           <p class="text-sm font-semibold text-white mb-1">Neutral</p>
           <p class="text-xs text-slate-400">Sin movimiento de ±2% en 24h — no penaliza el accuracy</p>
         </div>
