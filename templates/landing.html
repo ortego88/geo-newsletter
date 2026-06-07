@@ -573,20 +573,7 @@
   </section>
 
   <!-- FOOTER -->
-  <footer class="py-10 px-6 border-t border-slate-800 text-center text-slate-500 text-sm">
-    <p class="mb-3">
-      <span class="text-emerald-400 font-bold">Trianio</span> · <span data-i18n="footer.tagline">Intelligence before the market moves</span>
-    </p>
-    <div class="flex justify-center gap-6">
-      <a href="/pricing" class="hover:text-slate-300 transition" data-i18n="nav.pricing">Precios</a>
-      <a href="/login" class="hover:text-slate-300 transition" data-i18n="nav.login">Iniciar sesión</a>
-      <a href="#precios" class="hover:text-slate-300 transition" data-i18n="nav.start_free">Registrarse</a>
-    </div>
-    <p class="mt-4 text-xs text-slate-600 max-w-xl mx-auto" data-i18n="footer.ai_desc">Trianio utiliza Claude Sonnet 4.6 de Anthropic para analizar eventos geopolíticos y su impacto en los mercados de criptomonedas. El sistema se mejora de forma continua.</p>
-    <p class="mt-3 text-xs text-slate-600" data-i18n="footer.disclaimer">Las alertas son meramente informativas y no constituyen asesoramiento financiero.</p>
-    <p class="mt-3 text-xs text-slate-600"><a href="/privacy" class="hover:text-slate-400 transition" data-i18n="cookies.policy_link">Política de cookies</a></p>
-    <p class="mt-3 text-xs text-slate-600">Contacto: <a href="mailto:info@trianio.com" class="hover:text-slate-400 transition">info@trianio.com</a></p>
-  </footer>
+  {% include 'partials/footer.html' %}
 
 <!-- Logout confirmation modal -->
 <div id="logout-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
