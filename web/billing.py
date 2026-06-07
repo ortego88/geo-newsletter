@@ -42,7 +42,7 @@ def _get_user_payment_method(user_id: int):
 
 @billing_bp.route("/pricing")
 def pricing():
-    return render_template("billing/pricing.html", plans=PLANS, dl_page_name="pricing", dl_section_name="conversion")
+    return render_template("billing/pricing.html", plans=PLANS, dl_page_name="pricing", dl_section_name="pricing", dl_service_type="productInformation", dl_web_area="public")
 
 
 @billing_bp.route("/subscribe/<plan>", methods=["GET", "POST"])
@@ -88,6 +88,13 @@ def checkout_trial():
         next_step=next_step,
         plans=PLANS,
         plans_yearly_monthly=plans_yearly_monthly,
+        dl_page_name="register/step02/paymentDetails",
+        dl_section_name="register",
+        dl_service_type="userRegister",
+        dl_web_area="public",
+        dl_process_type="register",
+        dl_process_step="step02",
+        dl_process_detail="paymentDetails",
     )
 
 
@@ -269,7 +276,17 @@ def reactivate_subscription():
 @login_required
 def success():
     sub = current_user.get_subscription()
-    return render_template("billing/success.html", sub=sub, plans=PLANS)
+    return render_template(
+        "billing/success.html",
+        sub=sub,
+        plans=PLANS,
+        dl_page_name="register/success",
+        dl_section_name="register",
+        dl_service_type="userRegister",
+        dl_web_area="public",
+        dl_process_type="register",
+        dl_process_step="success",
+    )
 
 
 @billing_bp.route("/cancel")

@@ -41,7 +41,7 @@ def login():
         ip = request.headers.get("X-Real-IP", request.remote_addr)
         if _is_rate_limited(ip):
             flash("Demasiados intentos. Espera 5 minutos.", "error")
-            return render_template("auth/login.html")
+            return render_template("auth/login.html", dl_page_name="login", dl_section_name="login", dl_service_type="userLogin", dl_web_area="public")
 
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
@@ -54,7 +54,7 @@ def login():
             return _redirect_based_on_completion_status()
         _record_attempt(ip)
         flash("Email o contraseña incorrectos", "error")
-    return render_template("auth/login.html")
+    return render_template("auth/login.html", dl_page_name="login", dl_section_name="login", dl_service_type="userLogin", dl_web_area="public")
 
 
 def _redirect_based_on_completion_status():
@@ -141,7 +141,7 @@ def register():
     if plan not in PLANS:
         plan = "basic"
     trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
-    return render_template("auth/register.html", plan=plan, trial_end_date=trial_end_date)
+    return render_template("auth/register.html", plan=plan, trial_end_date=trial_end_date, dl_page_name="register/step01/personalDetails", dl_section_name="register", dl_service_type="userRegister", dl_web_area="public", dl_process_type="register", dl_process_step="step01", dl_process_detail="personalDetails")
 
 
 

@@ -14,12 +14,19 @@ window.dataLayer.push({
   'eventName': 'pageview',
   'pageName': '{{ dl_page_name | default("") }}',
   'sectionName': '{{ dl_section_name | default("") }}',
-  'serviceType': 'crypto_alerts',
+  'processType': '{{ dl_process_type | default("") }}',
+  'processStep': '{{ dl_process_step | default("") }}',
+  'processDetail': '{{ dl_process_detail | default("") }}',
+  'interactionType': 'view',
+  'serviceType': '{{ dl_service_type | default("") }}',
+  'productName': '{{ dl_product_name | default("") }}',
+  'webArea': '{{ dl_web_area | default("public") }}',
   'language': '{{ request.cookies.get("geo_lang", "es") }}',
   'pathname': '{{ request.path }}',
-  'userStatus': '{% if current_user.is_authenticated %}logged_in{% else %}anonymous{% endif %}',
+  'userID': '{% if current_user.is_authenticated %}{{ current_user.id }}{% else %}{% endif %}',
+  'userStatus': '{% if current_user.is_authenticated %}loggedIn{% else %}loggedOut{% endif %}',
   'userPlan': '{% if current_user.is_authenticated and current_user.get_subscription() %}{{ current_user.get_subscription().plan }}{% else %}none{% endif %}',
-  'userType': '{% if current_user.is_authenticated %}user{% else %}visitor{% endif %}'
+  'userType': '{% if current_user.is_authenticated %}client{% else %}prospect{% endif %}'
 });
 </script>
 <!-- Consent Mode v2 (inline, minimal) -->

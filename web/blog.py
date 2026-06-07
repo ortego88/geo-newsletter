@@ -129,7 +129,7 @@ def index():
             d["published_at_formatted"] = ""
         posts.append(d)
 
-    return render_template("blog/index.html", posts=posts, lang=lang)
+    return render_template("blog/index.html", posts=posts, lang=lang, dl_page_name="blog", dl_section_name="blog", dl_service_type="news", dl_web_area="public")
 
 
 @blog_bp.route("/blog/<slug>")
@@ -174,7 +174,7 @@ def post(slug):
     # URL canónica
     post["canonical_url"] = url_for("blog.post", slug=slug, _external=True)
 
-    return render_template("blog/post.html", post=post)
+    return render_template("blog/post.html", post=post, dl_page_name="blog/"+slug, dl_section_name="blog", dl_service_type="news", dl_web_area="public")
 
 
 @blog_bp.route("/blog/sitemap.xml")

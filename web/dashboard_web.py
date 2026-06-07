@@ -371,6 +371,10 @@ def index():
         per_page=per_page,
         history_label="Histórico completo",
         trial_expired=trial_expired,
+        dl_page_name="dashboard",
+        dl_section_name="Dashboard",
+        dl_service_type="productInformation",
+        dl_web_area="private",
     )
 
 
@@ -524,6 +528,10 @@ def settings():
         trial_expired=False,
         telegram_link_url=telegram_link_url,
         just_saved=just_saved,
+        dl_page_name="settings",
+        dl_section_name="settings",
+        dl_service_type="userSettings",
+        dl_web_area="private",
     )
 
 
@@ -547,6 +555,10 @@ def subscription():
         plans=PLANS,
         has_payment_method=has_payment_method,
         trial_expired=trial_expired,
+        dl_page_name="subscription",
+        dl_section_name="subscription",
+        dl_service_type="userSettings",
+        dl_web_area="private",
     )
 
 
@@ -642,4 +654,8 @@ def my_assets():
         selected_asset=selected_asset,
         tv_symbol=tv_symbol,
         assets_for_selector=assets_for_selector,
+        dl_page_name="assets",
+        dl_section_name="assets",
+        dl_service_type="productInformation",
+        dl_web_area="private",
     )

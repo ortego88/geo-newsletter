@@ -181,7 +181,7 @@ def create_app():
     @main_bp.route("/")
     def landing():
         best = _get_best_performers()
-        return render_template("landing.html", plans=PLANS, best_performers=best, dl_page_name="home", dl_section_name="landing")
+        return render_template("landing.html", plans=PLANS, best_performers=best, dl_page_name="home", dl_section_name="home", dl_service_type="home", dl_web_area="public")
 
     @main_bp.route("/app")
     def app_home():
@@ -191,7 +191,7 @@ def create_app():
 
     @main_bp.route("/como-funciona")
     def how_it_works():
-        return render_template("how_it_works.html", dl_page_name="how_it_works", dl_section_name="informational")
+        return render_template("how_it_works.html", dl_page_name="how_it_works", dl_section_name="informational", dl_service_type="serviceInformation", dl_web_area="public")
 
     @main_bp.route("/waitlist", methods=["GET", "POST"])
     def waitlist():
@@ -203,10 +203,10 @@ def create_app():
 
             if not first_name or not email or "@" not in email:
                 flash("Por favor, introduce tu nombre y email.", "error")
-                return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition")
+                return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
             if not terms:
                 flash("Debes aceptar los términos.", "error")
-                return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition")
+                return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
 
             subscribe_newsletter = bool(request.form.get("subscribe_newsletter"))
             try:
@@ -227,17 +227,17 @@ def create_app():
             except Exception as e:
                 _logger.error(f"Waitlist signup error: {e}")
 
-            return render_template("waitlist.html", submitted=True, dl_page_name="waitlist", dl_section_name="acquisition")
+            return render_template("waitlist.html", submitted=True, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
 
-        return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition")
+        return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
 
     @main_bp.route("/privacy")
     def privacy():
-        return render_template("privacy.html", plans=PLANS)
+        return render_template("privacy.html", plans=PLANS, dl_page_name="privacy", dl_section_name="privacy", dl_service_type="serviceInformation", dl_web_area="public")
 
     @main_bp.route("/terms")
     def terms():
-        return render_template("terms.html")
+        return render_template("terms.html", dl_page_name="terms", dl_section_name="terms", dl_service_type="serviceInformation", dl_web_area="public")
 
     @main_bp.route("/historial")
     def history():
@@ -439,6 +439,10 @@ def create_app():
             time_filter=time_filter,
             sort_by=sort_by,
             sort_dir=sort_dir,
+            dl_page_name="history",
+            dl_section_name="history",
+            dl_service_type="productInformation",
+            dl_web_area="public",
         )
 
     @main_bp.route("/health")
