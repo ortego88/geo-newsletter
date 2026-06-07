@@ -305,6 +305,28 @@ def get_large_trades(symbol: str = "BTCUSDT", min_usd: float = 200_000) -> dict 
     return _cached(f"large_trades_{symbol}", fetch, ttl=60)
 
 
+def _get_btc_1h_change() -> float:
+    """Returns BTC price change in the last 1 hour. Used to filter signals in rebound."""
+    def fetch():
+        resp = requests.get(
+            f"{_BINANCE_SPOT}/klines",
+            params={"symbol": "BTCUSDT", "interval": "1h", "limit": 2},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return 0.0
+        candles = resp.json()
+        if len(candles) < 2:
+            return 0.0
+        prev_close = float(candles[0][4])
+        last_close = float(candles[1][4])
+        if prev_close <= 0:
+            return 0.0
+        return (last_close - prev_close) / prev_close * 100
+    result = _cached("btc_1h_change", fetch, ttl=120)
+    return result if result is not None else 0.0
+
+
 def scan_microstructure_signals() -> list[dict]:
     """
     Main function: scans all microstructure signals and returns
@@ -314,13 +336,21 @@ def scan_microstructure_signals() -> list[dict]:
     """
     signals = []
 
+    # Check market context: if BTC rebounded >1.5% in last 1h, suppress DOWN signals
+    # This prevents sending DOWN alerts when the market already reversed
+    btc_1h = _get_btc_1h_change()
+    market_rebounding = btc_1h > 1.5
+    if market_rebounding:
+        logger.info(f"🔬 Market rebounding (BTC +{btc_1h:.1f}% 1h) — suppressing DOWN microstructure signals")
+
     # 1. Funding rates scan
     funding_data = get_funding_rates_all()
     for f in funding_data:
         asset = f["asset"]
 
         if f["very_extreme_long"]:
-            # >0.15%: market massively overleveraged long → sharp correction very likely
+            if market_rebounding:
+                continue
             confidence = 82
             reasoning = (
                 f"Funding rate extremo positivo ({f['rate_pct']}%/8h) en {asset}. "
@@ -421,6 +451,8 @@ def scan_microstructure_signals() -> list[dict]:
             continue
 
         if lt["whale_dump"] or (lt["large_sell_count"] >= 5 and lt["large_sell_usd"] > whale_threshold):
+            if market_rebounding:
+                continue
             confidence = 78
             reasoning = (
                 f"Ventas institucionales detectadas en {asset}: "
@@ -429,8 +461,8 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "down", confidence, reasoning, "whale_dump", lt["large_sell_usd"]))
 
-        elif lt["sell_dominance"] or (lt["large_sell_usd"] > lt["large_buy_usd"] * 2.5 and lt["large_sell_usd"] > whale_threshold * 0.5):
-            confidence = 70
+        elif not market_rebounding and (lt["sell_dominance"] or (lt["large_sell_usd"] > lt["large_buy_usd"] * 2.5 and lt["large_sell_usd"] > whale_threshold * 0.5)):
+            confidence = 75  # raised from 70 — requires stronger conviction
             reasoning = (
                 f"Dominio vendedor en {asset}: "
                 f"${lt['large_sell_usd']:,} en ventas vs ${lt['large_buy_usd']:,} en compras (5 min). "

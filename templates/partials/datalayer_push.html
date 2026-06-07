@@ -1,0 +1,16 @@
+<!-- DataLayer pageview push — must be BEFORE GTM fires -->
+<script>
+window.dataLayer = window.dataLayer || [];
+window.dataLayer.push({
+  'event': 'pageview',
+  'eventName': 'pageview',
+  'pageName': '{{ dl_page_name | default("") }}',
+  'sectionName': '{{ dl_section_name | default("") }}',
+  'serviceType': 'crypto_alerts',
+  'language': '{{ request.cookies.get("geo_lang", "es") }}',
+  'pathname': '{{ request.path }}',
+  'userStatus': '{% if current_user.is_authenticated %}logged_in{% else %}anonymous{% endif %}',
+  'userPlan': '{% if current_user.is_authenticated %}{{ current_user.get_subscription().plan if current_user.get_subscription() else "none" }}{% else %}none{% endif %}',
+  'userType': '{% if current_user.is_authenticated %}user{% else %}visitor{% endif %}'
+});
+</script>
