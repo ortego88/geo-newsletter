@@ -34,9 +34,8 @@ gtag('consent', 'default', {
   'wait_for_update': 500
 });
 gtag('js', new Date());
-gtag('config', 'G-7RD26FY5G5');
 </script>
-<!-- GA4 + GTM deferred -->
+<!-- GTM handles GA4 config — no duplicate gtag config needed -->
 <script defer src="https://www.googletagmanager.com/gtag/js?id=G-7RD26FY5G5"></script>
 <script defer>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
