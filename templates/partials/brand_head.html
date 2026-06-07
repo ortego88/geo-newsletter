@@ -6,6 +6,22 @@
 <link rel="stylesheet" href="/static/css/fonts.css">
 <!-- Compiled Tailwind (static, no runtime JS) -->
 <link rel="stylesheet" href="/static/css/tailwind.min.css">
+<!-- DataLayer pageview — MUST be before GTM so variables are available when tags fire -->
+<script>
+window.dataLayer = window.dataLayer || [];
+window.dataLayer.push({
+  'event': 'pageview',
+  'eventName': 'pageview',
+  'pageName': '{{ dl_page_name | default("") }}',
+  'sectionName': '{{ dl_section_name | default("") }}',
+  'serviceType': 'crypto_alerts',
+  'language': '{{ request.cookies.get("geo_lang", "es") }}',
+  'pathname': '{{ request.path }}',
+  'userStatus': '{% if current_user.is_authenticated %}logged_in{% else %}anonymous{% endif %}',
+  'userPlan': '{% if current_user.is_authenticated and current_user.get_subscription() %}{{ current_user.get_subscription().plan }}{% else %}none{% endif %}',
+  'userType': '{% if current_user.is_authenticated %}user{% else %}visitor{% endif %}'
+});
+</script>
 <!-- Consent Mode v2 (inline, minimal) -->
 <script>
 window.dataLayer = window.dataLayer || [];

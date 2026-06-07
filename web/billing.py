@@ -42,7 +42,7 @@ def _get_user_payment_method(user_id: int):
 
 @billing_bp.route("/pricing")
 def pricing():
-    return render_template("billing/pricing.html", plans=PLANS)
+    return render_template("billing/pricing.html", plans=PLANS, dl_page_name="pricing", dl_section_name="conversion")
 
 
 @billing_bp.route("/subscribe/<plan>", methods=["GET", "POST"])
