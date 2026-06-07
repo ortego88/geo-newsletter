@@ -106,15 +106,11 @@
       if (dl[i] && dl[i].eventName === 'pageview') {
         ctx.pageName = dl[i].pageName || '';
         ctx.sectionName = dl[i].sectionName || '';
-        ctx.webArea = dl[i].webArea || '';
         ctx.serviceType = dl[i].serviceType || '';
-        ctx.processType = dl[i].processType || '';
-        ctx.processStep = dl[i].processStep || '';
-        ctx.processDetail = dl[i].processDetail || '';
-        ctx.productName = dl[i].productName || '';
         ctx.userStatus = dl[i].userStatus || '';
         ctx.userType = dl[i].userType || '';
         ctx.userPlan = dl[i].userPlan || '';
+        ctx.language = dl[i].language || '';
         break;
       }
     }
@@ -123,29 +119,30 @@
 
   function pushInteraction(el) {
     window.dataLayer = window.dataLayer || [];
-    var eventName = el.getAttribute('data-dl-event') || 'click';
+    // Always use 'interaction' as GTM event name to avoid collision with native 'click' trigger
+    var dlEventName = el.getAttribute('data-dl-event') || 'interaction';
     var ctx = getPageContext();
     var payload = {
-      'event': eventName,
-      'eventName': eventName,
-      'action': el.getAttribute('data-dl-action') || 'click',
+      'event': dlEventName,          // GTM trigger listens for this exact string
+      'eventName': dlEventName,
+      // Interaction-specific params — must be top-level for GTM dataLayer variables
+      'action': el.getAttribute('data-dl-action') || '',
       'format': el.getAttribute('data-dl-format') || '',
       'component': el.getAttribute('data-dl-component') || '',
       'element': el.getAttribute('data-dl-element') || '',
+      'interactionType': el.getAttribute('data-dl-action') || 'click',
+      // Page context (carried from pageview push)
       'pageName': ctx.pageName,
       'sectionName': ctx.sectionName,
-      'webArea': ctx.webArea,
-      'serviceType': ctx.serviceType,
-      'processType': ctx.processType,
-      'processStep': ctx.processStep,
-      'processDetail': ctx.processDetail,
-      'productName': ctx.productName,
+      'serviceType': ctx.serviceType || 'crypto_alerts',
       'userStatus': ctx.userStatus,
       'userType': ctx.userType,
-      'userPlan': ctx.userPlan
+      'userPlan': ctx.userPlan,
+      'language': ctx.language || document.documentElement.lang || 'es',
+      'pathname': window.location.pathname
     };
     window.dataLayer.push(payload);
-    logToPanel(eventName, payload);
+    logToPanel(dlEventName, payload);
   }
 
   // Log the initial pageview push
