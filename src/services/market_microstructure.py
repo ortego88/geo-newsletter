@@ -305,6 +305,29 @@ def get_large_trades(symbol: str = "BTCUSDT", min_usd: float = 200_000) -> dict 
     return _cached(f"large_trades_{symbol}", fetch, ttl=60)
 
 
+def _get_price_change_5m(symbol: str) -> float:
+    """Returns price change in the last 5 minutes for a symbol.
+    Used to confirm movement has already started before alerting."""
+    def fetch():
+        resp = requests.get(
+            f"{_BINANCE_SPOT}/klines",
+            params={"symbol": symbol, "interval": "5m", "limit": 2},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return 0.0
+        candles = resp.json()
+        if len(candles) < 2:
+            return 0.0
+        prev_close = float(candles[0][4])
+        last_close = float(candles[1][4])
+        if prev_close <= 0:
+            return 0.0
+        return (last_close - prev_close) / prev_close * 100
+    result = _cached(f"price_5m_{symbol}", fetch, ttl=60)
+    return result if result is not None else 0.0
+
+
 def _get_btc_1h_change() -> float:
     """Returns BTC price change in the last 1 hour. Used to filter signals in rebound."""
     def fetch():
@@ -327,6 +350,32 @@ def _get_btc_1h_change() -> float:
     return result if result is not None else 0.0
 
 
+def _get_sector_alignment() -> dict:
+    """
+    Checks how many of the top 5 cryptos are moving in the same direction.
+    Returns: {'down_count': N, 'up_count': N, 'aligned_down': bool, 'aligned_up': bool}
+    aligned_down = at least 3/5 falling > 0.3% in last 5 min
+    """
+    TOP5 = ["BTCUSDT", "ETHUSDT", "XRPUSDT", "SOLUSDT", "BNBUSDT"]
+
+    def fetch():
+        down, up = 0, 0
+        for sym in TOP5:
+            chg = _get_price_change_5m(sym)
+            if chg < -0.3:
+                down += 1
+            elif chg > 0.3:
+                up += 1
+        return {
+            "down_count": down,
+            "up_count": up,
+            "aligned_down": down >= 3,
+            "aligned_up": up >= 3,
+        }
+    result = _cached("sector_alignment", fetch, ttl=60)
+    return result if result is not None else {"down_count": 0, "up_count": 0, "aligned_down": False, "aligned_up": False}
+
+
 def scan_microstructure_signals() -> list[dict]:
     """
     Main function: scans all microstructure signals and returns
@@ -336,12 +385,15 @@ def scan_microstructure_signals() -> list[dict]:
     """
     signals = []
 
-    # Check market context: if BTC rebounded >1.5% in last 1h, suppress DOWN signals
-    # This prevents sending DOWN alerts when the market already reversed
+    # Filter 1: if BTC rebounded >1.5% in last 1h, suppress DOWN signals
     btc_1h = _get_btc_1h_change()
     market_rebounding = btc_1h > 1.5
     if market_rebounding:
         logger.info(f"🔬 Market rebounding (BTC +{btc_1h:.1f}% 1h) — suppressing DOWN microstructure signals")
+
+    # Filter 2: sector alignment — check if top 5 cryptos confirm the direction
+    sector = _get_sector_alignment()
+    logger.info(f"🔬 Sector alignment: {sector['down_count']}/5 down, {sector['up_count']}/5 up in last 5m")
 
     # 1. Funding rates scan
     funding_data = get_funding_rates_all()
@@ -351,11 +403,15 @@ def scan_microstructure_signals() -> list[dict]:
         if f["very_extreme_long"]:
             if market_rebounding:
                 continue
+            # Funding rate is strong enough on its own — no sector alignment required
+            # but still check 5m price to confirm movement started
+            btc_5m = _get_price_change_5m("BTCUSDT") if asset != "BTC" else _get_price_change_5m("BTCUSDT")
             confidence = 82
             reasoning = (
                 f"Funding rate extremo positivo ({f['rate_pct']}%/8h) en {asset}. "
-                f"El mercado está masivamente apalancado en largo. "
-                f"Históricamente este nivel precede correcciones bruscas en 1-6h."
+                f"Mercado masivamente apalancado en largo. "
+                f"{'BTC confirmando caída (' + str(round(btc_5m,1)) + '% 5m). ' if btc_5m < -0.2 else ''}"
+                f"Históricamente precede correcciones en 1-6h."
             )
             signals.append(_build_signal(asset, "down", confidence, reasoning, "funding_extreme_long", f["rate_pct"]))
 
@@ -453,20 +509,36 @@ def scan_microstructure_signals() -> list[dict]:
         if lt["whale_dump"] or (lt["large_sell_count"] >= 5 and lt["large_sell_usd"] > whale_threshold):
             if market_rebounding:
                 continue
+            # Filter 3: confirm movement has started (-0.3% in last 5m on the asset itself)
+            price_5m = _get_price_change_5m(sym)
+            if price_5m >= 0:
+                logger.debug(f"🔬 Whale dump on {asset} but price not confirming ({price_5m:+.2f}% 5m) — skipping")
+                continue
+            # Filter 4: sector alignment — at least 2/5 top cryptos also falling
+            if sector["down_count"] < 2 and asset not in ("BTC", "ETH"):
+                logger.debug(f"🔬 Whale dump on {asset} but sector not aligned ({sector['down_count']}/5) — skipping")
+                continue
             confidence = 78
             reasoning = (
-                f"Ventas institucionales detectadas en {asset}: "
-                f"{lt['large_sell_count']} ventas grandes (${lt['large_sell_usd']:,} total) "
-                f"en los últimos 5 minutos. Distribución activa — presión bajista inminente."
+                f"Ventas institucionales en {asset}: "
+                f"{lt['large_sell_count']} ventas grandes (${lt['large_sell_usd']:,}) en 5 min. "
+                f"Precio confirmando caída ({price_5m:+.1f}% últimos 5m). "
+                f"{sector['down_count']}/5 grandes cryptos alineadas a la baja."
             )
             signals.append(_build_signal(asset, "down", confidence, reasoning, "whale_dump", lt["large_sell_usd"]))
 
         elif not market_rebounding and (lt["sell_dominance"] or (lt["large_sell_usd"] > lt["large_buy_usd"] * 2.5 and lt["large_sell_usd"] > whale_threshold * 0.5)):
-            confidence = 75  # raised from 70 — requires stronger conviction
+            # Both confirmation filters required for weaker signal
+            price_5m = _get_price_change_5m(sym)
+            if price_5m >= -0.2:
+                continue
+            if sector["down_count"] < 3:
+                continue
+            confidence = 75
             reasoning = (
                 f"Dominio vendedor en {asset}: "
                 f"${lt['large_sell_usd']:,} en ventas vs ${lt['large_buy_usd']:,} en compras (5 min). "
-                f"Presión bajista sostenida."
+                f"Precio bajando ({price_5m:+.1f}% últimos 5m), {sector['down_count']}/5 cryptos alineadas."
             )
             signals.append(_build_signal(asset, "down", confidence, reasoning, "large_sell_dominance", lt["large_sell_usd"]))
 
