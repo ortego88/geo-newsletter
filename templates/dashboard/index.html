@@ -208,6 +208,7 @@
                     </a>
                   </th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_change">{{ t.col_change }}</th>
+                  <th class="text-right px-3 py-3 text-slate-400 font-medium">Precio actual</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_outcome">{{ t.col_outcome }}</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
                     <a href="?page=1&asset={{ asset_filter }}&asset_type={{ asset_type_filter }}&outcome={{ outcome_filter }}&time_filter={{ time_filter }}&sort=predicted_at&dir={% if sort_by == 'predicted_at' and sort_dir == 'desc' %}asc{% else %}desc{% endif %}" class="flex items-center gap-1 hover:text-white transition" data-i18n-title="dash.col_date">
@@ -272,6 +273,12 @@
                       {% else %}
                         <span class="text-slate-500">{{ t.pending_lowercase }}</span>
                       {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right font-mono"
+                        data-live-asset="{{ pred.asset }}"
+                        data-entry-price="{{ pred.price_at_prediction or 0 }}"
+                        data-direction="{{ pred.direction or 'neutral' }}">
+                      <span class="live-price text-slate-500">—</span>
                     </td>
                     <td class="px-3 py-3 text-center">
                       {% if outcome == 'correct' %}
@@ -693,6 +700,68 @@
     if (flagEl && LANG_META[lang]) flagEl.textContent = LANG_META[lang].flag;
     if (codeEl) codeEl.textContent = lang.toUpperCase();
   })();
+</script>
+
+<!-- Live price updater: fetches Binance every 30s, no rate limit -->
+<script>
+(function() {
+  function formatPrice(p) {
+    if (!p || p <= 0) return '—';
+    if (p >= 1000) return '$' + p.toLocaleString('en-US', {maximumFractionDigits: 0});
+    if (p >= 1)    return '$' + p.toFixed(2);
+    if (p >= 0.01) return '$' + p.toFixed(4);
+    if (p >= 0.0001) return '$' + p.toFixed(6);
+    return '$' + p.toFixed(8);
+  }
+
+  function updateLivePrices(prices) {
+    document.querySelectorAll('[data-live-asset]').forEach(function(cell) {
+      var asset = cell.getAttribute('data-live-asset');
+      var entryPrice = parseFloat(cell.getAttribute('data-entry-price')) || 0;
+      var direction = cell.getAttribute('data-direction');
+      var price = prices[asset + 'USDT'];
+      var span = cell.querySelector('.live-price');
+      if (!span || !price) return;
+
+      var pct = entryPrice > 0 ? ((price - entryPrice) / entryPrice * 100) : null;
+
+      // Color: green if moving in predicted direction, red if against
+      var isPositive = direction === 'up' || direction === 'bullish' || direction === 'alza';
+      var isGood = pct !== null && ((isPositive && pct >= 0) || (!isPositive && pct <= 0));
+      var isBad  = pct !== null && ((isPositive && pct < 0)  || (!isPositive && pct > 0));
+
+      var colorClass = isGood ? '#34d399' : (isBad ? '#f87171' : '#94a3b8');
+      var arrow = pct !== null ? (pct >= 0 ? '▲' : '▼') : '';
+      var pctStr = pct !== null ? ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '';
+
+      span.innerHTML = '<span style="color:' + colorClass + '">' + formatPrice(price) + ' ' + arrow + pctStr + '</span>';
+    });
+  }
+
+  function fetchPrices() {
+    // Collect unique assets on current page
+    var assets = new Set();
+    document.querySelectorAll('[data-live-asset]').forEach(function(el) {
+      assets.add(el.getAttribute('data-live-asset'));
+    });
+    if (assets.size === 0) return;
+
+    // Fetch all from Binance in one call
+    var symbols = JSON.stringify(Array.from(assets).map(function(a){ return a + 'USDT'; }));
+    fetch('https://api.binance.com/api/v3/ticker/price?symbols=' + encodeURIComponent(symbols))
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        var prices = {};
+        data.forEach(function(t){ prices[t.symbol] = parseFloat(t.price); });
+        updateLivePrices(prices);
+      })
+      .catch(function(){});  // silent fail
+  }
+
+  // Run immediately then every 30s
+  fetchPrices();
+  setInterval(fetchPrices, 30000);
+})();
 </script>
 
 {% include 'partials/cookie_banner.html' %}
