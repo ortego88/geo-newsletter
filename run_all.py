@@ -402,8 +402,9 @@ def start_scheduler():
     def publish_daily_blog_post():
         try:
             import subprocess
+            import sys
             result = subprocess.run(
-                ["python3", "create_daily_blog_post.py"],
+                [sys.executable, "create_daily_blog_post.py"],
                 capture_output=True,
                 text=True,
                 timeout=120
