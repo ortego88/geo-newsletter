@@ -181,7 +181,8 @@ def _send_pipeline_alerts(events: list):
         return
 
     # Step 1: filter alertable events — exclude silent signals
-    # DOWN requires confidence >= 65, UP requires confidence >= 75
+    # News: DOWN>=65, UP>=75 (Claude analysis, strict)
+    # Price signals: DOWN>=65, UP>=65 (real Binance data, objective)
     resolved = []
     for e in events:
         if e.get("_silent"):  # never send silent calibration signals to users
@@ -190,7 +191,11 @@ def _send_pipeline_alerts(events: list):
             continue
         conf = e.get("analysis", {}).get("confidence", 0)
         direction = e.get("analysis", {}).get("direction", "")
-        min_conf = 75 if direction == "up" else 65
+        is_price_signal = "price_signal" in e.get("source", "")
+        if is_price_signal:
+            min_conf = 65  # price signals are objective data, same threshold both ways
+        else:
+            min_conf = 75 if direction == "up" else 65  # news: stricter for UP
         if conf >= min_conf:
             resolved.append(e)
 
