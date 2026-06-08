@@ -88,15 +88,43 @@ _batch_cache_time: float = 0
 
 
 def _refresh_batch_cache(assets: list[str]):
-    """Fetch 24h changes for all assets in one CoinGecko API call."""
-    global _batch_cache, _batch_cache_time
+    """Fetch 24h changes for all assets. Uses Binance first (no rate limit), CoinGecko as fallback."""
+    global _batch_cache, _price_cache, _batch_cache_time
     import time as _time
-    if _time.time() - _batch_cache_time < 300:
+    if _time.time() - _batch_cache_time < 900:  # 15 min cache — avoids CoinGecko 429
         return
 
+    import requests
+
+    # --- Primary source: Binance (no rate limit, all USDT pairs) ---
+    try:
+        resp = requests.get(
+            "https://api.binance.com/api/v3/ticker/24hr",
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            _batch_cache = {}
+            _price_cache = {}
+            for t in resp.json():
+                sym = t.get("symbol", "")
+                if not sym.endswith("USDT"):
+                    continue
+                asset = sym.replace("USDT", "")
+                if asset in ALL_ASSETS:
+                    chg = float(t.get("priceChangePercent", 0))
+                    price = float(t.get("lastPrice", 0))
+                    _batch_cache[asset] = chg
+                    if price > 0:
+                        _price_cache[asset] = price
+            _batch_cache_time = _time.time()
+            logger.info(f"📊 Price cache refreshed via Binance: {len(_batch_cache)} assets")
+            return
+    except Exception as e:
+        logger.warning(f"Binance batch failed: {e}, falling back to CoinGecko")
+
+    # --- Fallback: CoinGecko ---
     try:
         from src.services.real_price_fetcher import CRYPTO_IDS
-        import requests
 
         coin_ids = []
         id_to_asset = {}
@@ -125,7 +153,7 @@ def _refresh_batch_cache(assets: list[str]):
                     _price_cache[asset] = float(values["usd"])
 
         _batch_cache_time = _time.time()
-        logger.info(f"📊 Price cache refreshed: {len(_batch_cache)} assets")
+        logger.info(f"📊 Price cache refreshed via CoinGecko: {len(_batch_cache)} assets")
     except Exception as e:
         logger.warning(f"Error refreshing price batch: {e}")
 
