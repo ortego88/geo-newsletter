@@ -300,15 +300,16 @@ class PredictionTracker:
 
     def validate_prediction(self, prediction_id: int, current_price: float) -> dict | None:
         """
-        Valida una predicción comparando el precio actual con el precio inicial.
+        Valida una predicción SOLO al finalizar la ventana de 24h.
 
-        Lógica basada en umbral de ±1% dentro de una ventana de 24h:
-        - Si el precio se mueve >= 1% en la dirección predicha → CORRECT (validación inmediata)
-        - Si el precio se mueve >= 1% en la dirección opuesta → INCORRECT (validación inmediata)
-        - Si han pasado 24h y no se alcanzó el 1% en ninguna dirección → NEUTRAL
+        Lógica: esperar siempre las 24h completas y validar con el precio final.
+        Los movimientos intermedios (rebotes, ruido) se ignoran.
 
-        Esto permite validar predicciones antes de las 24h si el movimiento es claro,
-        y solo marca NEUTRAL cuando el mercado no reacciona tras la ventana completa.
+        - Ventana no expirada → no validar todavía (return None)
+        - Al expirar 24h:
+          - Precio final >= +2% en dirección predicha → CORRECT
+          - Precio final >= -2% en dirección contraria → INCORRECT
+          - Entre -2% y +2% → NEUTRAL (mercado no reaccionó)
         """
         with self._get_conn() as conn:
             row = conn.execute(
@@ -324,11 +325,9 @@ class PredictionTracker:
         if not price_at or price_at == 0:
             return None
 
-        actual_change_pct = ((current_price - price_at) / price_at) * 100
-        predicted_change = pred.get("impact_percent", 0)
         direction = pred.get("direction", "neutral")
 
-        # Check if the 24h window has expired
+        # Wait for the full 24h window before any evaluation
         predicted_at_str = pred.get("predicted_at", "")
         try:
             predicted_at = datetime.fromisoformat(predicted_at_str)
@@ -336,41 +335,30 @@ class PredictionTracker:
             predicted_at = datetime.utcnow() - timedelta(hours=_EVALUATION_WINDOW_HOURS + 1)
 
         window_expired = (datetime.utcnow() - predicted_at).total_seconds() >= _EVALUATION_WINDOW_HOURS * 3600
-        abs_change = abs(actual_change_pct)
+
+        if not window_expired:
+            return None  # Always wait for full 24h — no early validation
+
+        actual_change_pct = ((current_price - price_at) / price_at) * 100
 
         if direction in ("up", "bullish", "positive", "alza"):
             if actual_change_pct >= _THRESHOLD_PCT:
                 outcome = "correct"
-            elif actual_change_pct <= -_INCORRECT_THRESHOLD_PCT:
+            elif actual_change_pct <= -_THRESHOLD_PCT:
                 outcome = "incorrect"
-            elif window_expired:
-                if actual_change_pct > 0:
-                    outcome = "correct"
-                else:
-                    outcome = "incorrect"
             else:
-                return None  # Still within window, threshold not reached — check later
+                outcome = "neutral"
 
         elif direction in ("down", "bearish", "negative", "baja"):
             if actual_change_pct <= -_THRESHOLD_PCT:
                 outcome = "correct"
-            elif actual_change_pct >= _INCORRECT_THRESHOLD_PCT:
+            elif actual_change_pct >= _THRESHOLD_PCT:
                 outcome = "incorrect"
-            elif window_expired:
-                if actual_change_pct < 0:
-                    outcome = "correct"
-                else:
-                    outcome = "incorrect"
             else:
-                return None
+                outcome = "neutral"
 
         else:  # neutral direction
-            if abs_change >= _THRESHOLD_PCT:
-                outcome = "incorrect"
-            elif window_expired:
-                outcome = "correct"
-            else:
-                return None
+            outcome = "neutral"
 
         validated_at = datetime.utcnow().isoformat()
 
