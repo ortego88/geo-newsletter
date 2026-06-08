@@ -231,11 +231,31 @@ def _send_pipeline_alerts(events: list):
     for event in saved_predictions:
         alerted_prediction_ids.add(event.get("prediction_id"))
 
-    # Step 2b: send FCM push notifications to plan topics
+    # Step 2b: send FCM push notifications — only to users who have the asset selected
     try:
-        from src.services.firebase_push import send_alert_to_topics
+        from src.services.firebase_push import send_push_to_user_tokens
+        from web.db_engine import get_engine as _ge
+        from sqlalchemy import text as _text
+
+        with _ge("app").connect() as _conn:
+            _user_tokens = _conn.execute(_text("""
+                SELECT u.id, u.telegram_chat_id, s.plan, s.selected_assets, t.token
+                FROM users u
+                JOIN subscriptions s ON s.user_id = u.id
+                LEFT JOIN user_fcm_tokens t ON t.user_id = u.id
+                WHERE t.token IS NOT NULL
+                  AND s.status IN ('active', 'trial')
+                  AND u.is_active = 1
+            """)).fetchall()
+
         for event in saved_predictions:
-            send_alert_to_topics(event, event.get("analysis", {}))
+            _asset = (event.get("analysis", {}).get("most_affected_assets", []) or [""])[0].upper()
+            if not _asset:
+                continue
+            for _uid, _chat_id, _plan, _sel_raw, _token in _user_tokens:
+                _selected = {a.strip().upper() for a in (_sel_raw or "").split(",") if a.strip()}
+                if _asset in _selected:
+                    send_push_to_user_tokens(event, event.get("analysis", {}), [_token])
     except Exception as e:
         logger.debug(f"FCM push skipped: {e}")
 

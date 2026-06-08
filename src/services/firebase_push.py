@@ -151,6 +151,41 @@ def send_alert_to_topics(event: dict, analysis: dict, plans: list[str] | None = 
     return sent
 
 
+def send_push_to_user_tokens(event: dict, analysis: dict, tokens: list[str]) -> int:
+    """Sends push to specific FCM tokens (per-user, asset-filtered)."""
+    if not tokens or not _init_firebase():
+        return 0
+    try:
+        from firebase_admin import messaging
+    except ImportError:
+        return 0
+
+    assets = analysis.get("most_affected_assets", [])
+    primary_asset = assets[0].upper() if assets else "CRYPTO"
+    direction = analysis.get("direction", "neutral")
+    confidence = analysis.get("confidence", 0)
+
+    dir_emoji = "📈" if direction in ("up", "bullish", "positive", "alza") else "📉"
+    dir_text = "Alcista" if direction in ("up", "bullish", "positive", "alza") else "Bajista"
+
+    title = f"{dir_emoji} {primary_asset} — Señal {dir_text}"
+    body = event.get("title", "Nueva alerta")[:100]
+
+    sent = 0
+    for token in tokens:
+        try:
+            msg = messaging.Message(
+                notification=messaging.Notification(title=title, body=body),
+                data={"asset": primary_asset, "direction": direction, "confidence": str(confidence)},
+                token=token,
+            )
+            messaging.send(msg)
+            sent += 1
+        except Exception as e:
+            logger.debug(f"FCM token push failed: {e}")
+    return sent
+
+
 def send_result_to_topics(prediction_id: int, asset: str, outcome: str,
                           plans: list[str] | None = None) -> int:
     """
