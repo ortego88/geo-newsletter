@@ -147,28 +147,46 @@ def send_weekly_newsletter():
     html_content = _render_newsletter(stats)
     subject = f"Esta semana: {stats['global_accuracy']}% de acierto y {stats['best_up_asset']} +{stats['best_up_pct']}%"
 
+    # Fetch subscriber list and send via transactional API (works without verified sender domain)
     try:
-        resp = requests.post(
-            "https://api.brevo.com/v3/emailCampaigns",
-            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
-            json={
-                "name": f"Weekly Digest {stats['week_range']}",
-                "subject": subject,
-                "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
-                "type": "classic",
-                "htmlContent": html_content,
-                "recipients": {"listIds": [BREVO_LIST_ID]},
-            },
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
-            campaign_id = resp.json().get("id")
-            logger.info(f"Newsletter campaign created: ID={campaign_id}")
-            _send_campaign(campaign_id)
-        else:
-            logger.error(f"Brevo campaign creation failed: {resp.status_code} {resp.text[:200]}")
+        from web.db_engine import get_engine
+        from sqlalchemy import text
+        with get_engine("app").connect() as conn:
+            subscribers = conn.execute(text(
+                "SELECT email, first_name, last_name FROM newsletter_subscribers ORDER BY subscribed_at"
+            )).fetchall()
     except Exception as e:
-        logger.error(f"Error sending newsletter: {e}")
+        logger.error(f"Error fetching subscribers: {e}")
+        return
+
+    if not subscribers:
+        logger.info("No subscribers — skipping newsletter")
+        return
+
+    sent, failed = 0, 0
+    for email, first_name, last_name in subscribers:
+        try:
+            resp = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+                json={
+                    "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                    "to": [{"email": email, "name": f"{first_name or ''} {last_name or ''}".strip()}],
+                    "subject": subject,
+                    "htmlContent": html_content,
+                },
+                timeout=10,
+            )
+            if resp.status_code == 201:
+                sent += 1
+            else:
+                failed += 1
+                logger.warning(f"Failed to send to {email}: {resp.status_code}")
+        except Exception as e:
+            failed += 1
+            logger.warning(f"Error sending to {email}: {e}")
+
+    logger.info(f"Newsletter sent: {sent} ok, {failed} failed")
 
 
 def _send_campaign(campaign_id: int):
