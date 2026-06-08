@@ -180,10 +180,12 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events
+    # Step 1: filter alertable events — exclude silent signals
     # DOWN requires confidence >= 65, UP requires confidence >= 75
     resolved = []
     for e in events:
+        if e.get("_silent"):  # never send silent calibration signals to users
+            continue
         if not e.get("analysis") or e.get("score", 0) < 60:
             continue
         conf = e.get("analysis", {}).get("confidence", 0)
@@ -277,9 +279,50 @@ def run_pipeline_cycle():
             events = []
             logger.info("Sin eventos de noticias en este ciclo.")
 
-        # Price signals based on 24h change: DISABLED.
-        # Describing past price movement doesn't predict future direction.
-        # Active sources: news via Claude (>=70% conf) + microstructure (separate 3-min job)
+        # Price signals — SILENT mode: saved to DB for model evaluation only, NOT sent to users.
+        # This fills the predictions table so we can measure accuracy without spamming users.
+        try:
+            from src.services.price_signals import _get_current_batch, _batch_cache, _refresh_batch_cache, ALL_ASSETS
+            from src.services.real_price_fetcher import get_price
+
+            _refresh_batch_cache(ALL_ASSETS)
+            all_assets = _get_current_batch()
+
+            for asset in all_assets:
+                change = _batch_cache.get(asset.upper())
+                if change is None or abs(change) < 2.5:
+                    continue
+                price_now = get_price(asset) or 0.0
+                if price_now <= 0:
+                    continue
+                direction = "down" if change < 0 else "up"
+                silent_event = {
+                    "title": f"{asset} {'cae' if change < 0 else 'sube'} un {abs(change):.1f}% en 24h",
+                    "description": f"Movimiento de precio en {asset}: {change:+.1f}% en las últimas 24h.",
+                    "source": "price_signal_silent",
+                    "sources": ["Price Monitor (silent)"],
+                    "suggested_asset": asset,
+                    "matched_assets": [asset],
+                    "score": min(85, 60 + int(abs(change))),
+                    "category": "CRYPTO",
+                    "published_at": datetime.utcnow().isoformat(),
+                    "analysis": {
+                        "direction": direction,
+                        "confidence": 65,
+                        "most_affected_assets": [asset],
+                        "timeframe": "hours",
+                        "reasoning": f"{asset} {change:+.1f}% en 24h — señal silenciosa para calibración",
+                        "signal_strength": "medium",
+                        "verification_window_hours": 24,
+                    },
+                    "_silent": True,  # flag: do NOT send to users
+                }
+                pred_id = tracker.save_prediction(silent_event, price_now)
+                if pred_id:
+                    silent_event["prediction_id"] = pred_id
+                    silent_event["price_at_prediction"] = price_now
+        except Exception as e:
+            logger.debug(f"Silent price signals error: {e}")
 
         if not events:
             return
