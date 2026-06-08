@@ -300,16 +300,18 @@ class PredictionTracker:
 
     def validate_prediction(self, prediction_id: int, current_price: float) -> dict | None:
         """
-        Valida una predicción SOLO al finalizar la ventana de 24h.
+        Valida una predicción basándose en el máximo movimiento favorable durante 24h.
 
-        Lógica: esperar siempre las 24h completas y validar con el precio final.
-        Los movimientos intermedios (rebotes, ruido) se ignoran.
+        Lógica: el valor de la alerta es la OPORTUNIDAD que generó, no el precio final.
+        Si predices UP y el precio llega a +20% en algún momento, la alerta fue valiosa
+        aunque cierre en -3%. El usuario tuvo 20% de ventana para actuar.
 
-        - Ventana no expirada → no validar todavía (return None)
+        - Ventana no expirada → track max_price en campo price_at_validation para UP
+                                  track min_price en campo price_at_validation para DOWN
         - Al expirar 24h:
-          - Precio final >= +2% en dirección predicha → CORRECT
-          - Precio final >= -2% en dirección contraria → INCORRECT
-          - Entre -2% y +2% → NEUTRAL (mercado no reaccionó)
+          - Para UP: si max alcanzado >= +2% sobre precio entrada → CORRECT
+          - Para DOWN: si min alcanzado <= -2% sobre precio entrada → CORRECT
+          - Si no se alcanzó el umbral en ningún momento → INCORRECT
         """
         with self._get_conn() as conn:
             row = conn.execute(
@@ -327,7 +329,6 @@ class PredictionTracker:
 
         direction = pred.get("direction", "neutral")
 
-        # Wait for the full 24h window before any evaluation
         predicted_at_str = pred.get("predicted_at", "")
         try:
             predicted_at = datetime.fromisoformat(predicted_at_str)
@@ -335,30 +336,60 @@ class PredictionTracker:
             predicted_at = datetime.utcnow() - timedelta(hours=_EVALUATION_WINDOW_HOURS + 1)
 
         window_expired = (datetime.utcnow() - predicted_at).total_seconds() >= _EVALUATION_WINDOW_HOURS * 3600
-
-        if not window_expired:
-            return None  # Always wait for full 24h — no early validation
-
         actual_change_pct = ((current_price - price_at) / price_at) * 100
 
+        # Track best price seen so far in price_at_validation field
+        # For UP: track the maximum (best case for buyer)
+        # For DOWN: track the minimum (best case for seller)
+        prev_best = pred.get("price_at_validation") or 0
+
         if direction in ("up", "bullish", "positive", "alza"):
-            if actual_change_pct >= _THRESHOLD_PCT:
+            # Update best (maximum) price seen
+            best_price = max(current_price, prev_best) if prev_best > 0 else current_price
+            best_change_pct = ((best_price - price_at) / price_at) * 100
+
+            if not window_expired:
+                # Still within window — update best price seen but don't finalize
+                if best_price > (prev_best or 0):
+                    with self._get_conn() as conn:
+                        conn.execute(text(
+                            "UPDATE predictions SET price_at_validation = :price WHERE id = :id"
+                        ), {"price": best_price, "id": prediction_id})
+                        conn.commit()
+                return None
+
+            # Window expired — evaluate based on best price achieved
+            if best_change_pct >= _THRESHOLD_PCT:
                 outcome = "correct"
-            elif actual_change_pct <= -_THRESHOLD_PCT:
-                outcome = "incorrect"
             else:
-                outcome = "neutral"
+                outcome = "incorrect"
 
         elif direction in ("down", "bearish", "negative", "baja"):
-            if actual_change_pct <= -_THRESHOLD_PCT:
-                outcome = "correct"
-            elif actual_change_pct >= _THRESHOLD_PCT:
-                outcome = "incorrect"
-            else:
-                outcome = "neutral"
+            # Update best (minimum) price seen
+            best_price = min(current_price, prev_best) if prev_best > 0 else current_price
+            best_change_pct = ((best_price - price_at) / price_at) * 100
 
-        else:  # neutral direction
+            if not window_expired:
+                if best_price < (prev_best or float('inf')):
+                    with self._get_conn() as conn:
+                        conn.execute(text(
+                            "UPDATE predictions SET price_at_validation = :price WHERE id = :id"
+                        ), {"price": best_price, "id": prediction_id})
+                        conn.commit()
+                return None
+
+            # Window expired — evaluate based on best (lowest) price achieved
+            if best_change_pct <= -_THRESHOLD_PCT:
+                outcome = "correct"
+            else:
+                outcome = "incorrect"
+
+        else:  # neutral
+            if not window_expired:
+                return None
             outcome = "neutral"
+            best_price = current_price
+            actual_change_pct = ((best_price - price_at) / price_at) * 100
 
         validated_at = datetime.utcnow().isoformat()
 
