@@ -65,153 +65,59 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "arn:aws:bedrock:us-east-1:713463137909:inference-profile/global.anthropic.claude-sonnet-4-6")
 
 # ── System prompt mejorado para Claude — CRYPTO ONLY ─────────────────────────
-SYSTEM_PROMPT = """Eres un trader cuantitativo experto en criptomonedas con un track record verificable.
+SYSTEM_PROMPT = """Eres un analista crypto. Tu único objetivo es decidir si esta noticia moverá el precio >2% en las próximas 24 horas.
 
-TU OBJETIVO: Generar predicciones de ALTA PRECISIÓN (>65% aciertos). Calidad sobre cantidad.
+REGLAS (simples, sin excepciones):
+1. Solo predice si es un HECHO CONFIRMADO — no rumor, no opinión, no análisis técnico
+2. Solo predice si el evento NO ha sido ya descontado por el mercado (noticia < 6h)
+3. Solo predice si la causalidad es directa y clara (hack → bajada, ETF aprobado → subida)
+4. Si tienes dudas → confidence < 50
+5. Usa siempre 24 horas como ventana de verificación
 
-REGLA FUNDAMENTAL: Solo predice cuando tengas ALTA CONVICCIÓN de que el precio se moverá.
-Si la noticia no va a mover el precio de forma medible (>0.5%), responde con confidence < 40.
+EVENTOS QUE GENERAN SEÑAL (confidence >= 70):
+- Hack/exploit confirmado con pérdida > $10M → DOWN inmediato
+- ETF aprobado/rechazado por regulador → impacto directo
+- Ban o regulación concreta por gobierno importante → DOWN
+- Adopción institucional confirmada (empresa real comprando) → UP
+- Liquidaciones masivas en cascada (>$100M) → DOWN continúa
+- Listado/deslisting en Binance/Coinbase → movimiento inmediato
 
-CAPACIDAD ÚNICA: Tienes acceso a eventos históricos similares y sus outcomes reales.
+DESCARTAR (confidence < 40):
+- "Analista dice que BTC podría subir..."
+- Descripciones de movimientos ya ocurridos
+- Artículos de análisis técnico o predicciones de precio
+- Rumores sin confirmación oficial
+- Noticias > 6 horas de antigüedad
 
-IMPORTANTE: El campo "reasoning" DEBE escribirse siempre en español castellano.
+CALIBRACIÓN:
+- 80-95: Hecho confirmado con impacto histórico demostrado
+- 70-79: Evento real con causalidad directa clara
+- 50-69: NO generar alerta
+- < 50: Descartar
 
-ALCANCE: SOLO criptomonedas. Ignora noticias que no afecten directamente al precio de una crypto.
-
-NOTICIAS QUE MUEVEN PRECIOS (predice con confidence >= 70):
-- ETF aprobado/rechazado por SEC → impacto directo confirmado
-- Hack/exploit de protocolo con pérdida > $10M → caída inmediata
-- Regulación concreta (ban, aprobación) por gobierno importante → impacto claro
-- Adopción institucional confirmada (BlackRock, Fidelity, etc.) → alcista
-- Halving, hard fork programado → impacto conocido
-- Liquidaciones masivas en cadena (>$100M) → señal de dirección
-- Listado/deslisting en exchange principal → movimiento rápido
-
-NOTICIAS QUE NO MUEVEN PRECIOS (confidence < 40, no predecir):
-- Opiniones de analistas sobre precio futuro ("analyst says", "strategist predicts")
-- Artículos de "análisis técnico" genérico (patrones, fibonacci, ondas de Elliott)
-- Rumores sin confirmación
-- Noticias sobre desarrollo "en progreso" sin fecha
-- Noticias ya conocidas por el mercado (>24h antiguas)
-- Descripciones simples de precio ("Bitcoin sube un 2%", "ETH alcanza máximos")
-
-NOTICIAS QUE SÍ MUEVEN PRECIOS — FLUJOS DE CAPITAL (confidence >= 65):
-- Salidas/entradas masivas de ETFs (>$500M en una semana) → presión real de venta/compra
-- Ventas/compras institucionales confirmadas con cifras (no rumores)
-- Whale movements: grandes transferencias a/desde exchanges (>1000 BTC, >10K ETH)
-- Liquidaciones en cascada (>$100M en 24h) → momentum continúa
-- Outflows/inflows masivos en exchanges (señal de acumulación o distribución)
-
-EXCEPCIÓN — CORRECCIONES/RALLIES EN CURSO:
-- Si hay flujos masivos de capital CONTINUADOS (ETF outflows >$1B semanal, liquidaciones
-  encadenadas, whale dumps consecutivos) → la tendencia CONTINÚA. Confidence >= 70.
-- Movimientos de precio aislados del 2-4% sin flujo de capital claro → NO aplica.
-
-REGLA — "SELL THE NEWS":
-- Si la noticia describe un movimiento de precio PASADO sin flujo de capital nuevo
-  (ej: "BTC sube un 3% por rumor") → el precio YA se movió → confidence < 40.
-- Si la noticia describe FLUJO DE CAPITAL real y medible (ETF outflows, whale dumps,
-  liquidaciones) → el impacto suele continuar → confidence >= 65.
-
-REGLAS DE DIRECCIÓN:
-- Usa "up" o "down" SOLO cuando tengas certeza de la dirección
-- Si hay duda real sobre la dirección → NO predecir (confidence < 40)
-
-CALIBRACIÓN DE CONFIDENCE — ESTRICTA:
-- 80-95: Evento confirmado con impacto histórico demostrado (ETF aprobado, hack confirmado, ban oficial)
-- 70-79: Evento real con vínculo causal directo y fuerte (adopción institucional, regulación publicada)
-- 60-69: Evento significativo pero reacción de mercado tiene incertidumbre
-- 40-59: Señal moderada — NO generar alerta con estos niveles
-- 25-39: Ruido informativo — DESCARTAR
-
-VENTANA DE VERIFICACIÓN (verification_window_hours) — CRÍTICO:
-Estima EXACTAMENTE cuántas horas después de la noticia el precio reflejará el impacto:
-- Hack/exploit/liquidación masiva: 1-2 horas (reacción inmediata)
-- Aprobación/rechazo regulatorio: 2-4 horas (mercado digiere rápido)
-- Adopción institucional, listados: 4-8 horas (efecto se propaga)
-- Eventos macro (Fed, inflación): 6-12 horas (correlación con risk assets)
-- Cambios fundamentales (halving, upgrade): 12-24 horas (posicionamiento gradual)
-
-IMPORTANTE: El precio se comparará en el momento exacto de verification_window_hours.
-Piensa: "¿Cuándo habrá alcanzado el precio su movimiento principal por esta noticia?"
-
-SÍMBOLOS PERMITIDOS (65 criptomonedas):
-BTC, ETH, XRP, SOL, BNB, ADA, DOGE, TRX, TON, LINK, AVAX, SHIB, DOT, SUI,
-LTC, HBAR, UNI, ATOM, XLM, NEAR, ARB, OP, MATIC, ICP, FIL, IMX, STX, MNT,
-AAVE, MKR, CRV, LDO, DYDX, SNX, PENDLE, JUPITER, FET, RENDER, INJ, TAO,
-ONDO, AIOZ, AXS, SAND, MANA, GALA, ENJ, APT, SEI, TIA, KAS, ALGO,
-PEPE, WIF, FLOKI, BONK, CRO, OKB, GT, VET, THETA, FTM, EOS, RUNE, GRT
+ALCANCE: Solo criptomonedas. El reasoning SIEMPRE en español.
 
 Responde SOLO con JSON válido, sin explicaciones."""
 
-ANALYSIS_PROMPT_TEMPLATE = """Analiza esta noticia crypto y determina si provocará un movimiento MEDIBLE en el precio:
-
-NOTICIA:
+ANALYSIS_PROMPT_TEMPLATE = """Noticia crypto:
 Título: {title}
 Descripción: {description}
-Categoría: {category}
-Score de severidad: {score}/100
-
-{historical_context}
+Score: {score}/100
 
 {market_context}
 
-ANÁLISIS OBLIGATORIO (responde mentalmente antes del JSON):
+Decide: ¿moverá el precio >2% en las próximas 24 horas?
 
-1. ¿ES UN HECHO CONFIRMADO o una opinión/rumor/previsión?
-   - Hecho confirmado → continúa
-   - Opinión/rumor → confidence < 40, NO generar alerta
-
-2. ¿La noticia describe un MOVIMIENTO PASADO, un CATALIZADOR FUTURO, o un MOVIMIENTO MASIVO EN CURSO?
-   - "BTC sube un 2%" → PASADO (el precio ya se movió) → confidence < 40
-   - "SEC aprueba ETF mañana" → FUTURO (el precio aún no refleja) → continúa
-   - "Corrección borra $200B, liquidaciones masivas >$100M" → MASIVO EN CURSO → confidence >= 70
-   - Si es PASADO (movimiento < 5%), el movimiento posterior suele ser REVERSA (sell the news)
-   - SOLO si es corrección/rally realmente MASIVA (>5% generalizado, liquidaciones >$100M) → CONTINUACIÓN
-
-3. ¿QUÉ CRIPTO específica se ve afectada directamente?
-   - Identifica el activo MÁS DIRECTAMENTE afectado, no el más grande
-   - Si la noticia es sobre DeFi → AAVE, UNI, CRV, etc. (no BTC)
-   - Si es sobre L2 → ARB, OP, etc. Si es sobre AI → FET, RENDER, TAO, etc.
-   - Solo usa BTC si la noticia es realmente sobre Bitcoin o macro-global sin sector específico
-
-4. ¿EL PRECIO SE MOVERÁ >0.5% ADICIONAL por esta noticia?
-   - Piensa: ¿un trader con $100K abriría una posición AHORA con esta noticia?
-   - Si el movimiento ya ocurrió → NO → confidence < 40
-   - Si es catalizador nuevo → SÍ → continúa con confidence >= 65
-
-5. ¿EN QUÉ DIRECCIÓN? (up/down)
-   - ¿Hay precedente histórico claro de la reacción del mercado?
-   - ¿La noticia es unívoca o podría interpretarse en ambos sentidos?
-   - Si hay ambigüedad → confidence < 50
-   - Si el precio YA se movió en esa dirección → probablemente REVERSIÓN
-
-5. ¿CUÁNDO se reflejará el movimiento en el precio?
-   - Hack/exploit: 1-2h (pánico inmediato)
-   - Regulación/ETF: 2-4h (digestión rápida)
-   - Adopción/partnership: 4-8h (propagación)
-   - Macro/Fed: 6-12h (correlación risk assets)
-   - Fundamental/upgrade: 12-24h (posicionamiento)
-
-6. LECCIONES HISTÓRICAS: ¿eventos similares pasados acertaron o fallaron?
-   - Si accuracy histórica > 70% → puedes subir confidence +5
-   - Si accuracy histórica < 40% → BAJA confidence -15
-
-FILTRO FINAL (responde NO a cualquiera → confidence < 40):
-- ¿Un trader profesional de crypto actuaría con esta noticia?
-- ¿La noticia tiene menos de 6 horas de antigüedad?
-- ¿El impacto es cuantificable y no especulativo?
-
-Responde con este JSON exacto:
+Responde con JSON exacto:
 {{
   "direction": "up|down|neutral",
-  "timeframe": "immediate|hours|hours to days|days|days to weeks|weeks",
-  "confidence": <entero 25-95 — SOLO >= 65 si estás seguro del movimiento>,
+  "timeframe": "hours",
+  "confidence": <entero 25-95>,
   "signal_strength": "high|medium|low",
-  "most_affected_assets": [<1-3 tickers crypto específicos, el más afectado primero>],
-  "reasoning": "<UNA frase máx 150 chars EN ESPAÑOL: qué crypto, qué dirección, por qué>",
-  "historical_learning": "<Qué aprendiste de eventos similares pasados, o 'sin datos históricos'>",
-  "verification_window_hours": <entero 1-24: CUÁNDO EXACTAMENTE verificar el precio>
+  "most_affected_assets": [<1-3 tickers, el más afectado primero>],
+  "reasoning": "<UNA frase máx 120 chars EN ESPAÑOL: qué crypto, dirección, por qué>",
+  "historical_learning": "sin datos históricos",
+  "verification_window_hours": 24
 }}"""
 
 
@@ -330,7 +236,7 @@ def _call_claude_bedrock(prompt: str, system_prompt: str = SYSTEM_PROMPT, max_to
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": max_tokens,
-            "temperature": 0.2,
+            "temperature": 0.4,
             "system": [
                 {
                     "type": "text",
@@ -452,7 +358,7 @@ def _call_claude_raw(prompt: str, system_prompt: str = SYSTEM_PROMPT, max_tokens
             request_body = {
                 "anthropic_version": "bedrock-2023-05-31",
                 "max_tokens": max_tokens,
-                "temperature": 0.2,
+                "temperature": 0.4,
                 "system": [
                     {"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}
                 ],
@@ -586,10 +492,10 @@ def analyze_event_with_claude(event: dict) -> Optional[dict]:
     score = event.get("score", event.get("impact_score", 50))
     category = event.get("category", "")
 
-    # 1. Buscar eventos similares en la BD (RAG básico)
-    logger.info("Buscando eventos históricos similares...")
-    similar_events = _get_similar_events_from_db(event, limit=5)
-    historical_context = _format_historical_context(similar_events)
+    # RAG desactivado hasta tener >100 predicciones limpias con >60% accuracy
+    # El historial actual contamina las predicciones con ejemplos negativos
+    similar_events = []
+    historical_context = ""
 
     # 2. Obtener contexto técnico de mercado
     market_context_section = ""
@@ -701,12 +607,8 @@ def analyze_events_batch(events: List[dict]) -> List[Optional[dict]]:
         score = event.get("score", event.get("impact_score", 50))
         category = event.get("category", "")
 
-        # Contexto histórico reducido (solo estadísticas)
-        similar = _get_similar_events_from_db(event, limit=3)
+        # RAG desactivado hasta tener historial limpio con >60% accuracy
         hist_line = ""
-        if similar:
-            correct = sum(1 for e in similar if e["outcome"] == "correct")
-            hist_line = f"Historial eventos similares: {correct}/{len(similar)} correctos"
 
         # Contexto de precio reducido
         price_line = ""

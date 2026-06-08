@@ -59,11 +59,11 @@ _IMAGE_POOL = [
 
 
 def _get_daily_image(date_str: str = None) -> str:
-    """Picks a unique image based on day-of-year — cycles through entire pool before repeating."""
+    """Picks a unique image based on datetime (including hour) to vary even within same day."""
     if not date_str:
-        date_str = datetime.utcnow().strftime("%Y-%m-%d")
-    day_of_year = datetime.strptime(date_str, "%Y-%m-%d").timetuple().tm_yday
-    idx = day_of_year % len(_IMAGE_POOL)
+        date_str = datetime.utcnow().strftime("%Y-%m-%d-%H-%M")
+    import hashlib
+    idx = int(hashlib.md5(date_str.encode()).hexdigest(), 16) % len(_IMAGE_POOL)
     return _IMAGE_POOL[idx]
 
 # Lista de temas para rotar (se escoge uno aleatorio cada día)
@@ -277,7 +277,10 @@ def publish_post(title, content, keywords, excerpt=None, featured_image=None):
 def _generate_daily_topic():
     """Genera un tema basado en la fecha actual para garantizar unicidad."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    day_of_week = datetime.utcnow().weekday()
+    # Use full date hash to vary topic even when called multiple times same day
+    import hashlib
+    day_hash = int(hashlib.md5(today.encode()).hexdigest(), 16)
+    day_of_week = day_hash % 7  # deterministic but varies by date
 
     themes = [
         {
