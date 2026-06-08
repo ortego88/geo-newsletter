@@ -15,10 +15,9 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("price_signals")
 
-THRESHOLD_PCT = 2.5
-# Price-based cooldown: only re-alert when price moves >5% from last alert price
-# This prevents spam regardless of time — the signal only fires when something NEW happens
-COOLDOWN_PRICE_MOVE_PCT = 5.0
+THRESHOLD_PCT = 2.5       # minimum move to generate any signal
+ALERT_MAX_PCT = 5.0       # moves above this are sent silently (too late to act)
+COOLDOWN_PRICE_MOVE_PCT = 5.0  # re-alert only when price moves 5% from last alert
 
 # All tracked crypto assets — rotated in batches to avoid API rate limits
 ALL_ASSETS = [
@@ -91,7 +90,7 @@ def _refresh_batch_cache(assets: list[str]):
     """Fetch 24h changes for all assets. Uses Binance first (no rate limit), CoinGecko as fallback."""
     global _batch_cache, _price_cache, _batch_cache_time
     import time as _time
-    if _time.time() - _batch_cache_time < 900:  # 15 min cache — avoids CoinGecko 429
+    if _time.time() - _batch_cache_time < 180:  # 3 min cache — Binance has no rate limit
         return
 
     import requests
@@ -215,11 +214,15 @@ def check_price_signals() -> list[dict]:
             )
 
         score = min(85, 65 + int(abs(change)))
+        # Early signal (2.5-5%): alertable — movement just started, user can still act
+        # Late signal (>5%): silent — too late to enter, only for model calibration
+        is_early = abs(change) <= ALERT_MAX_PCT
+        signal_type = "early_move" if is_early else "late_move"
 
         event = {
             "title": title,
             "description": description,
-            "source": "price_signal",
+            "source": f"price_signal_{signal_type}",
             "sources": ["Price Monitor"],
             "suggested_asset": asset,
             "matched_assets": [asset],
@@ -227,9 +230,10 @@ def check_price_signals() -> list[dict]:
             "category": "CRYPTO",
             "published_at": datetime.now(timezone.utc).isoformat(),
             "_change_pct": change,
+            "_silent": not is_early,  # only early moves are sent to users
         }
         signals.append(event)
         _set_cooldown(asset, current_price)
-        logger.info(f"📊 Price signal: {asset} {change:+.1f}% @ ${current_price} (score={score})")
+        logger.info(f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% @ ${current_price}")
 
     return signals

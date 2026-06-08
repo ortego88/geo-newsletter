@@ -279,50 +279,42 @@ def run_pipeline_cycle():
             events = []
             logger.info("Sin eventos de noticias en este ciclo.")
 
-        # Price signals — SILENT mode: saved to DB for model evaluation only, NOT sent to users.
-        # This fills the predictions table so we can measure accuracy without spamming users.
+        # Price signals via Binance (3-min cache, no rate limit):
+        # - 2.5-5% move (_silent=False): ALERTABLE — early signal, user can still act
+        # - >5% move (_silent=True): calibration only — too late to enter
         try:
-            from src.services.price_signals import _get_current_batch, _batch_cache, _refresh_batch_cache, ALL_ASSETS
-            from src.services.real_price_fetcher import get_price
+            from src.services.price_signals import check_price_signals
+            from src.services.real_price_fetcher import get_price as _gp
 
-            _refresh_batch_cache(ALL_ASSETS)
-            all_assets = _get_current_batch()
-
-            for asset in all_assets:
-                change = _batch_cache.get(asset.upper())
-                if change is None or abs(change) < 2.5:
-                    continue
-                price_now = get_price(asset) or 0.0
+            price_events = check_price_signals()
+            for pe in price_events:
+                asset = pe.get("suggested_asset", "")
+                change = pe.get("_change_pct", 0)
+                price_now = _gp(asset) or 0.0
                 if price_now <= 0:
                     continue
                 direction = "down" if change < 0 else "up"
-                silent_event = {
-                    "title": f"{asset} {'cae' if change < 0 else 'sube'} un {abs(change):.1f}% en 24h",
-                    "description": f"Movimiento de precio en {asset}: {change:+.1f}% en las últimas 24h.",
-                    "source": "price_signal_silent",
-                    "sources": ["Price Monitor (silent)"],
-                    "suggested_asset": asset,
-                    "matched_assets": [asset],
-                    "score": min(85, 60 + int(abs(change))),
-                    "category": "CRYPTO",
-                    "published_at": datetime.utcnow().isoformat(),
-                    "analysis": {
-                        "direction": direction,
-                        "confidence": 65,
-                        "most_affected_assets": [asset],
-                        "timeframe": "hours",
-                        "reasoning": f"{asset} {change:+.1f}% en 24h — señal silenciosa para calibración",
-                        "signal_strength": "medium",
-                        "verification_window_hours": 24,
-                    },
-                    "_silent": True,  # flag: do NOT send to users
+                pe["analysis"] = {
+                    "direction": direction,
+                    "confidence": 70,
+                    "most_affected_assets": [asset],
+                    "timeframe": "hours",
+                    "reasoning": f"{asset} {change:+.1f}% en 24h — {'señal temprana' if not pe.get('_silent') else 'calibración'}",
+                    "signal_strength": "high" if abs(change) >= 4 else "medium",
+                    "verification_window_hours": 24,
                 }
-                pred_id = tracker.save_prediction(silent_event, price_now)
+                pred_id = tracker.save_prediction(pe, price_now)
                 if pred_id:
-                    silent_event["prediction_id"] = pred_id
-                    silent_event["price_at_prediction"] = price_now
+                    pe["prediction_id"] = pred_id
+                    pe["price_at_prediction"] = price_now
+                    if not pe.get("_silent"):
+                        events.append(pe)  # early moves go to user alerts
+            if price_events:
+                early = sum(1 for p in price_events if not p.get("_silent"))
+                late = len(price_events) - early
+                logger.info(f"📊 Price signals: {early} alertables (2.5-5%), {late} silenciosas (>5%)")
         except Exception as e:
-            logger.debug(f"Silent price signals error: {e}")
+            logger.debug(f"Price signals error: {e}")
 
         if not events:
             return
