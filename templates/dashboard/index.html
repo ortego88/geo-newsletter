@@ -255,7 +255,7 @@
                       {% else %}—{% endif %}
                     </td>
                     <td class="px-3 py-3 text-right font-mono text-slate-300">
-                      {% if pred.price_at_validation %}
+                      {% if outcome != 'pending' and pred.price_at_validation %}
                         {% if pred.price_at_validation >= 1000 %}
                           ${{ "{:,.0f}".format(pred.price_at_validation) }}
                         {% elif pred.price_at_validation >= 1 %}
@@ -263,15 +263,15 @@
                         {% else %}
                           ${{ "%.4f"|format(pred.price_at_validation) }}
                         {% endif %}
-                      {% else %}<span class="text-slate-500">{{ t.pending_lowercase }}</span>{% endif %}
+                      {% else %}<span class="text-slate-500">—</span>{% endif %}
                     </td>
                     <td class="px-3 py-3 text-right font-mono">
-                      {% if pred.price_change_pct is not none %}
+                      {% if outcome != 'pending' and pred.price_change_pct is not none %}
                         <span class="{% if pred.price_change_pct > 0 %}text-up-green{% elif pred.price_change_pct < 0 %}text-down-red{% else %}text-slate-400{% endif %}">
                           {{ "%+.2f"|format(pred.price_change_pct) }}%
                         </span>
                       {% else %}
-                        <span class="text-slate-500">{{ t.pending_lowercase }}</span>
+                        <span class="text-slate-500">—</span>
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-right font-mono"
