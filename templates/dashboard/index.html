@@ -184,7 +184,6 @@
               <thead>
                 <tr class="border-b border-slate-700 bg-slate-900/50">
                   <th class="text-left px-3 py-3 text-slate-400 font-medium">#</th>
-                  <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_event">{{ t.col_title }}</th>
                   <th class="text-left px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_asset">{{ t.col_asset }}</th>
                   <th class="text-center px-3 py-3 text-slate-400 font-medium" data-i18n="dash.col_direction">Dir</th>
                   <th class="text-right px-3 py-3 text-slate-400 font-medium cursor-pointer select-none">
@@ -223,7 +222,6 @@
                   {% set row_id = (page - 1) * per_page + loop.index %}
                   <tr class="hover:bg-slate-700/30 transition cursor-pointer" data-status="{{ outcome }}" onclick="toggleDetail({{ row_id }})">
                     <td class="px-3 py-3 text-slate-500">{{ row_id }}</td>
-                    <td class="px-3 py-3 text-slate-300 max-w-[220px] truncate">{{ (pred.title or '')[:60] }}</td>
                     <td class="px-3 py-3 font-semibold text-white">
                       <span data-tooltip="{{ asset_names.get(pred.asset, pred.asset or '—') }}">{{ pred.asset or '—' }}</span>
                     </td>
@@ -245,12 +243,12 @@
                     </td>
                     <td class="px-3 py-3 text-right font-mono text-slate-300">
                       {% if pred.price_at_prediction %}
-                        {% if pred.price_at_prediction >= 1000 %}
-                          ${{ "{:,.0f}".format(pred.price_at_prediction) }}
-                        {% elif pred.price_at_prediction >= 1 %}
-                          ${{ "%.2f"|format(pred.price_at_prediction) }}
-                        {% else %}
-                          ${{ "%.4f"|format(pred.price_at_prediction) }}
+                        {% set p = pred.price_at_prediction %}
+                        {% if p >= 1000 %}${{ "{:,.2f}".format(p) }}
+                        {% elif p >= 1 %}${{ "%.4f"|format(p) }}
+                        {% elif p >= 0.01 %}${{ "%.5f"|format(p) }}
+                        {% elif p >= 0.0001 %}${{ "%.6f"|format(p) }}
+                        {% else %}${{ "%.8f"|format(p) }}
                         {% endif %}
                       {% else %}—{% endif %}
                     </td>
