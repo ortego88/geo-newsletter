@@ -413,7 +413,9 @@ def create_app():
             d["predicted_at_madrid"] = _to_madrid_str(d.get("predicted_at"))
             p_in = d.get("price_at_prediction") or 0
             p_out = d.get("price_at_validation")
-            if p_in and p_in > 0 and p_out:
+            outcome = d.get("outcome", "pending")
+            # Only show price_change_pct when fully validated (not during 24h tracking window)
+            if p_in and p_in > 0 and p_out and outcome != "pending":
                 d["price_change_pct"] = round((p_out - p_in) / p_in * 100, 2)
             else:
                 d["price_change_pct"] = None

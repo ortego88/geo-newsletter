@@ -291,11 +291,13 @@ def run_pipeline_cycle():
             from src.services.price_signals import check_price_signals
             from src.services.real_price_fetcher import get_price as _gp
 
+            from src.services.price_signals import _price_cache as _ps_price_cache
             price_events = check_price_signals()
             for pe in price_events:
                 asset = pe.get("suggested_asset", "")
                 change = pe.get("_change_pct", 0)
-                price_now = _gp(asset) or 0.0
+                # Use Binance cache price (reliable) — fall back to real_price_fetcher
+                price_now = _ps_price_cache.get(asset.upper(), 0) or _gp(asset) or 0.0
                 if price_now <= 0:
                     continue
                 direction = "down" if change < 0 else "up"
