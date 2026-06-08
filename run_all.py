@@ -181,19 +181,19 @@ def _send_pipeline_alerts(events: list):
         return
 
     # Step 1: filter alertable events
-    # DOWN requires confidence >= 70, UP requires confidence >= 80 (much harder to predict)
+    # DOWN requires confidence >= 65, UP requires confidence >= 75
     resolved = []
     for e in events:
         if not e.get("analysis") or e.get("score", 0) < 60:
             continue
         conf = e.get("analysis", {}).get("confidence", 0)
         direction = e.get("analysis", {}).get("direction", "")
-        min_conf = 80 if direction == "up" else 70
+        min_conf = 75 if direction == "up" else 65
         if conf >= min_conf:
             resolved.append(e)
 
     if not resolved:
-        logger.info("Sin eventos con confianza suficiente (DOWN≥70, UP≥80) para alertar")
+        logger.info("Sin eventos con confianza suficiente (DOWN≥65, UP≥75) para alertar")
         return
 
     # Only send alerts for events that were saved in the predictions DB.

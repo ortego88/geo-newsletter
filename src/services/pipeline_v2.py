@@ -506,7 +506,7 @@ class AnalysisPipeline:
 
             event_score = event.get("score", 0)
             event_confidence = analysis.get("confidence", 0)
-            if event_score < 60 or event_confidence < 70:
+            if event_score < 60 or event_confidence < 65:
                 logger.info(
                     f"   ⏭️ No guardada (score={event_score}, conf={event_confidence}): "
                     f"{event.get('title', '')[:55]}"
@@ -603,7 +603,7 @@ class AnalysisPipeline:
                 if source in low_accuracy_up_sources:
                     original_conf = analysis.get("confidence", 0)
                     analysis["confidence"] = min(original_conf, 65)
-                    if analysis["confidence"] < 70:
+                    if analysis["confidence"] < 65:
                         logger.info(
                             f"   ⏭️ Source filter: {source} tiene bajo accuracy UP "
                             f"(conf {original_conf}→{analysis['confidence']}): "

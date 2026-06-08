@@ -515,7 +515,7 @@ def scan_microstructure_signals() -> list[dict]:
                 logger.debug(f"🔬 Whale dump on {asset} but price not confirming ({price_5m:+.2f}% 5m) — skipping")
                 continue
             # Filter 4: sector alignment — at least 2/5 top cryptos also falling
-            if sector["down_count"] < 2 and asset not in ("BTC", "ETH"):
+            if sector["down_count"] < 1 and asset not in ("BTC", "ETH"):
                 logger.debug(f"🔬 Whale dump on {asset} but sector not aligned ({sector['down_count']}/5) — skipping")
                 continue
             confidence = 78
@@ -532,7 +532,7 @@ def scan_microstructure_signals() -> list[dict]:
             price_5m = _get_price_change_5m(sym)
             if price_5m >= -0.2:
                 continue
-            if sector["down_count"] < 3:
+            if sector["down_count"] < 2:
                 continue
             confidence = 75
             reasoning = (
