@@ -1,11 +1,13 @@
 <!-- Trianio Brand: Favicon + Self-hosted Fonts + Compiled Tailwind -->
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-<!-- Preload critical fonts (self-hosted, no external DNS lookup) -->
+<!-- Preload only the primary font (400 weight) — 600 is non-critical -->
 <link rel="preload" href="/static/fonts/dm-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/static/fonts/dm-serif-display-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/static/css/fonts.css">
-<!-- Compiled Tailwind (static, no runtime JS) -->
-<link rel="stylesheet" href="/static/css/tailwind.min.css">
+<!-- fonts.css deferred: swap prevents FOIT, browser uses system font first -->
+<link rel="preload" href="/static/css/fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="/static/css/fonts.css"></noscript>
+<!-- Tailwind: inline critical above-the-fold styles, defer rest -->
+<link rel="preload" href="/static/css/tailwind.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="/static/css/tailwind.min.css"></noscript>
 <!-- DataLayer pageview — MUST be before GTM so variables are available when tags fire -->
 <script>
 window.dataLayer = window.dataLayer || [];
@@ -52,7 +54,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.defer=true;j.src=
 <script src="/static/js/datalayer.js" defer></script>
 <script src="/static/js/push.js" defer></script>
 <style>
-  body { font-family: 'DM Sans', sans-serif; }
+  /* Critical above-the-fold styles — inlined to avoid render-blocking */
+  *,::after,::before{box-sizing:border-box}
+  html{line-height:1.5;-webkit-text-size-adjust:100%}
+  body{margin:0;font-family:'DM Sans',sans-serif;background-color:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
+  .bg-slate-900{background-color:#0f172a}
+  .text-white{color:#fff}
+  .text-slate-400{color:#94a3b8}
+  /* Utility classes needed before Tailwind loads */
   .text-up-green { color: #34d399; }
   .text-down-red { color: #f87171; }
   .badge-correct { background: rgba(52,211,153,0.15); color: #34d399; }
