@@ -299,9 +299,10 @@ def run_pipeline_cycle():
                 _syms = [a + "USDT" for a in _assets_needed]
                 _live_prices = {}
                 try:
+                    import json as _json
                     _br = _req.get(
                         "https://api.binance.com/api/v3/ticker/price",
-                        params={"symbols": str(_syms).replace("'", '"')},
+                        params={"symbols": _json.dumps(_syms)},  # proper JSON array format
                         timeout=8,
                     )
                     if _br.status_code == 200:
