@@ -296,9 +296,19 @@ def run_pipeline_cycle():
             for pe in price_events:
                 asset = pe.get("suggested_asset", "")
                 change = pe.get("_change_pct", 0)
-                # Use Binance cache price (reliable) — fall back to real_price_fetcher
-                price_now = _ps_price_cache.get(asset.upper(), 0) or _gp(asset) or 0.0
+                # Priority 1: Binance cache (most reliable, updated every 3min)
+                price_now = _ps_price_cache.get(asset.upper(), 0)
+                # Priority 2: real_price_fetcher fallback
                 if price_now <= 0:
+                    price_now = _gp(asset) or 0.0
+                if price_now <= 0:
+                    continue
+                # Sanity check: price must be consistent with 24h change
+                # If change is +3% but price is $0.008, something is wrong
+                # Estimate rough price range: if we know the change, the price
+                # should be > $0.001 for most tracked assets
+                if price_now < 0.0001:
+                    logger.warning(f"Suspicious price for {asset}: ${price_now} — skipping")
                     continue
                 direction = "down" if change < 0 else "up"
                 pe["analysis"] = {

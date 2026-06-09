@@ -120,7 +120,9 @@ def _refresh_batch_cache(assets: list[str]):
                     chg = float(t.get("priceChangePercent", 0))
                     price = float(t.get("lastPrice", 0))
                     _batch_cache[asset] = chg
-                    if price > 0:
+                    # Only store price if it passes minimum sanity check
+                    # Protects against Binance returning fractional/wrong prices
+                    if price > 0.000001:
                         _price_cache[asset] = price
             _batch_cache_time = _time.time()
             logger.info(f"📊 Price cache refreshed via Binance: {len(_batch_cache)} assets")
