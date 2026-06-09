@@ -291,24 +291,33 @@ def run_pipeline_cycle():
             from src.services.price_signals import check_price_signals
             from src.services.real_price_fetcher import get_price as _gp
 
-            from src.services.price_signals import _price_cache as _ps_price_cache
             price_events = check_price_signals()
+            if price_events:
+                # Fresh Binance price lookup for all assets at once — avoids stale cache
+                import requests as _req
+                _assets_needed = list({pe.get("suggested_asset","") for pe in price_events if pe.get("suggested_asset")})
+                _syms = [a + "USDT" for a in _assets_needed]
+                _live_prices = {}
+                try:
+                    _br = _req.get(
+                        "https://api.binance.com/api/v3/ticker/price",
+                        params={"symbols": str(_syms).replace("'", '"')},
+                        timeout=8,
+                    )
+                    if _br.status_code == 200:
+                        for _t in _br.json():
+                            _a = _t["symbol"].replace("USDT", "")
+                            _live_prices[_a] = float(_t["price"])
+                except Exception:
+                    pass
+
             for pe in price_events:
                 asset = pe.get("suggested_asset", "")
                 change = pe.get("_change_pct", 0)
-                # Priority 1: Binance cache (most reliable, updated every 3min)
-                price_now = _ps_price_cache.get(asset.upper(), 0)
-                # Priority 2: real_price_fetcher fallback
-                if price_now <= 0:
-                    price_now = _gp(asset) or 0.0
-                if price_now <= 0:
-                    continue
-                # Sanity check: price must be consistent with 24h change
-                # If change is +3% but price is $0.008, something is wrong
-                # Estimate rough price range: if we know the change, the price
-                # should be > $0.001 for most tracked assets
-                if price_now < 0.0001:
-                    logger.warning(f"Suspicious price for {asset}: ${price_now} — skipping")
+                # Use freshly fetched Binance price — most reliable
+                price_now = _live_prices.get(asset, 0) or _gp(asset) or 0.0
+                if price_now <= 0 or price_now < 0.0001:
+                    logger.warning(f"Suspicious/missing price for {asset}: ${price_now} — skipping")
                     continue
                 direction = "down" if change < 0 else "up"
                 pe["analysis"] = {
