@@ -37,7 +37,8 @@ ALL_ASSETS = [
 
 _cycle_index = 0
 
-# Stores the price at which we last alerted for each asset
+# Stores last alert price per asset+direction: key = "ASSET_up" or "ASSET_down"
+# UP alert does NOT block a DOWN alert on the same asset — they are independent
 _last_alert_price: dict[str, float] = {}
 _COOLDOWN_FILE = "/tmp/price_signal_cooldowns.json"
 
@@ -64,20 +65,26 @@ def _save_cooldowns():
 _load_cooldowns()
 
 
-def _is_on_cooldown(asset: str, current_price: float = 0) -> bool:
-    """Re-alert only if price moved >5% from last alert. No time-based blocking."""
-    last_price = _last_alert_price.get(asset, 0)
+def _cooldown_key(asset: str, direction: str) -> str:
+    return f"{asset.upper()}_{direction}"
+
+
+def _is_on_cooldown(asset: str, current_price: float = 0, direction: str = "") -> bool:
+    """Per-direction cooldown: UP alert doesn't block a DOWN alert on same asset."""
+    key = _cooldown_key(asset, direction) if direction else asset.upper()
+    last_price = _last_alert_price.get(key, 0)
     if last_price <= 0:
-        return False  # Never alerted → go ahead
+        return False
     if current_price <= 0:
-        return True   # Can't verify → be conservative
+        return True
     move_pct = abs((current_price - last_price) / last_price) * 100
     return move_pct < COOLDOWN_PRICE_MOVE_PCT
 
 
-def _set_cooldown(asset: str, price: float = 0):
+def _set_cooldown(asset: str, price: float = 0, direction: str = ""):
+    key = _cooldown_key(asset, direction) if direction else asset.upper()
     if price > 0:
-        _last_alert_price[asset] = price
+        _last_alert_price[key] = price
     _save_cooldowns()
 
 
@@ -195,7 +202,8 @@ def check_price_signals() -> list[dict]:
 
         # Get current price to check price-based cooldown
         current_price = _price_cache.get(asset.upper(), 0)
-        if _is_on_cooldown(asset, current_price):
+        direction = "down" if change < 0 else "up"
+        if _is_on_cooldown(asset, current_price, direction):
             continue
 
         if change <= -THRESHOLD_PCT:
@@ -233,7 +241,7 @@ def check_price_signals() -> list[dict]:
             "_silent": not is_early,  # only early moves are sent to users
         }
         signals.append(event)
-        _set_cooldown(asset, current_price)
+        _set_cooldown(asset, current_price, direction)
         logger.info(f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% @ ${current_price}")
 
     return signals
