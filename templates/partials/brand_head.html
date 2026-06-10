@@ -2,12 +2,9 @@
 <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <!-- Preload only the primary font (400 weight) — 600 is non-critical -->
 <link rel="preload" href="/static/fonts/dm-sans-400.woff2" as="font" type="font/woff2" crossorigin>
-<!-- fonts.css deferred: swap prevents FOIT, browser uses system font first -->
-<link rel="preload" href="/static/css/fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/static/css/fonts.css"></noscript>
-<!-- Tailwind: inline critical above-the-fold styles, defer rest -->
-<link rel="preload" href="/static/css/tailwind.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/static/css/tailwind.min.css"></noscript>
+<!-- CSS loaded synchronously — deferred CSS caused too many FOUC issues -->
+<link rel="stylesheet" href="/static/css/fonts.css">
+<link rel="stylesheet" href="/static/css/tailwind.min.css">
 <!-- DataLayer pageview — MUST be before GTM so variables are available when tags fire -->
 <script>
 window.dataLayer = window.dataLayer || [];
