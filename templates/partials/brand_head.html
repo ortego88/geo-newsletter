@@ -54,13 +54,22 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.defer=true;j.src=
 <script src="/static/js/datalayer.js" defer></script>
 <script src="/static/js/push.js" defer></script>
 <style>
-  /* Critical above-the-fold styles — inlined to avoid render-blocking */
+  /* Critical above-the-fold styles — inlined to prevent FOUC */
   *,::after,::before{box-sizing:border-box}
   html{line-height:1.5;-webkit-text-size-adjust:100%}
   body{margin:0;font-family:'DM Sans',sans-serif;background-color:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
-  .bg-slate-900{background-color:#0f172a}
+  /* Nav — prevents flash of unstyled nav */
+  nav{position:fixed;top:0;left:0;right:0;z-index:50;background-color:rgba(15,23,42,0.8);border-bottom:1px solid #1e293b}
+  #user-menu-wrapper{position:relative}
+  #user-dropdown{display:none;position:absolute;right:0;top:100%;margin-top:8px;background:#1e293b;border:1px solid #334155;border-radius:12px;padding:4px 0;z-index:50;min-width:200px}
+  #mobile-nav-menu{display:none}
+  /* Logo triangle — prevent white flash */
   .text-white{color:#fff}
   .text-slate-400{color:#94a3b8}
+  .text-slate-300{color:#cbd5e1}
+  .text-emerald-400{color:#E8B84B}
+  .bg-slate-900{background-color:#0f172a}
+  .bg-slate-800{background-color:#1e293b}
   /* Utility classes needed before Tailwind loads */
   .text-up-green { color: #34d399; }
   .text-down-red { color: #f87171; }
@@ -68,4 +77,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.defer=true;j.src=
   .badge-incorrect { background: rgba(248,113,113,0.15); color: #f87171; }
   #cookie-banner { display: none !important; }
   #cookie-banner.is-visible { display: block !important; }
+  /* Hide elements that need JS/CSS to display correctly */
+  [x-cloak]{display:none}
 </style>
