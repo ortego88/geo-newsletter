@@ -54,18 +54,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.defer=true;j.src=
 <script src="/static/js/datalayer.js" defer></script>
 <script src="/static/js/push.js" defer></script>
 <style>
-  /* Critical above-the-fold styles — inlined to avoid render-blocking */
+  /* Critical inline styles — only what's needed to prevent FOUC on logo/nav */
   *,::after,::before{box-sizing:border-box}
   html{line-height:1.5;-webkit-text-size-adjust:100%}
   body{margin:0;font-family:'DM Sans',sans-serif;background-color:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
-  .bg-slate-900{background-color:#0f172a}
-  .text-white{color:#fff}
-  .text-slate-400{color:#94a3b8}
+  /* Logo: prevent the SVG from rendering huge before Tailwind sets w-7 h-7 */
+  .logo-svg{width:1.75rem;height:1.75rem;display:block;flex-shrink:0}
+  /* Nav logo link: prevent stacking before flex loads */
+  .logo-link{display:inline-flex;align-items:center;gap:0.5rem;text-decoration:none;opacity:1;transition:opacity .15s}
+  /* Logo wordmark font size */
+  .logo-wordmark{font-size:1.125rem;line-height:1.25rem;font-weight:700;color:#fff;letter-spacing:-0.025em}
   /* Utility classes needed before Tailwind loads */
-  .text-up-green { color: #34d399; }
-  .text-down-red { color: #f87171; }
-  .badge-correct { background: rgba(52,211,153,0.15); color: #34d399; }
-  .badge-incorrect { background: rgba(248,113,113,0.15); color: #f87171; }
-  #cookie-banner { display: none !important; }
-  #cookie-banner.is-visible { display: block !important; }
+  .text-up-green{color:#34d399}
+  .text-down-red{color:#f87171}
+  .badge-correct{background:rgba(52,211,153,0.15);color:#34d399}
+  .badge-incorrect{background:rgba(248,113,113,0.15);color:#f87171}
+  #cookie-banner{display:none !important}
+  #cookie-banner.is-visible{display:block !important}
 </style>
