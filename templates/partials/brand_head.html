@@ -58,12 +58,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.defer=true;j.src=
   *,::after,::before{box-sizing:border-box}
   html{line-height:1.5;-webkit-text-size-adjust:100%}
   body{margin:0;font-family:'DM Sans',sans-serif;background-color:#0f172a;color:#e2e8f0;-webkit-font-smoothing:antialiased}
-  /* Logo: prevent the SVG from rendering huge before Tailwind sets w-7 h-7 */
-  .logo-svg{width:1.75rem;height:1.75rem;display:block;flex-shrink:0}
-  /* Nav logo link: prevent stacking before flex loads */
-  .logo-link{display:inline-flex;align-items:center;gap:0.5rem;text-decoration:none;opacity:1;transition:opacity .15s}
-  /* Logo wordmark font size */
-  .logo-wordmark{font-size:1.125rem;line-height:1.25rem;font-weight:700;color:#fff;letter-spacing:-0.025em}
+  /* Logo: target by ID to prevent affecting other elements */
+  #trianio-logo{display:inline-flex;align-items:center;gap:0.5rem;text-decoration:none}
+  #trianio-logo-svg{width:1.75rem;height:1.75rem;display:block;flex-shrink:0}
   /* Utility classes needed before Tailwind loads */
   .text-up-green{color:#34d399}
   .text-down-red{color:#f87171}
