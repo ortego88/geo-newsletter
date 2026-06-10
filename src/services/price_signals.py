@@ -224,9 +224,12 @@ def check_price_signals() -> list[dict]:
             )
 
         score = min(85, 65 + int(abs(change)))
-        # Early signal (2.5-5%): alertable — movement just started, user can still act
-        # Late signal (>5%): silent — too late to enter, only for model calibration
+        is_down = change < 0
         is_early = abs(change) <= ALERT_MAX_PCT
+        # DOWN early (2.5-5%): alertable — downtrend confirmed, user can act
+        # UP early (2.5-5%): SILENT — data shows 17% accuracy, too many false positives
+        # Any late (>5%): silent — too late to enter
+        is_alertable = is_down and is_early
         signal_type = "early_move" if is_early else "late_move"
 
         event = {
@@ -240,7 +243,7 @@ def check_price_signals() -> list[dict]:
             "category": "CRYPTO",
             "published_at": datetime.now(timezone.utc).isoformat(),
             "_change_pct": change,
-            "_silent": not is_early,  # only early moves are sent to users
+            "_silent": not is_alertable,  # only DOWN early moves sent to users
         }
         signals.append(event)
         _set_cooldown(asset, current_price, direction)
