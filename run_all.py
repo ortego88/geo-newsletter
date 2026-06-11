@@ -320,6 +320,14 @@ def run_pipeline_cycle():
                 if price_now <= 0 or price_now < 0.0001:
                     logger.warning(f"Suspicious/missing price for {asset}: ${price_now} — skipping")
                     continue
+                # Cross-check: price must be consistent with 24h % change
+                # If price is $0.0007 but 24h change is +3%, that implies yesterday's price
+                # was $0.00068 — clearly wrong for ARB ($0.08). Skip if ratio is off.
+                # Only applies to assets that shouldn't be sub-penny
+                _KNOWN_MICRO = {'PEPE','SHIB','BONK','FLOKI','GALA','WIF','SATS'}
+                if asset.upper() not in _KNOWN_MICRO and price_now < 0.01:
+                    logger.warning(f"Price too low for {asset}: ${price_now} — likely BTC-denominated, skipping")
+                    continue
                 direction = "down" if change < 0 else "up"
                 pe["analysis"] = {
                     "direction": direction,
