@@ -528,21 +528,25 @@ class PredictionTracker:
         Solo se cuentan 'correct' e 'incorrect' para la tasa de aciertos.
         Esto evita que predicciones con movimientos insignificantes penalicen la métrica.
         """
+        # Only count predictions that were actually sent to users (not silent calibration)
+        SILENT_SOURCES = ("price_signal_late_move", "price_signal_silent")
+        silent_filter = " AND source NOT IN ('price_signal_late_move', 'price_signal_silent')"
+
         with self._get_conn() as conn:
             rows = conn.execute(
-                text("""
+                text(f"""
                     SELECT outcome, confidence, impact_percent
                     FROM predictions
-                    WHERE outcome NOT IN ('pending', 'neutral')
+                    WHERE outcome NOT IN ('pending', 'neutral'){silent_filter}
                 """)
             ).fetchall()
 
             pending = conn.execute(
-                text("SELECT COUNT(*) FROM predictions WHERE outcome = 'pending'")
+                text(f"SELECT COUNT(*) FROM predictions WHERE outcome = 'pending'{silent_filter}")
             ).fetchone()[0]
 
             neutral = conn.execute(
-                text("SELECT COUNT(*) FROM predictions WHERE outcome = 'neutral'")
+                text(f"SELECT COUNT(*) FROM predictions WHERE outcome = 'neutral'{silent_filter}")
             ).fetchone()[0]
 
         if not rows:

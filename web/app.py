@@ -280,8 +280,13 @@ def create_app():
         try:
             with _get_predictions_conn() as conn:
                 # 24h delay: only show predictions older than 24 hours
+                # Exclude silent calibration signals from user-facing stats
                 delay_cutoff = (datetime.utcnow() - timedelta(hours=24)).isoformat()
-                where = f"WHERE UPPER(asset) IN ({available_in_clause}) AND predicted_at <= :delay_cutoff"
+                where = (
+                    f"WHERE UPPER(asset) IN ({available_in_clause})"
+                    f" AND predicted_at <= :delay_cutoff"
+                    f" AND source NOT IN ('price_signal_late_move', 'price_signal_silent')"
+                )
                 params: dict = {"delay_cutoff": delay_cutoff}
 
                 # Only show predictions from after the user's registration date
