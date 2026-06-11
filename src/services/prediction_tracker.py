@@ -256,6 +256,36 @@ class PredictionTracker:
             return True
         return False
 
+    def save_prediction_silent(self, event: dict, current_price: float) -> int | None:
+        """Save a silent calibration prediction — bypasses cooldown and counter-signal checks."""
+        analysis = event.get("analysis", {})
+        asset = (analysis.get("most_affected_assets") or ["UNKNOWN"])[0]
+        direction = analysis.get("direction", "neutral")
+        if direction == "neutral":
+            return None
+        # Still check for very recent duplicate (same asset+direction in last 30min)
+        cutoff_30m = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+        with self._get_conn() as conn:
+            dup = conn.execute(text("""
+                SELECT id FROM predictions
+                WHERE asset = :asset AND direction = :dir
+                  AND source LIKE '%silent%'
+                  AND predicted_at >= :cutoff
+                LIMIT 1
+            """), {"asset": asset, "dir": direction, "cutoff": cutoff_30m}).fetchone()
+        if dup:
+            return None
+        # Delegate to save_prediction but skip cooldown checks by temporarily patching
+        original_method = self._has_recent_prediction
+        self._has_recent_prediction = lambda *a, **kw: False
+        original_contradictory = self._close_opposite_pending
+        self._close_opposite_pending = lambda *a, **kw: None
+        try:
+            return self.save_prediction(event, current_price)
+        finally:
+            self._has_recent_prediction = original_method
+            self._close_opposite_pending = original_contradictory
+
     def save_prediction(self, event: dict, current_price: float) -> int | None:
         """
         Guarda una predicción. Devuelve el ID de la fila insertada, o None si ya existía

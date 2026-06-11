@@ -330,7 +330,11 @@ def run_pipeline_cycle():
                     "signal_strength": "high" if abs(change) >= 4 else "medium",
                     "verification_window_hours": 24,
                 }
-                pred_id = tracker.save_prediction(pe, price_now)
+                # Silent signals bypass the 3h cooldown (calibration only)
+                if pe.get("_silent"):
+                    pred_id = tracker.save_prediction_silent(pe, price_now)
+                else:
+                    pred_id = tracker.save_prediction(pe, price_now)
                 if pred_id:
                     pe["prediction_id"] = pred_id
                     pe["price_at_prediction"] = price_now
