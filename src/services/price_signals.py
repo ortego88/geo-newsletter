@@ -88,6 +88,21 @@ def _set_cooldown(asset: str, price: float = 0, direction: str = ""):
     _save_cooldowns()
 
 
+# Binance symbol overrides: some assets have different tickers on Binance
+_BINANCE_SYMBOL_MAP = {
+    "JUPITER": "JUP",
+    "MNT":     "MNT",    # not on Binance spot — skip
+    "AIOZ":    "AIOZ",   # not on Binance spot — skip
+    "CRO":     "CRO",    # not on Binance spot
+    "OKB":     "OKB",    # not on Binance spot
+    "GT":      "GT",     # not on Binance spot
+    "KAS":     "KAS",    # not on Binance spot
+}
+
+def _binance_sym(asset: str) -> str:
+    """Returns the correct Binance base symbol for an asset."""
+    return _BINANCE_SYMBOL_MAP.get(asset.upper(), asset.upper())
+
 _batch_cache: dict[str, float] = {}    # asset → 4h change pct
 _change_24h_cache: dict[str, float] = {}  # asset → 24h change pct (for context/learning)
 _price_cache: dict[str, float] = {}    # asset → current price USD
@@ -108,17 +123,20 @@ def _refresh_batch_cache(assets: list[str]):
     import requests, json as _json
 
     # Fetch current price AND 24h change from ticker (single call, used for context)
+    # Use _binance_sym to handle assets with different Binance tickers (e.g. JUPITER→JUP)
     global _change_24h_cache
+    _sym_to_asset = {_binance_sym(a) + "USDT": a for a in ALL_ASSETS}
+    valid_syms = [s for s in _sym_to_asset.keys()]
     try:
-        syms_24h = [a + "USDT" for a in ALL_ASSETS]
         price_resp = requests.get(
             "https://api.binance.com/api/v3/ticker/24hr",
-            params={"symbols": _json.dumps(syms_24h)},
+            params={"symbols": _json.dumps(valid_syms)},
             timeout=10,
         )
         if price_resp.status_code == 200:
             for t in price_resp.json():
-                a = t["symbol"].replace("USDT", "")
+                sym = t["symbol"]
+                a = _sym_to_asset.get(sym, sym.replace("USDT", ""))
                 p = float(t.get("lastPrice", 0))
                 c24 = float(t.get("priceChangePercent", 0))
                 if p > 0.000001:
@@ -132,9 +150,10 @@ def _refresh_batch_cache(assets: list[str]):
     success = 0
     for asset in ALL_ASSETS:
         try:
+            binance_sym = _binance_sym(asset) + "USDT"
             r = requests.get(
                 "https://api.binance.com/api/v3/klines",
-                params={"symbol": asset + "USDT", "interval": _KLINE_INTERVAL, "limit": _KLINE_LIMIT},
+                params={"symbol": binance_sym, "interval": _KLINE_INTERVAL, "limit": _KLINE_LIMIT},
                 timeout=5,
             )
             if r.status_code != 200:
