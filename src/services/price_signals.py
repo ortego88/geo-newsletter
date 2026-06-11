@@ -88,8 +88,9 @@ def _set_cooldown(asset: str, price: float = 0, direction: str = ""):
     _save_cooldowns()
 
 
-_batch_cache: dict[str, float] = {}   # asset → 4h change pct (not 24h)
-_price_cache: dict[str, float] = {}   # asset → current price USD
+_batch_cache: dict[str, float] = {}    # asset → 4h change pct
+_change_24h_cache: dict[str, float] = {}  # asset → 24h change pct (for context/learning)
+_price_cache: dict[str, float] = {}    # asset → current price USD
 _batch_cache_time: float = 0
 
 # Use 4h window: detects early momentum, avoids alerting on moves that already happened
@@ -106,21 +107,25 @@ def _refresh_batch_cache(assets: list[str]):
 
     import requests, json as _json
 
-    # Fetch current price from ticker (fast, single call)
+    # Fetch current price AND 24h change from ticker (single call, used for context)
+    global _change_24h_cache
     try:
+        syms_24h = [a + "USDT" for a in ALL_ASSETS]
         price_resp = requests.get(
-            "https://api.binance.com/api/v3/ticker/price",
-            params={"symbols": _json.dumps([a + "USDT" for a in ALL_ASSETS])},
+            "https://api.binance.com/api/v3/ticker/24hr",
+            params={"symbols": _json.dumps(syms_24h)},
             timeout=10,
         )
         if price_resp.status_code == 200:
             for t in price_resp.json():
                 a = t["symbol"].replace("USDT", "")
-                p = float(t["price"])
+                p = float(t.get("lastPrice", 0))
+                c24 = float(t.get("priceChangePercent", 0))
                 if p > 0.000001:
                     _price_cache[a] = p
+                _change_24h_cache[a] = c24
     except Exception as e:
-        logger.warning(f"Price fetch failed: {e}")
+        logger.warning(f"Price/24h fetch failed: {e}")
 
     # Fetch 4h klines for each asset to get recent momentum
     _batch_cache = {}
@@ -240,18 +245,23 @@ def check_price_signals() -> list[dict]:
                 f"Momentum alcista reciente — movimiento en curso, no histórico."
             )
 
+        # 24h context for learning — does trend alignment improve accuracy?
+        change_24h = _change_24h_cache.get(asset.upper(), 0)
+        trend_aligned = (change < 0 and change_24h < 0) or (change > 0 and change_24h > 0)
+
         score = min(85, 65 + int(abs(change)))
         is_down = change < 0
         is_early = abs(change) <= ALERT_MAX_PCT
-        # DOWN early (2.5-5%): alertable — downtrend confirmed, user can act
-        # UP early (2.5-5%): SILENT — data shows 17% accuracy, too many false positives
-        # Any late (>5%): silent — too late to enter
         is_alertable = is_down and is_early
         signal_type = "early_move" if is_early else "late_move"
 
         event = {
             "title": title,
-            "description": description,
+            "description": (
+                f"{description} "
+                f"Tendencia 24h: {change_24h:+.1f}% "
+                f"({'alineada' if trend_aligned else 'contraria'} al movimiento actual)."
+            ),
             "source": f"price_signal_{signal_type}",
             "sources": ["Price Monitor"],
             "suggested_asset": asset,
@@ -260,10 +270,15 @@ def check_price_signals() -> list[dict]:
             "category": "CRYPTO",
             "published_at": datetime.now(timezone.utc).isoformat(),
             "_change_pct": change,
-            "_silent": not is_alertable,  # only DOWN early moves sent to users
+            "_change_24h": change_24h,
+            "_trend_aligned": trend_aligned,
+            "_silent": not is_alertable,
         }
         signals.append(event)
         _set_cooldown(asset, current_price, direction)
-        logger.info(f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% @ ${current_price}")
+        logger.info(
+            f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% (4h) "
+            f"/ {change_24h:+.1f}% (24h) {'✓aligned' if trend_aligned else '✗contra'}"
+        )
 
     return signals
