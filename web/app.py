@@ -414,9 +414,17 @@ def create_app():
             p_in = d.get("price_at_prediction") or 0
             p_out = d.get("price_at_validation")
             outcome = d.get("outcome", "pending")
-            # Only show price_change_pct when fully validated (not during 24h tracking window)
+            direction = d.get("direction", "")
+            # Show max favorable move: positive = moved in predicted direction
+            # UP: price_at_validation is the max reached → show as positive %
+            # DOWN: price_at_validation is the min reached → invert sign to show positive
             if p_in and p_in > 0 and p_out and outcome != "pending":
-                d["price_change_pct"] = round((p_out - p_in) / p_in * 100, 2)
+                raw_pct = (p_out - p_in) / p_in * 100
+                if direction in ("down", "bearish", "negative", "baja"):
+                    # For DOWN, min price means price went down = positive opportunity
+                    d["price_change_pct"] = round(-raw_pct, 2)
+                else:
+                    d["price_change_pct"] = round(raw_pct, 2)
             else:
                 d["price_change_pct"] = None
             alerts.append(d)

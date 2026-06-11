@@ -177,6 +177,64 @@ class PredictionTracker:
             """), {"asset": asset, "cutoff": cutoff}).fetchone()
         return row is not None
 
+    def _close_opposite_pending(self, asset: str, new_direction: str, current_price: float):
+        """
+        When a new signal arrives in opposite direction, close any pending prediction
+        for the same asset. This implements the 'close on counter-signal' window rule.
+        """
+        opposite_dir = "down" if new_direction in ("up", "bullish", "positive", "alza") else "up"
+        try:
+            with self._get_conn() as conn:
+                rows = conn.execute(text("""
+                    SELECT id, direction, price_at_prediction,
+                           COALESCE(price_at_validation, 0) as best_so_far
+                    FROM predictions
+                    WHERE asset = :asset AND outcome = 'pending'
+                      AND direction IN ('up','bullish','positive','alza','down','bearish','negative','baja')
+                """), {"asset": asset}).fetchall()
+
+            for row in rows:
+                pred_id, pred_dir, p_in, best_so_far = row
+                is_opposite = (
+                    pred_dir in ("up", "bullish", "positive", "alza") and
+                    opposite_dir == "up"
+                ) or (
+                    pred_dir in ("down", "bearish", "negative", "baja") and
+                    opposite_dir == "down"
+                )
+                if not is_opposite or not p_in or p_in <= 0:
+                    continue
+
+                # Use the best price tracked so far (or current if no best yet)
+                best = best_so_far if best_so_far > 0 else current_price
+                best_change = (best - p_in) / p_in * 100
+
+                if pred_dir in ("up", "bullish", "positive", "alza"):
+                    outcome = "correct" if best_change >= _THRESHOLD_PCT else "incorrect"
+                else:
+                    outcome = "correct" if best_change <= -_THRESHOLD_PCT else "incorrect"
+
+                with self._get_conn() as conn:
+                    conn.execute(text("""
+                        UPDATE predictions
+                        SET outcome = :outcome,
+                            price_at_validation = :price,
+                            validated_at = :now
+                        WHERE id = :id
+                    """), {
+                        "outcome": outcome,
+                        "price": best,
+                        "now": datetime.utcnow().isoformat(),
+                        "id": pred_id,
+                    })
+                    conn.commit()
+                logger.info(
+                    f"🔄 Predicción #{pred_id} {asset} {pred_dir} cerrada por señal contraria "
+                    f"({new_direction}) → {outcome} (mejor: {best_change:+.1f}%)"
+                )
+        except Exception as e:
+            logger.warning(f"Error closing opposite prediction for {asset}: {e}")
+
     def _has_contradictory_prediction(self, asset: str, direction: str) -> bool:
         """Blocks opposite-direction signals within 4h of a recent prediction."""
         cutoff = (datetime.utcnow() - timedelta(hours=4)).isoformat()
@@ -219,9 +277,8 @@ class PredictionTracker:
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción reciente (<3h)")
             return None
 
-        # Block contradictory signals (opposite direction within 4h)
-        if self._has_contradictory_prediction(asset, direction):
-            return None
+        # If there's an opposite pending prediction, close it first (counter-signal)
+        self._close_opposite_pending(asset, direction, current_price)
 
         impact_percent = float(analysis.get("market_impact_percent", 0))
         timeframe = analysis.get("timeframe", "hours")
