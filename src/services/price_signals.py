@@ -88,47 +88,66 @@ def _set_cooldown(asset: str, price: float = 0, direction: str = ""):
     _save_cooldowns()
 
 
-_batch_cache: dict[str, float] = {}   # asset → 24h change pct
+_batch_cache: dict[str, float] = {}   # asset → 4h change pct (not 24h)
 _price_cache: dict[str, float] = {}   # asset → current price USD
 _batch_cache_time: float = 0
 
+# Use 4h window: detects early momentum, avoids alerting on moves that already happened
+_KLINE_INTERVAL = "4h"
+_KLINE_LIMIT = 2  # previous candle + current candle = 4h change
+
 
 def _refresh_batch_cache(assets: list[str]):
-    """Fetch 24h changes for all assets. Uses Binance first (no rate limit), CoinGecko as fallback."""
+    """Fetch 4h price changes for all assets using Binance klines. No rate limit."""
     global _batch_cache, _price_cache, _batch_cache_time
     import time as _time
-    if _time.time() - _batch_cache_time < 180:  # 3 min cache — Binance has no rate limit
+    if _time.time() - _batch_cache_time < 180:
         return
 
-    import requests
+    import requests, json as _json
 
-    # --- Primary source: Binance (no rate limit, all USDT pairs) ---
+    # Fetch current price from ticker (fast, single call)
     try:
-        resp = requests.get(
-            "https://api.binance.com/api/v3/ticker/24hr",
-            timeout=15,
+        price_resp = requests.get(
+            "https://api.binance.com/api/v3/ticker/price",
+            params={"symbols": _json.dumps([a + "USDT" for a in ALL_ASSETS])},
+            timeout=10,
         )
-        if resp.status_code == 200:
-            _batch_cache = {}
-            _price_cache = {}
-            for t in resp.json():
-                sym = t.get("symbol", "")
-                if not sym.endswith("USDT"):
-                    continue
-                asset = sym.replace("USDT", "")
-                if asset in ALL_ASSETS:
-                    chg = float(t.get("priceChangePercent", 0))
-                    price = float(t.get("lastPrice", 0))
-                    _batch_cache[asset] = chg
-                    # Only store price if it passes minimum sanity check
-                    # Protects against Binance returning fractional/wrong prices
-                    if price > 0.000001:
-                        _price_cache[asset] = price
-            _batch_cache_time = _time.time()
-            logger.info(f"📊 Price cache refreshed via Binance: {len(_batch_cache)} assets")
-            return
+        if price_resp.status_code == 200:
+            for t in price_resp.json():
+                a = t["symbol"].replace("USDT", "")
+                p = float(t["price"])
+                if p > 0.000001:
+                    _price_cache[a] = p
     except Exception as e:
-        logger.warning(f"Binance batch failed: {e}, falling back to CoinGecko")
+        logger.warning(f"Price fetch failed: {e}")
+
+    # Fetch 4h klines for each asset to get recent momentum
+    _batch_cache = {}
+    success = 0
+    for asset in ALL_ASSETS:
+        try:
+            r = requests.get(
+                "https://api.binance.com/api/v3/klines",
+                params={"symbol": asset + "USDT", "interval": _KLINE_INTERVAL, "limit": _KLINE_LIMIT},
+                timeout=5,
+            )
+            if r.status_code != 200:
+                continue
+            candles = r.json()
+            if len(candles) < 2:
+                continue
+            open_price = float(candles[0][1])   # open of previous candle
+            close_price = float(candles[-1][4])  # close of current candle
+            if open_price > 0:
+                chg = (close_price - open_price) / open_price * 100
+                _batch_cache[asset] = chg
+                success += 1
+        except Exception:
+            continue
+
+    _batch_cache_time = _time.time()
+    logger.info(f"📊 Price cache refreshed (4h klines): {success}/{len(ALL_ASSETS)} assets")
 
     # --- Fallback: CoinGecko ---
     try:
@@ -209,18 +228,16 @@ def check_price_signals() -> list[dict]:
             continue
 
         if change <= -THRESHOLD_PCT:
-            title = f"{asset} cae un {abs(change):.1f}% en las últimas 24 horas"
+            title = f"{asset} cae un {abs(change):.1f}% en las últimas 4 horas"
             description = (
-                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 24 horas. "
-                f"Este movimiento puede indicar una corrección en curso o "
-                f"una reacción a eventos de mercado aún no reflejados en noticias."
+                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 4 horas. "
+                f"Momentum bajista reciente — movimiento en curso, no histórico."
             )
         else:
-            title = f"{asset} sube un {change:.1f}% en las últimas 24 horas"
+            title = f"{asset} sube un {change:.1f}% en las últimas 4 horas"
             description = (
-                f"{asset} ha ganado un {change:.1f}% en las últimas 24 horas. "
-                f"Este movimiento puede indicar un rally en curso o "
-                f"una reacción a catalizadores positivos."
+                f"{asset} ha ganado un {change:.1f}% en las últimas 4 horas. "
+                f"Momentum alcista reciente — movimiento en curso, no histórico."
             )
 
         score = min(85, 65 + int(abs(change)))
