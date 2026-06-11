@@ -88,16 +88,13 @@ def _set_cooldown(asset: str, price: float = 0, direction: str = ""):
     _save_cooldowns()
 
 
-# Binance symbol overrides: some assets have different tickers on Binance
+# Binance symbol overrides: assets with different Binance tickers
 _BINANCE_SYMBOL_MAP = {
     "JUPITER": "JUP",
-    "MNT":     "MNT",    # not on Binance spot — skip
-    "AIOZ":    "AIOZ",   # not on Binance spot — skip
-    "CRO":     "CRO",    # not on Binance spot
-    "OKB":     "OKB",    # not on Binance spot
-    "GT":      "GT",     # not on Binance spot
-    "KAS":     "KAS",    # not on Binance spot
 }
+
+# Assets not available on Binance spot USDT — excluded from price signals
+_NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
 
 def _binance_sym(asset: str) -> str:
     """Returns the correct Binance base symbol for an asset."""
@@ -149,6 +146,8 @@ def _refresh_batch_cache(assets: list[str]):
     _batch_cache = {}
     success = 0
     for asset in ALL_ASSETS:
+        if asset.upper() in _NO_BINANCE_SPOT:
+            continue  # no Binance spot pair — skip to avoid fallback data errors
         try:
             binance_sym = _binance_sym(asset) + "USDT"
             r = requests.get(
@@ -239,6 +238,8 @@ def check_price_signals() -> list[dict]:
     logger.info(f"📊 Price signals: checking {len(assets_to_check)} assets ({len(_batch_cache)} in cache)")
 
     for asset in assets_to_check:
+        if asset.upper() in _NO_BINANCE_SPOT:
+            continue  # excluded — no reliable Binance data
         change = _get_24h_change(asset)
         if change is None:
             continue
