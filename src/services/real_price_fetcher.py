@@ -254,6 +254,20 @@ def get_price(asset: str):
         price = _fetch_stock_price(asset_upper)
 
     if price is not None:
+        # Validate price before caching — detect obvious errors
+        if price <= 0:
+            logger.warning(f"⚠️  Precio inválido recibido para {asset_upper}: ${price}")
+            return None
+        # Log significant price changes (>50% from cache) for debugging
+        if asset_upper in _cache:
+            old_price, _ = _cache[asset_upper]
+            if old_price > 0:
+                ratio = price / old_price
+                if ratio > 1.5 or ratio < 0.67:
+                    logger.info(
+                        f"📊 Cambio de precio significativo detectado para {asset_upper}: "
+                        f"${old_price:.6f} → ${price:.6f} (ratio: {ratio:.2f}x)"
+                    )
         _set_cached(asset_upper, price)
     return price
 

@@ -321,6 +321,31 @@ class PredictionTracker:
         source_url = event.get("url") or event.get("link") or ""
         predicted_at = datetime.utcnow()
 
+        # Validate price: reject if zero or suspiciously far from recent prices
+        if current_price <= 0:
+            logger.warning(f"⚠️  Precio inválido para {asset}: ${current_price} — predicción omitida")
+            return None
+
+        # Check for price outliers (>10x or <0.1x from last known price)
+        try:
+            with self._get_conn() as conn:
+                last_price_row = conn.execute(text("""
+                    SELECT price_at_prediction FROM predictions
+                    WHERE asset = :asset AND price_at_prediction > 0
+                    ORDER BY predicted_at DESC LIMIT 1
+                """), {"asset": asset}).fetchone()
+                if last_price_row:
+                    last_price = float(last_price_row[0])
+                    ratio = current_price / last_price if last_price > 0 else 1
+                    if ratio > 10 or ratio < 0.1:
+                        logger.warning(
+                            f"⚠️  Precio outlier detectado para {asset}: "
+                            f"${last_price:.6f} → ${current_price:.6f} (ratio: {ratio:.2f}x) "
+                            f"— revisar RealPriceFetcher"
+                        )
+        except Exception as e:
+            logger.debug(f"Error checking price outlier for {asset}: {e}")
+
         # Usar verification_window_hours recomendado por Claude (si está disponible)
         verification_window_hours = analysis.get("verification_window_hours")
         if not verification_window_hours:

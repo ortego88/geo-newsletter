@@ -73,6 +73,10 @@ REGLAS (simples, sin excepciones):
 3. Solo predice si la causalidad es directa y clara (hack → bajada, ETF aprobado → subida)
 4. Si tienes dudas → confidence < 50
 5. Usa siempre 24 horas como ventana de verificación
+6. CRÍTICO: Para movimientos de precio ya ocurridos (señales de 3-5%):
+   - Si el movimiento es alcista (UP) Y tiene momentum (volumen alto, tendencia 24h alineada) → confidence 70-75
+   - Si el movimiento es bajista (DOWN) Y tiene momentum → confidence 70-75
+   - Si el movimiento NO tiene momentum o va contra la tendencia 24h → confidence < 60
 
 EVENTOS QUE GENERAN SEÑAL (confidence >= 70):
 - Hack/exploit confirmado con pérdida > $10M → DOWN inmediato
@@ -81,17 +85,19 @@ EVENTOS QUE GENERAN SEÑAL (confidence >= 70):
 - Adopción institucional confirmada (empresa real comprando) → UP
 - Liquidaciones masivas en cascada (>$100M) → DOWN continúa
 - Listado/deslisting en Binance/Coinbase → movimiento inmediato
+- Movimiento de precio 3-5% CON volumen alto Y tendencia 24h alineada → continúa
 
 DESCARTAR (confidence < 40):
 - "Analista dice que BTC podría subir..."
-- Descripciones de movimientos ya ocurridos
+- Descripciones de movimientos ya ocurridos SIN momentum
 - Artículos de análisis técnico o predicciones de precio
 - Rumores sin confirmación oficial
 - Noticias > 6 horas de antigüedad
+- Movimientos contra-tendencia (6h UP pero 24h DOWN fuerte)
 
 CALIBRACIÓN:
 - 80-95: Hecho confirmado con impacto histórico demostrado
-- 70-79: Evento real con causalidad directa clara
+- 70-79: Evento real con causalidad directa clara O movimiento con momentum fuerte
 - 50-69: NO generar alerta
 - < 50: Descartar
 

@@ -15,23 +15,27 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("price_signals")
 
-THRESHOLD_PCT = 2.5       # minimum move to generate any signal
+THRESHOLD_PCT = 3.0       # minimum move to generate any signal (increased from 2.5% to reduce noise)
 ALERT_MAX_PCT = 5.0       # moves above this are sent silently (too late to act)
 COOLDOWN_PRICE_MOVE_PCT = 5.0  # re-alert only when price moves 5% from last alert
 
+# Temporarily excluded assets with 0% accuracy (as of June 15, 2026)
+# Re-evaluate after prompt improvements — Jun 22, 2026
+EXCLUDED_LOW_ACCURACY = {"PEPE", "XRP", "ATOM", "LDO", "SNX"}
+
 # All tracked crypto assets — rotated in batches to avoid API rate limits
 ALL_ASSETS = [
-    # Tier 1: Top coins (checked every cycle)
-    "BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK",
-    # Tier 2: Mid caps (rotated)
-    "SHIB", "TON", "TRX", "LTC", "HBAR", "UNI", "ATOM", "XLM", "NEAR",
+    # Tier 1: Top coins (checked every cycle) — keeping BTC/ETH despite low accuracy for learning
+    "BTC", "ETH", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK",
+    # Tier 2: Mid caps (rotated) — XRP, ATOM excluded temporarily
+    "SHIB", "TON", "TRX", "LTC", "HBAR", "UNI", "XLM", "NEAR",
     "ARB", "OP", "MATIC", "SUI", "ICP", "FIL", "IMX", "STX", "MNT",
-    # Tier 3: DeFi, AI, Gaming (rotated)
-    "AAVE", "MKR", "CRV", "LDO", "DYDX", "SNX", "PENDLE", "JUPITER",
+    # Tier 3: DeFi, AI, Gaming (rotated) — LDO, SNX excluded temporarily
+    "AAVE", "MKR", "CRV", "DYDX", "PENDLE", "JUPITER",
     "FET", "RENDER", "INJ", "TAO", "ONDO", "AIOZ",
     "AXS", "SAND", "MANA", "GALA", "ENJ",
-    # Tier 4: Memecoins & others (rotated)
-    "PEPE", "WIF", "FLOKI", "BONK",
+    # Tier 4: Memecoins & others (rotated) — PEPE excluded temporarily
+    "WIF", "FLOKI", "BONK",
     "CRO", "OKB", "GT", "VET", "THETA", "FTM", "EOS", "RUNE", "GRT", "KAS",
 ]
 
@@ -106,7 +110,7 @@ _price_cache: dict[str, float] = {}    # asset → current price USD
 _batch_cache_time: float = 0
 
 # Use 4h window: detects early momentum, avoids alerting on moves that already happened
-_KLINE_INTERVAL = "4h"
+_KLINE_INTERVAL = "6h"  # Changed from 4h to reduce noise and improve signal quality
 _KLINE_LIMIT = 2  # previous candle + current candle = 4h change
 
 
@@ -142,7 +146,7 @@ def _refresh_batch_cache(assets: list[str]):
     except Exception as e:
         logger.warning(f"Price/24h fetch failed: {e}")
 
-    # Fetch 4h klines for each asset to get recent momentum
+    # Fetch 6h klines for each asset to get recent momentum
     _batch_cache = {}
     success = 0
     for asset in ALL_ASSETS:
@@ -170,7 +174,7 @@ def _refresh_batch_cache(assets: list[str]):
             continue
 
     _batch_cache_time = _time.time()
-    logger.info(f"📊 Price cache refreshed (4h klines): {success}/{len(ALL_ASSETS)} assets")
+    logger.info(f"📊 Price cache refreshed (6h klines): {success}/{len(ALL_ASSETS)} assets")
 
     # --- Fallback: CoinGecko ---
     try:
@@ -240,6 +244,8 @@ def check_price_signals() -> list[dict]:
     for asset in assets_to_check:
         if asset.upper() in _NO_BINANCE_SPOT:
             continue  # excluded — no reliable Binance data
+        if asset.upper() in EXCLUDED_LOW_ACCURACY:
+            continue  # temporarily excluded — 0% accuracy as of Jun 15, 2026
         change = _get_24h_change(asset)
         if change is None:
             continue
@@ -253,15 +259,15 @@ def check_price_signals() -> list[dict]:
             continue
 
         if change <= -THRESHOLD_PCT:
-            title = f"{asset} cae un {abs(change):.1f}% en las últimas 4 horas"
+            title = f"{asset} cae un {abs(change):.1f}% en las últimas 6 horas"
             description = (
-                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 4 horas. "
+                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 6 horas. "
                 f"Momentum bajista reciente — movimiento en curso, no histórico."
             )
         else:
-            title = f"{asset} sube un {change:.1f}% en las últimas 4 horas"
+            title = f"{asset} sube un {change:.1f}% en las últimas 6 horas"
             description = (
-                f"{asset} ha ganado un {change:.1f}% en las últimas 4 horas. "
+                f"{asset} ha ganado un {change:.1f}% en las últimas 6 horas. "
                 f"Momentum alcista reciente — movimiento en curso, no histórico."
             )
 
@@ -272,7 +278,8 @@ def check_price_signals() -> list[dict]:
         score = min(85, 65 + int(abs(change)))
         is_down = change < 0
         is_early = abs(change) <= ALERT_MAX_PCT
-        is_alertable = is_down and is_early
+        # Fixed: alert both UP and DOWN early moves (2.5-5%), not just DOWN
+        is_alertable = is_early
         signal_type = "early_move" if is_early else "late_move"
 
         event = {
@@ -282,7 +289,7 @@ def check_price_signals() -> list[dict]:
                 f"Tendencia 24h: {change_24h:+.1f}% "
                 f"({'alineada' if trend_aligned else 'contraria'} al movimiento actual)."
             ),
-            "source": f"price_signal_{signal_type}",
+            "source": f"Price Monitor ({'alerta temprana' if is_alertable else 'calibración silenciosa'})",
             "sources": ["Price Monitor"],
             "suggested_asset": asset,
             "matched_assets": [asset],
@@ -297,7 +304,7 @@ def check_price_signals() -> list[dict]:
         signals.append(event)
         _set_cooldown(asset, current_price, direction)
         logger.info(
-            f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% (4h) "
+            f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% (6h) "
             f"/ {change_24h:+.1f}% (24h) {'✓aligned' if trend_aligned else '✗contra'}"
         )
 
