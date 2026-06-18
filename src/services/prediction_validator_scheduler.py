@@ -1,13 +1,11 @@
 """
 Validador de predicciones con APScheduler.
-Verifica predicciones pendientes cada hora usando precios reales.
+Verifica predicciones pendientes cada 5 minutos usando precios reales (Binance).
 
-Lógica de evaluación (crypto 24/7):
-  - Cada hora comprueba si el precio se movió >= ±1% desde la predicción
-  - Si sube >=1% y se predijo alza → CORRECT (validación inmediata)
-  - Si baja >=1% y se predijo baja → CORRECT (validación inmediata)
-  - Si se mueve >=1% en dirección opuesta → INCORRECT (validación inmediata)
-  - Si tras 24h no se alcanza ±1% → NEUTRAL (no penaliza accuracy)
+Validación binaria:
+  - CORRECT: precio alcanza ≥+2% en la dirección predicha (inmediato)
+  - INCORRECT: ventana de 24h expira sin alcanzar +2% (o cierre por señal contraria)
+  - No existe neutral — el sistema es honesto.
 """
 
 import logging
@@ -194,7 +192,7 @@ class PredictionValidatorScheduler:
                 )
                 continue
             validated_count += 1
-            outcome_es = {"correct": "✅ CORRECTA", "incorrect": "❌ INCORRECTA", "neutral": "⚪ NEUTRAL"}.get(result["outcome"], result["outcome"])
+            outcome_es = {"correct": "✅ CORRECTA", "incorrect": "❌ INCORRECTA"}.get(result["outcome"], result["outcome"])
             logger.info(
                 f"Predicción #{prediction_id} validada: {outcome_es} | "
                 f"{asset} cambio real: {result['actual_change']:+.2f}%"

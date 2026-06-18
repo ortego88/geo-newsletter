@@ -15,13 +15,31 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("price_signals")
 
-THRESHOLD_PCT = 3.0       # minimum move to generate any signal (increased from 2.5% to reduce noise)
+THRESHOLD_PCT_DEFAULT = 3.0  # default minimum move for altcoins
 ALERT_MAX_PCT = 5.0       # moves above this are sent silently (too late to act)
 COOLDOWN_PRICE_MOVE_PCT = 5.0  # re-alert only when price moves 5% from last alert
 
-# Temporarily excluded assets with 0% accuracy (as of June 15, 2026)
-# Re-evaluate after prompt improvements — Jun 22, 2026
-EXCLUDED_LOW_ACCURACY = {"PEPE", "XRP", "ATOM", "LDO", "SNX"}
+# Dynamic threshold by market cap tier — large caps need less % to generate signal
+# because they move less but with higher conviction
+_THRESHOLD_BY_TIER = {
+    "tier1": 2.0,  # BTC, ETH, SOL, BNB — 2% is significant for large caps
+    "tier2": 2.5,  # Top 20 by cap
+    "default": 3.0,  # everything else
+}
+_TIER1_ASSETS = {"BTC", "ETH", "SOL", "BNB"}
+_TIER2_ASSETS = {"ADA", "DOGE", "AVAX", "DOT", "LINK", "XRP", "TON", "TRX", "LTC", "SHIB"}
+
+def _get_threshold(asset: str) -> float:
+    a = asset.upper()
+    if a in _TIER1_ASSETS:
+        return _THRESHOLD_BY_TIER["tier1"]
+    if a in _TIER2_ASSETS:
+        return _THRESHOLD_BY_TIER["tier2"]
+    return _THRESHOLD_BY_TIER["default"]
+
+
+# Re-included after fixes — only exclude if still failing after volume+trend filtering
+EXCLUDED_LOW_ACCURACY: set = set()
 
 # All tracked crypto assets — rotated in batches to avoid API rate limits
 ALL_ASSETS = [
@@ -104,8 +122,10 @@ def _binance_sym(asset: str) -> str:
     """Returns the correct Binance base symbol for an asset."""
     return _BINANCE_SYMBOL_MAP.get(asset.upper(), asset.upper())
 
-_batch_cache: dict[str, float] = {}    # asset → 4h change pct
+_batch_cache: dict[str, float] = {}    # asset → 6h change pct
 _change_24h_cache: dict[str, float] = {}  # asset → 24h change pct (for context/learning)
+_volume_cache: dict[str, float] = {}  # asset → 24h quote volume in USDT
+_change_1h_cache: dict[str, float] = {}  # asset → 1h change pct (multi-timeframe)
 _price_cache: dict[str, float] = {}    # asset → current price USD
 _batch_cache_time: float = 0
 
@@ -115,23 +135,22 @@ _KLINE_LIMIT = 2  # previous candle + current candle = 4h change
 
 
 def _refresh_batch_cache(assets: list[str]):
-    """Fetch 4h price changes for all assets using Binance klines. No rate limit."""
-    global _batch_cache, _price_cache, _batch_cache_time
+    """Fetch 6h price changes, 1h changes, and volume for all assets using Binance."""
+    global _batch_cache, _price_cache, _batch_cache_time, _change_24h_cache, _volume_cache, _change_1h_cache
     import time as _time
     if _time.time() - _batch_cache_time < 180:
         return
 
     import requests, json as _json
 
-    # Fetch current price AND 24h change from ticker (single call, used for context)
-    # Use _binance_sym to handle assets with different Binance tickers (e.g. JUPITER→JUP)
-    global _change_24h_cache
-    _sym_to_asset = {_binance_sym(a) + "USDT": a for a in ALL_ASSETS}
-    valid_syms = [s for s in _sym_to_asset.keys()]
+    # Fetch current price, 24h change, AND volume from ticker (single call)
+    # Exclude NO_BINANCE_SPOT assets — their symbols don't exist and would cause 400 errors
+    _sym_to_asset = {_binance_sym(a) + "USDT": a for a in ALL_ASSETS if a not in _NO_BINANCE_SPOT}
+    valid_syms = list(_sym_to_asset.keys())
     try:
         price_resp = requests.get(
             "https://api.binance.com/api/v3/ticker/24hr",
-            params={"symbols": _json.dumps(valid_syms)},
+            params={"symbols": _json.dumps(valid_syms, separators=(',', ':'))},
             timeout=10,
         )
         if price_resp.status_code == 200:
@@ -140,41 +159,53 @@ def _refresh_batch_cache(assets: list[str]):
                 a = _sym_to_asset.get(sym, sym.replace("USDT", ""))
                 p = float(t.get("lastPrice", 0))
                 c24 = float(t.get("priceChangePercent", 0))
+                vol = float(t.get("quoteVolume", 0))
                 if p > 0.000001:
                     _price_cache[a] = p
                 _change_24h_cache[a] = c24
+                _volume_cache[a] = vol
     except Exception as e:
         logger.warning(f"Price/24h fetch failed: {e}")
 
     # Fetch 6h klines for each asset to get recent momentum
     _batch_cache = {}
+    _change_1h_cache = {}
     success = 0
     for asset in ALL_ASSETS:
         if asset.upper() in _NO_BINANCE_SPOT:
-            continue  # no Binance spot pair — skip to avoid fallback data errors
+            continue
         try:
             binance_sym = _binance_sym(asset) + "USDT"
+            # Fetch 1h klines (last 7 candles = covers 6h window + current 1h)
             r = requests.get(
                 "https://api.binance.com/api/v3/klines",
-                params={"symbol": binance_sym, "interval": _KLINE_INTERVAL, "limit": _KLINE_LIMIT},
+                params={"symbol": binance_sym, "interval": "1h", "limit": 7},
                 timeout=5,
             )
             if r.status_code != 200:
                 continue
             candles = r.json()
-            if len(candles) < 2:
+            if len(candles) < 7:
                 continue
-            open_price = float(candles[0][1])   # open of previous candle
-            close_price = float(candles[-1][4])  # close of current candle
-            if open_price > 0:
-                chg = (close_price - open_price) / open_price * 100
-                _batch_cache[asset] = chg
+
+            # 6h change: open of candle[0] vs close of candle[-1]
+            open_6h = float(candles[0][1])
+            close_now = float(candles[-1][4])
+            if open_6h > 0:
+                chg_6h = (close_now - open_6h) / open_6h * 100
+                _batch_cache[asset] = chg_6h
                 success += 1
+
+            # 1h change: open of last candle vs close of last candle
+            open_1h = float(candles[-1][1])
+            if open_1h > 0:
+                chg_1h = (close_now - open_1h) / open_1h * 100
+                _change_1h_cache[asset] = chg_1h
         except Exception:
             continue
 
     _batch_cache_time = _time.time()
-    logger.info(f"📊 Price cache refreshed (6h klines): {success}/{len(ALL_ASSETS)} assets")
+    logger.info(f"📊 Price cache refreshed (6h+1h klines): {success}/{len(ALL_ASSETS)} assets")
 
     # Only use CoinGecko as fallback for assets that Binance missed — never overwrite Binance data
     missing_assets = [a for a in assets if a.upper() not in _batch_cache and a.upper() not in _NO_BINANCE_SPOT]
@@ -242,9 +273,9 @@ def _get_current_batch() -> list[str]:
 
 def check_price_signals() -> list[dict]:
     """
-    Checks assets for significant price movements (>= THRESHOLD_PCT).
-    All assets fetched in one batch API call, then filtered.
-    Returns synthetic events for Claude analysis.
+    Checks assets for significant price movements using dynamic thresholds.
+    Multi-timeframe confirmation: 1h, 6h, 24h must align for highest confidence.
+    Volume confirmation: high volume = higher conviction.
     """
     signals = []
     _refresh_batch_cache(ALL_ASSETS)
@@ -253,13 +284,16 @@ def check_price_signals() -> list[dict]:
 
     for asset in assets_to_check:
         if asset.upper() in _NO_BINANCE_SPOT:
-            continue  # excluded — no reliable Binance data
+            continue
         if asset.upper() in EXCLUDED_LOW_ACCURACY:
-            continue  # temporarily excluded — 0% accuracy as of Jun 15, 2026
+            continue
         change = _get_24h_change(asset)
         if change is None:
             continue
-        if abs(change) < THRESHOLD_PCT:
+
+        # Dynamic threshold based on market cap tier
+        threshold = _get_threshold(asset)
+        if abs(change) < threshold:
             continue
 
         # Get current price to check price-based cooldown
@@ -268,43 +302,59 @@ def check_price_signals() -> list[dict]:
         if _is_on_cooldown(asset, current_price, direction):
             continue
 
-        if change <= -THRESHOLD_PCT:
-            title = f"{asset} cae un {abs(change):.1f}% en las últimas 6 horas"
-            description = (
-                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 6 horas. "
-                f"Momentum bajista reciente — movimiento en curso, no histórico."
-            )
-        else:
-            title = f"{asset} sube un {change:.1f}% en las últimas 6 horas"
-            description = (
-                f"{asset} ha ganado un {change:.1f}% en las últimas 6 horas. "
-                f"Momentum alcista reciente — movimiento en curso, no histórico."
-            )
-
-        # 24h context — filter contra-trend signals (bounce/retracement noise)
+        # 24h and 1h context for multi-timeframe confirmation
         change_24h = _change_24h_cache.get(asset.upper(), 0)
+        change_1h = _change_1h_cache.get(asset.upper(), 0)
         trend_aligned = (change < 0 and change_24h < 0) or (change > 0 and change_24h > 0)
+        # Multi-timeframe: 1h agrees with 6h direction
+        momentum_1h = (change < 0 and change_1h < 0) or (change > 0 and change_1h > 0)
 
         # Skip contra-trend signals: 6h UP but 24h strongly DOWN (or vice versa)
-        # These are usually temporary bounces, not real reversals
         if not trend_aligned and abs(change_24h) > 5.0:
             logger.debug(
                 f"Skipping contra-trend signal: {asset} 6h={change:+.1f}% vs 24h={change_24h:+.1f}%"
             )
             continue
 
-        score = min(85, 65 + int(abs(change)))
-        is_down = change < 0
+        # Volume confirmation — high volume = more conviction
+        volume_usd = _volume_cache.get(asset.upper(), 0)
+        has_high_volume = volume_usd > 50_000_000  # $50M+ 24h volume = significant
+
+        if change < 0:
+            title = f"{asset} cae un {abs(change):.1f}% en las últimas 6 horas"
+            description = (
+                f"{asset} ha perdido un {abs(change):.1f}% en las últimas 6 horas. "
+                f"Momentum bajista reciente — movimiento en curso."
+            )
+        else:
+            title = f"{asset} sube un {change:.1f}% en las últimas 6 horas"
+            description = (
+                f"{asset} ha ganado un {change:.1f}% en las últimas 6 horas. "
+                f"Momentum alcista reciente — movimiento en curso."
+            )
+
+        # Score based on multiple factors (not just magnitude)
+        base_score = 60 + int(abs(change))
+        if trend_aligned:
+            base_score += 5
+        if momentum_1h:
+            base_score += 5
+        if has_high_volume:
+            base_score += 5
+        score = min(90, base_score)
+
         is_early = abs(change) <= ALERT_MAX_PCT
         is_alertable = is_early
         signal_type = "early_move" if is_early else "late_move"
 
+        vol_label = f"${volume_usd/1e6:.0f}M" if volume_usd > 1e6 else "low"
         event = {
             "title": title,
             "description": (
                 f"{description} "
-                f"Tendencia 24h: {change_24h:+.1f}% "
-                f"({'alineada' if trend_aligned else 'contraria'} al movimiento actual)."
+                f"1h: {change_1h:+.1f}% | 24h: {change_24h:+.1f}% "
+                f"({'alineada' if trend_aligned else 'contraria'}). "
+                f"Vol 24h: {vol_label}."
             ),
             "source": f"Price Monitor ({'alerta temprana' if is_alertable else 'calibración silenciosa'})",
             "sources": ["Price Monitor"],
@@ -314,15 +364,20 @@ def check_price_signals() -> list[dict]:
             "category": "CRYPTO",
             "published_at": datetime.now(timezone.utc).isoformat(),
             "_change_pct": change,
+            "_change_1h": change_1h,
             "_change_24h": change_24h,
             "_trend_aligned": trend_aligned,
+            "_momentum_1h": momentum_1h,
+            "_high_volume": has_high_volume,
+            "_volume_usd": volume_usd,
             "_silent": not is_alertable,
         }
         signals.append(event)
         _set_cooldown(asset, current_price, direction)
         logger.info(
             f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% (6h) "
-            f"/ {change_24h:+.1f}% (24h) {'✓aligned' if trend_aligned else '✗contra'}"
+            f"/ {change_1h:+.1f}% (1h) / {change_24h:+.1f}% (24h) "
+            f"vol={vol_label} {'✓aligned' if trend_aligned else '✗contra'}"
         )
 
     return signals

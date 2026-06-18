@@ -2,10 +2,13 @@
 Rastreador de predicciones.
 Guarda predicciones en PostgreSQL y las valida comparando precios.
 
-Validación basada en umbral ±1% en ventana de 24h:
-- Si el precio se mueve >=1% en la dirección predicha → CORRECT
-- Si se mueve >=1% en la dirección opuesta → INCORRECT
-- Si tras 24h no alcanza ±1% → NEUTRAL (no penaliza accuracy)
+Validación binaria honesta:
+- CORRECT: precio alcanza ≥+2% en la dirección predicha dentro de 24h
+- INCORRECT: cualquier otro escenario (no alcanza 2%, o ventana expira)
+- Cierre anticipado: si llega señal contraria, se cierra con el precio del momento
+  (correct si ya había alcanzado 2% en algún momento, incorrect si no)
+
+No existe "neutral" — el sistema debe estar seguro antes de alertar.
 """
 
 import logging
@@ -20,12 +23,9 @@ from src.services.market_config import calculate_verification_time
 
 logger = logging.getLogger("prediction_tracker")
 
-# Umbral de movimiento significativo para validar predicciones.
-# Si en las 24h siguientes el precio se mueve >= 1% en la dirección predicha → CORRECT
-# Si se mueve >= 1% en la dirección opuesta → INCORRECT
-# Si no alcanza 1% en ninguna dirección al finalizar las 24h → NEUTRAL
-_THRESHOLD_PCT = 1.5  # 1.5% — more predictions resolve instead of staying neutral
-_INCORRECT_THRESHOLD_PCT = 1.5  # 1.5% — symmetric threshold for opposite direction
+# Umbral para considerar una predicción correcta.
+# El precio debe moverse ≥2% en la dirección predicha dentro de 24h.
+_THRESHOLD_PCT = 2.0
 
 # Ventana de evaluación en horas
 _EVALUATION_WINDOW_HOURS = 24
@@ -180,9 +180,9 @@ class PredictionTracker:
     def _close_opposite_pending(self, asset: str, new_direction: str, current_price: float):
         """
         When a new signal arrives in opposite direction, close any pending prediction
-        for the same asset. This implements the 'close on counter-signal' window rule.
+        for the same asset immediately. Correct only if the best tracked price already
+        reached ≥2% in the predicted direction; otherwise incorrect.
         """
-        opposite_dir = "down" if new_direction in ("up", "bullish", "positive", "alza") else "up"
         try:
             with self._get_conn() as conn:
                 rows = conn.execute(text("""
@@ -195,34 +195,24 @@ class PredictionTracker:
 
             for row in rows:
                 pred_id, pred_dir, p_in, best_so_far = row
-                is_opposite = (
-                    pred_dir in ("up", "bullish", "positive", "alza") and
-                    opposite_dir == "up"
-                ) or (
-                    pred_dir in ("down", "bearish", "negative", "baja") and
-                    opposite_dir == "down"
-                )
-                if not is_opposite or not p_in or p_in <= 0:
+                if not p_in or p_in <= 0:
                     continue
+
+                # Check if this prediction's direction is opposite to the new signal
+                pred_is_up = pred_dir in ("up", "bullish", "positive", "alza")
+                new_is_up = new_direction in ("up", "bullish", "positive", "alza")
+                if pred_is_up == new_is_up:
+                    continue  # same direction, not a counter-signal
 
                 # Use the best price tracked so far (or current if no best yet)
                 best = best_so_far if best_so_far > 0 else current_price
                 best_change = (best - p_in) / p_in * 100
 
-                if pred_dir in ("up", "bullish", "positive", "alza"):
-                    if best_change >= _THRESHOLD_PCT:
-                        outcome = "correct"
-                    elif best_change <= -_INCORRECT_THRESHOLD_PCT:
-                        outcome = "incorrect"
-                    else:
-                        outcome = "neutral"
+                # Binary: correct only if best price already reached ≥2% in predicted direction
+                if pred_is_up:
+                    outcome = "correct" if best_change >= _THRESHOLD_PCT else "incorrect"
                 else:
-                    if best_change <= -_THRESHOLD_PCT:
-                        outcome = "correct"
-                    elif best_change >= _INCORRECT_THRESHOLD_PCT:
-                        outcome = "incorrect"
-                    else:
-                        outcome = "neutral"
+                    outcome = "correct" if best_change <= -_THRESHOLD_PCT else "incorrect"
 
                 with self._get_conn() as conn:
                     conn.execute(text("""
@@ -233,14 +223,14 @@ class PredictionTracker:
                         WHERE id = :id
                     """), {
                         "outcome": outcome,
-                        "price": best,
+                        "price": current_price,
                         "now": datetime.utcnow().isoformat(),
                         "id": pred_id,
                     })
                     conn.commit()
                 logger.info(
                     f"🔄 Predicción #{pred_id} {asset} {pred_dir} cerrada por señal contraria "
-                    f"({new_direction}) → {outcome} (mejor: {best_change:+.1f}%)"
+                    f"({new_direction}) → {outcome} (mejor cambio: {best_change:+.1f}%)"
                 )
         except Exception as e:
             logger.warning(f"Error closing opposite prediction for {asset}: {e}")
@@ -422,18 +412,18 @@ class PredictionTracker:
 
     def validate_prediction(self, prediction_id: int, current_price: float) -> dict | None:
         """
-        Valida una predicción basándose en el máximo movimiento favorable durante 24h.
+        Validación binaria honesta:
+        - CORRECT: precio alcanzó ≥2% en la dirección predicha en algún momento de las 24h
+        - INCORRECT: no alcanzó ≥2% al expirar la ventana de 24h
 
-        Lógica: el valor de la alerta es la OPORTUNIDAD que generó, no el precio final.
-        Si predices UP y el precio llega a +20% en algún momento, la alerta fue valiosa
-        aunque cierre en -3%. El usuario tuvo 20% de ventana para actuar.
+        Dentro de la ventana:
+        - Trackea el mejor precio visto (max para UP, min para DOWN)
+        - Si el mejor ya alcanza ≥2% → CORRECT inmediato (no esperar)
+        - Si la ventana no ha expirado y no se alcanzó → return None (retry next cycle)
 
-        - Ventana no expirada → track max_price en campo price_at_validation para UP
-                                  track min_price en campo price_at_validation para DOWN
-        - Al expirar 24h:
-          - Para UP: si max alcanzado >= +2% sobre precio entrada → CORRECT
-          - Para DOWN: si min alcanzado <= -2% sobre precio entrada → CORRECT
-          - Si no se alcanzó el umbral en ningún momento → INCORRECT
+        Al expirar la ventana:
+        - Si el mejor precio tracked alguna vez alcanzó ≥2% → CORRECT
+        - Si no → INCORRECT (sin zona gris)
         """
         with self._get_conn() as conn:
             row = conn.execute(
@@ -450,6 +440,8 @@ class PredictionTracker:
             return None
 
         direction = pred.get("direction", "neutral")
+        if direction == "neutral":
+            return None
 
         predicted_at_str = pred.get("predicted_at", "")
         try:
@@ -461,65 +453,37 @@ class PredictionTracker:
         actual_change_pct = ((current_price - price_at) / price_at) * 100
 
         # Track best price seen so far in price_at_validation field
-        # For UP: track the maximum (best case for buyer)
-        # For DOWN: track the minimum (best case for seller)
         prev_best = pred.get("price_at_validation") or 0
+        is_up = direction in ("up", "bullish", "positive", "alza")
 
-        if direction in ("up", "bullish", "positive", "alza"):
-            # Update best (maximum) price seen
+        if is_up:
             best_price = max(current_price, prev_best) if prev_best > 0 else current_price
             best_change_pct = ((best_price - price_at) / price_at) * 100
-
-            if not window_expired:
-                # Still within window — update best price seen but don't finalize
-                if best_price > (prev_best or 0):
-                    with self._get_conn() as conn:
-                        conn.execute(text(
-                            "UPDATE predictions SET price_at_validation = :price WHERE id = :id"
-                        ), {"price": best_price, "id": prediction_id})
-                        conn.commit()
-                return None
-
-            # Window expired — evaluate based on best price achieved
-            if best_change_pct >= _THRESHOLD_PCT:
-                outcome = "correct"
-            elif best_change_pct <= -_INCORRECT_THRESHOLD_PCT:
-                # Moved significantly in opposite direction
-                outcome = "incorrect"
-            else:
-                # Movement < 2% in either direction
-                outcome = "neutral"
-
-        elif direction in ("down", "bearish", "negative", "baja"):
-            # Update best (minimum) price seen
+            threshold_reached = best_change_pct >= _THRESHOLD_PCT
+        else:
             best_price = min(current_price, prev_best) if prev_best > 0 else current_price
             best_change_pct = ((best_price - price_at) / price_at) * 100
+            threshold_reached = best_change_pct <= -_THRESHOLD_PCT
 
-            if not window_expired:
-                if best_price < (prev_best or float('inf')):
-                    with self._get_conn() as conn:
-                        conn.execute(text(
-                            "UPDATE predictions SET price_at_validation = :price WHERE id = :id"
-                        ), {"price": best_price, "id": prediction_id})
-                        conn.commit()
-                return None
-
-            # Window expired — evaluate based on best (lowest) price achieved
-            if best_change_pct <= -_THRESHOLD_PCT:
-                outcome = "correct"
-            elif best_change_pct >= _INCORRECT_THRESHOLD_PCT:
-                # Moved significantly in opposite direction
-                outcome = "incorrect"
-            else:
-                # Movement < 2% in either direction
-                outcome = "neutral"
-
-        else:  # neutral
-            if not window_expired:
-                return None
-            outcome = "neutral"
-            best_price = current_price
-            actual_change_pct = ((best_price - price_at) / price_at) * 100
+        if threshold_reached:
+            # Target reached — CORRECT immediately, no need to wait for window expiry
+            outcome = "correct"
+        elif not window_expired:
+            # Still within 24h window — update best price and retry next cycle
+            should_update = (
+                (is_up and best_price > (prev_best or 0)) or
+                (not is_up and (prev_best <= 0 or best_price < prev_best))
+            )
+            if should_update:
+                with self._get_conn() as conn:
+                    conn.execute(text(
+                        "UPDATE predictions SET price_at_validation = :price WHERE id = :id"
+                    ), {"price": best_price, "id": prediction_id})
+                    conn.commit()
+            return None
+        else:
+            # Window expired without reaching ≥2% — INCORRECT
+            outcome = "incorrect"
 
         validated_at = datetime.utcnow().isoformat()
 
@@ -544,12 +508,11 @@ class PredictionTracker:
             "validated_at": validated_at,
         }
 
-        outcome_icon = "✅" if outcome == "correct" else ("⚪" if outcome == "neutral" else "❌")
+        outcome_icon = "✅" if outcome == "correct" else "❌"
         logger.info(
             f"Predicción validada: ID={prediction_id} | {outcome_icon} {outcome.upper()} | "
-            f"Dirección predicha: {direction} | "
-            f"Cambio real: {actual_change_pct:+.3f}% | Umbral: ±{_THRESHOLD_PCT}% | "
-            f"Ventana {'expirada' if window_expired else 'activa'}"
+            f"Dirección: {direction} | Mejor cambio: {best_change_pct:+.2f}% | "
+            f"Umbral: {_THRESHOLD_PCT}% | Ventana {'expirada' if window_expired else 'activa'}"
         )
         return result
 
@@ -565,14 +528,8 @@ class PredictionTracker:
     def get_accuracy_stats(self) -> dict:
         """
         Devuelve estadísticas de precisión de predicciones.
-
-        IMPORTANTE: Las predicciones con outcome='neutral' NO se incluyen en el
-        cálculo de accuracy (ni como correctas ni como incorrectas).
-        Solo se cuentan 'correct' e 'incorrect' para la tasa de aciertos.
-        Esto evita que predicciones con movimientos insignificantes penalicen la métrica.
+        Binary: solo correct e incorrect. No existe neutral en el nuevo sistema.
         """
-        # Only count predictions that were actually sent to users (not silent calibration)
-        SILENT_SOURCES = ("price_signal_late_move", "price_signal_silent")
         silent_filter = " AND source NOT IN ('price_signal_late_move', 'price_signal_silent')"
 
         with self._get_conn() as conn:
@@ -580,7 +537,7 @@ class PredictionTracker:
                 text(f"""
                     SELECT outcome, confidence, impact_percent
                     FROM predictions
-                    WHERE outcome NOT IN ('pending', 'neutral'){silent_filter}
+                    WHERE outcome IN ('correct', 'incorrect'){silent_filter}
                 """)
             ).fetchall()
 

@@ -180,27 +180,28 @@ def _send_pipeline_alerts(events: list):
         logger.error(f"Error importando módulos de alerta: {e}")
         return
 
-    # Step 1: filter alertable events — exclude silent signals
-    # News: DOWN>=65, UP>=75 (Claude analysis, strict)
-    # Price signals: DOWN>=65, UP>=65 (real Binance data, objective)
+    # Step 1: filter alertable events — binary system requires high confidence
+    # Since INCORRECT = any alert that doesn't reach +2%, we must be very selective
+    # Minimum confidence: 75 for all alerts (both news and price signals)
     resolved = []
     for e in events:
-        if e.get("_silent"):  # never send silent calibration signals to users
+        if e.get("_silent"):
             continue
         if not e.get("analysis") or e.get("score", 0) < 60:
             continue
         conf = e.get("analysis", {}).get("confidence", 0)
-        direction = e.get("analysis", {}).get("direction", "")
-        is_price_signal = "price_signal" in e.get("source", "")
+        is_price_signal = "Price Monitor" in e.get("source", "")
         if is_price_signal:
-            min_conf = 65  # price signals are objective data, same threshold both ways
+            # Price signals: need trend+volume+1h alignment for high confidence
+            min_conf = 75
         else:
-            min_conf = 75 if direction == "up" else 65  # news: stricter for UP
+            # News: Claude must be very confident (≥75) for any direction
+            min_conf = 75
         if conf >= min_conf:
             resolved.append(e)
 
     if not resolved:
-        logger.info("Sin eventos con confianza suficiente (DOWN≥65, UP≥75) para alertar")
+        logger.info("Sin eventos con confianza ≥75 para alertar (sistema binario estricto)")
         return
 
     # Only send alerts for events that were saved in the predictions DB.
@@ -302,7 +303,7 @@ def run_pipeline_cycle():
                     import json as _json
                     _br = _req.get(
                         "https://api.binance.com/api/v3/ticker/price",
-                        params={"symbols": _json.dumps(_syms)},  # proper JSON array format
+                        params={"symbols": _json.dumps(_syms, separators=(',', ':'))},
                         timeout=8,
                     )
                     if _br.status_code == 200:
@@ -329,13 +330,25 @@ def run_pipeline_cycle():
                     logger.warning(f"Price too low for {asset}: ${price_now} — likely BTC-denominated, skipping")
                     continue
                 direction = "down" if change < 0 else "up"
+                # Dynamic confidence based on multi-timeframe alignment + volume
+                _conf = 65  # base
+                if pe.get("_trend_aligned"):
+                    _conf += 5
+                if pe.get("_momentum_1h"):
+                    _conf += 5
+                if pe.get("_high_volume"):
+                    _conf += 5
+                if abs(change) >= 4:
+                    _conf += 3
+                _conf = min(85, _conf)
+
                 pe["analysis"] = {
                     "direction": direction,
-                    "confidence": 70,
+                    "confidence": _conf,
                     "most_affected_assets": [asset],
                     "timeframe": "hours",
-                    "reasoning": f"{asset} {change:+.1f}% en 24h — {'señal temprana' if not pe.get('_silent') else 'calibración'}",
-                    "signal_strength": "high" if abs(change) >= 4 else "medium",
+                    "reasoning": f"{asset} {change:+.1f}% (6h) trend {'✓' if pe.get('_trend_aligned') else '✗'} vol {'high' if pe.get('_high_volume') else 'low'}",
+                    "signal_strength": "high" if _conf >= 78 else "medium",
                     "verification_window_hours": 24,
                 }
                 # Silent signals bypass the 3h cooldown (calibration only)
