@@ -139,6 +139,22 @@ class PredictionTracker:
                     logger.info("Migración: columna alerted añadida a predictions")
         except Exception as e:
             logger.debug(f"alerted migration note: {e}")
+        self._migrate_add_signal_factors(engine)
+
+    def _migrate_add_signal_factors(self, engine):
+        """Adds signal_factors column — stores A/B testing metadata as JSON."""
+        try:
+            with engine.connect() as conn:
+                exists = conn.execute(text(
+                    "SELECT 1 FROM information_schema.columns "
+                    "WHERE LOWER(table_name)='predictions' AND LOWER(column_name)='signal_factors'"
+                )).fetchone()
+                if not exists:
+                    conn.execute(text("ALTER TABLE predictions ADD COLUMN signal_factors TEXT"))
+                    conn.commit()
+                    logger.info("Migración: columna signal_factors añadida a predictions")
+        except Exception as e:
+            logger.debug(f"signal_factors migration note: {e}")
 
     def mark_as_alerted(self, prediction_id: int):
         """Marks a prediction as having been sent to Telegram."""

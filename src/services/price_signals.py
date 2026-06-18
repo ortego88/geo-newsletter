@@ -271,11 +271,57 @@ def _get_current_batch() -> list[str]:
     return tier1 + batch
 
 
+def _get_liquidation_boost(asset: str, direction: str) -> int:
+    """Returns confidence boost if there are concentrated liquidations supporting our direction."""
+    try:
+        from src.services.market_microstructure import get_funding_rates_all
+        funding = get_funding_rates_all()
+        for f in funding:
+            if f["asset"] != asset.upper():
+                continue
+            # Extreme longs + we predict DOWN = liquidation cascade likely → +8 confidence
+            if direction == "down" and f.get("extreme_long"):
+                return 8
+            # Extreme shorts + we predict UP = short squeeze likely → +8 confidence
+            if direction == "up" and f.get("extreme_short"):
+                return 8
+            # Moderate: funding rate aligned with our direction → +3
+            if direction == "down" and f["rate_pct"] > 0.04:
+                return 3
+            if direction == "up" and f["rate_pct"] < -0.02:
+                return 3
+    except Exception:
+        pass
+    return 0
+
+
+def _hour_of_day_factor() -> int:
+    """
+    Returns confidence adjustment based on hour of day (UTC).
+    High-continuation hours: US market open (13-16 UTC), Asia close (0-2 UTC)
+    Low-continuation hours: dead zone (4-7 UTC)
+    """
+    from datetime import datetime, timezone
+    hour = datetime.now(timezone.utc).hour
+    # US session open (13-16 UTC = 9am-12pm ET) — highest volume, strongest continuations
+    if 13 <= hour <= 16:
+        return 3
+    # Asia close / Europe open overlap (7-9 UTC) — decent volume
+    if 7 <= hour <= 9:
+        return 2
+    # Dead zone (3-6 UTC) — low volume, more false signals
+    if 3 <= hour <= 6:
+        return -3
+    return 0
+
+
 def check_price_signals() -> list[dict]:
     """
     Checks assets for significant price movements using dynamic thresholds.
     Multi-timeframe confirmation: 1h, 6h, 24h must align for highest confidence.
     Volume confirmation: high volume = higher conviction.
+    Liquidation data: concentrated longs/shorts amplify signal.
+    Hour-of-day: US session gets boost, dead zone gets penalty.
     """
     signals = []
     _refresh_batch_cache(ALL_ASSETS)
@@ -333,6 +379,11 @@ def check_price_signals() -> list[dict]:
                 f"Momentum alcista reciente — movimiento en curso."
             )
 
+        # Liquidation data — concentrated positions amplify signal
+        liq_boost = _get_liquidation_boost(asset, direction)
+        # Hour of day — US session boosts, dead zone penalizes
+        hour_factor = _hour_of_day_factor()
+
         # Score based on multiple factors (not just magnitude)
         base_score = 60 + int(abs(change))
         if trend_aligned:
@@ -341,7 +392,9 @@ def check_price_signals() -> list[dict]:
             base_score += 5
         if has_high_volume:
             base_score += 5
-        score = min(90, base_score)
+        base_score += liq_boost
+        base_score += hour_factor
+        score = max(50, min(92, base_score))
 
         is_early = abs(change) <= ALERT_MAX_PCT
         is_alertable = is_early
@@ -370,14 +423,28 @@ def check_price_signals() -> list[dict]:
             "_momentum_1h": momentum_1h,
             "_high_volume": has_high_volume,
             "_volume_usd": volume_usd,
+            "_liq_boost": liq_boost,
+            "_hour_factor": hour_factor,
             "_silent": not is_alertable,
+            # A/B testing metadata — stored with prediction for later analysis
+            "_signal_factors": {
+                "magnitude": round(abs(change), 2),
+                "trend_aligned": trend_aligned,
+                "momentum_1h": momentum_1h,
+                "high_volume": has_high_volume,
+                "liq_boost": liq_boost,
+                "hour_factor": hour_factor,
+                "threshold_used": threshold,
+                "tier": "tier1" if asset in _TIER1_ASSETS else ("tier2" if asset in _TIER2_ASSETS else "default"),
+            },
         }
         signals.append(event)
         _set_cooldown(asset, current_price, direction)
         logger.info(
             f"📊 Price signal [{signal_type}]: {asset} {change:+.1f}% (6h) "
             f"/ {change_1h:+.1f}% (1h) / {change_24h:+.1f}% (24h) "
-            f"vol={vol_label} {'✓aligned' if trend_aligned else '✗contra'}"
+            f"vol={vol_label} liq={liq_boost:+d} hour={hour_factor:+d} "
+            f"{'✓aligned' if trend_aligned else '✗contra'}"
         )
 
     return signals

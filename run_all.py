@@ -330,7 +330,7 @@ def run_pipeline_cycle():
                     logger.warning(f"Price too low for {asset}: ${price_now} — likely BTC-denominated, skipping")
                     continue
                 direction = "down" if change < 0 else "up"
-                # Dynamic confidence based on multi-timeframe alignment + volume
+                # Dynamic confidence based on all signal factors
                 _conf = 65  # base
                 if pe.get("_trend_aligned"):
                     _conf += 5
@@ -340,16 +340,24 @@ def run_pipeline_cycle():
                     _conf += 5
                 if abs(change) >= 4:
                     _conf += 3
-                _conf = min(85, _conf)
+                _conf += pe.get("_liq_boost", 0)
+                _conf += pe.get("_hour_factor", 0)
+                _conf = max(50, min(88, _conf))
 
+                _factors = pe.get("_signal_factors", {})
                 pe["analysis"] = {
                     "direction": direction,
                     "confidence": _conf,
                     "most_affected_assets": [asset],
                     "timeframe": "hours",
-                    "reasoning": f"{asset} {change:+.1f}% (6h) trend {'✓' if pe.get('_trend_aligned') else '✗'} vol {'high' if pe.get('_high_volume') else 'low'}",
+                    "reasoning": (
+                        f"{asset} {change:+.1f}% (6h) trend={'✓' if pe.get('_trend_aligned') else '✗'} "
+                        f"vol={'H' if pe.get('_high_volume') else 'L'} "
+                        f"liq={pe.get('_liq_boost',0):+d} hour={pe.get('_hour_factor',0):+d}"
+                    ),
                     "signal_strength": "high" if _conf >= 78 else "medium",
                     "verification_window_hours": 24,
+                    "signal_factors": _factors,
                 }
                 # Silent signals bypass the 3h cooldown (calibration only)
                 if pe.get("_silent"):
