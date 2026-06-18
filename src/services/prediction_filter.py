@@ -67,8 +67,17 @@ def _compute_accuracy_rules() -> dict:
         return rules
 
     if len(rows) < _MIN_SAMPLES:
-        logger.info(f"Insufficient data for filter ({len(rows)} predictions, need {_MIN_SAMPLES})")
-        return rules
+        logger.info(f"Insufficient data for filter ({len(rows)} predictions, need {_MIN_SAMPLES}) - using permissive defaults")
+        # Return permissive defaults when insufficient data to avoid blocking all alerts
+        return {
+            "min_score": 45,
+            "min_confidence": 55,
+            "blocked_sources": set(),
+            "preferred_direction": None,
+            "preferred_timeframes": set(),
+            "min_score_by_asset": {},
+            "stats": {"note": "insufficient_data", "sample_size": len(rows)},
+        }
 
     total = len(rows)
     correct = sum(1 for r in rows if r[6] == "correct")

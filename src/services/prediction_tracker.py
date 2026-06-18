@@ -210,9 +210,19 @@ class PredictionTracker:
                 best_change = (best - p_in) / p_in * 100
 
                 if pred_dir in ("up", "bullish", "positive", "alza"):
-                    outcome = "correct" if best_change >= _THRESHOLD_PCT else "incorrect"
+                    if best_change >= _THRESHOLD_PCT:
+                        outcome = "correct"
+                    elif best_change <= -_INCORRECT_THRESHOLD_PCT:
+                        outcome = "incorrect"
+                    else:
+                        outcome = "neutral"
                 else:
-                    outcome = "correct" if best_change <= -_THRESHOLD_PCT else "incorrect"
+                    if best_change <= -_THRESHOLD_PCT:
+                        outcome = "correct"
+                    elif best_change >= _INCORRECT_THRESHOLD_PCT:
+                        outcome = "incorrect"
+                    else:
+                        outcome = "neutral"
 
                 with self._get_conn() as conn:
                     conn.execute(text("""
@@ -473,8 +483,12 @@ class PredictionTracker:
             # Window expired — evaluate based on best price achieved
             if best_change_pct >= _THRESHOLD_PCT:
                 outcome = "correct"
-            else:
+            elif best_change_pct <= -_INCORRECT_THRESHOLD_PCT:
+                # Moved significantly in opposite direction
                 outcome = "incorrect"
+            else:
+                # Movement < 2% in either direction
+                outcome = "neutral"
 
         elif direction in ("down", "bearish", "negative", "baja"):
             # Update best (minimum) price seen
@@ -493,8 +507,12 @@ class PredictionTracker:
             # Window expired — evaluate based on best (lowest) price achieved
             if best_change_pct <= -_THRESHOLD_PCT:
                 outcome = "correct"
-            else:
+            elif best_change_pct >= _INCORRECT_THRESHOLD_PCT:
+                # Moved significantly in opposite direction
                 outcome = "incorrect"
+            else:
+                # Movement < 2% in either direction
+                outcome = "neutral"
 
         else:  # neutral
             if not window_expired:
