@@ -1,8 +1,9 @@
 """
 Fetcher de precios reales para activos financieros.
-- Crypto: CoinGecko (primary) → CoinMarketCap (fallback) → yfinance
-- Acciones/Índices/Commodities: yfinance (incluye futuros de materias primas)
+- Crypto: Binance (primary) → CoinGecko (fallback) → CoinMarketCap (last resort)
+- yfinance eliminated — unreliable for crypto (returns garbage for delisted assets)
 - Caché en memoria con TTL de 60 segundos
+- Cross-validation: rejects prices deviating >50% from last known price
 """
 
 import time
@@ -13,6 +14,10 @@ logger = logging.getLogger("real_price_fetcher")
 
 # API keys for premium sources
 COINMARKETCAP_API_KEY = os.getenv("COINMARKETCAP_API_KEY", "")
+
+# CoinGecko rate limit tracking
+_coingecko_last_429: float = 0
+_COINGECKO_BACKOFF_SECONDS = 120  # wait 2 min after a 429
 
 # --- Caché en memoria ---
 _cache: dict = {}  # {asset: (price, timestamp)}
@@ -104,6 +109,14 @@ STABLECOIN_BLACKLIST = {"USDC", "USDT", "DAI", "BUSD", "TUSD", "USDP", "FRAX", "
 # No non-crypto assets — scope is crypto only
 YAHOO_TICKERS = {}
 
+# Assets not available on Binance spot USDT pair
+_NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
+
+# Binance symbol overrides
+_BINANCE_SYMBOL_MAP = {
+    "JUPITER": "JUP",
+}
+
 
 def _get_cached(asset: str):
     entry = _cache.get(asset)
@@ -118,8 +131,33 @@ def _set_cached(asset: str, price: float):
     _cache[asset] = (price, time.time())
 
 
+def _fetch_crypto_price_binance(asset: str):
+    """Obtiene precio de crypto desde Binance (primary source — most reliable)."""
+    asset_upper = asset.upper()
+    if asset_upper in _NO_BINANCE_SPOT:
+        return None
+    sym = _BINANCE_SYMBOL_MAP.get(asset_upper, asset_upper)
+    try:
+        import requests
+        url = f"https://api.binance.com/api/v3/ticker/price?symbol={sym}USDT"
+        resp = requests.get(url, timeout=5)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        price = float(data.get("price", 0))
+        if price > 0:
+            return price
+    except Exception as e:
+        logger.debug(f"Binance error para {asset}: {e}")
+    return None
+
+
 def _fetch_crypto_price_coingecko(asset: str):
-    """Obtiene precio de crypto desde CoinGecko (primary source)."""
+    """Obtiene precio de crypto desde CoinGecko (fallback)."""
+    global _coingecko_last_429
+    if time.time() - _coingecko_last_429 < _COINGECKO_BACKOFF_SECONDS:
+        return None
+
     gecko_id = CRYPTO_IDS.get(asset.upper())
     if not gecko_id:
         return None
@@ -130,6 +168,10 @@ def _fetch_crypto_price_coingecko(asset: str):
             f"?ids={gecko_id}&vs_currencies=usd"
         )
         resp = requests.get(url, timeout=8)
+        if resp.status_code == 429:
+            _coingecko_last_429 = time.time()
+            logger.warning("CoinGecko rate limited (429) — backing off 2 min")
+            return None
         resp.raise_for_status()
         data = resp.json()
         price = data.get(gecko_id, {}).get("usd")
@@ -141,7 +183,7 @@ def _fetch_crypto_price_coingecko(asset: str):
 
 
 def _fetch_crypto_price_coinmarketcap(asset: str):
-    """Obtiene precio de crypto desde CoinMarketCap (fallback)."""
+    """Obtiene precio de crypto desde CoinMarketCap (last resort)."""
     if not COINMARKETCAP_API_KEY:
         return None
 
@@ -166,71 +208,45 @@ def _fetch_crypto_price_coinmarketcap(asset: str):
     return None
 
 
-def _fetch_crypto_price_yfinance(asset: str):
-    """Obtiene precio de crypto desde yfinance (último recurso)."""
-    try:
-        import yfinance as yf
-        ticker_symbol = f"{asset.upper()}-USD"
-        ticker = yf.Ticker(ticker_symbol)
-        info = ticker.fast_info
-        price = getattr(info, "last_price", None)
-        if price is None:
-            hist = ticker.history(period="1d")
-            if not hist.empty:
-                price = float(hist["Close"].iloc[-1])
-        if price is not None:
-            return float(price)
-    except Exception as e:
-        logger.debug(f"yfinance error para crypto {asset}: {e}")
-    return None
+def _cross_validate_price(asset: str, price: float) -> bool:
+    """Rejects prices that deviate >50% from last known cached price."""
+    if asset not in _cache:
+        return True
+    old_price, _ = _cache[asset]
+    if old_price <= 0:
+        return True
+    ratio = price / old_price
+    if ratio > 2.0 or ratio < 0.5:
+        logger.warning(
+            f"⚠️  Cross-validation REJECTED price for {asset}: "
+            f"${old_price:.6f} → ${price:.6f} (ratio: {ratio:.2f}x, threshold ±50%)"
+        )
+        return False
+    return True
 
 
 def _fetch_crypto_price(asset: str):
     """
     Obtiene precio de crypto con fallback múltiple.
-    Orden: CoinGecko → CoinMarketCap → yfinance
+    Orden: Binance (primary) → CoinGecko → CoinMarketCap
+    yfinance eliminated — returns garbage for many assets.
     """
-    # Intentar CoinGecko primero (más fiable, gratis)
+    price = _fetch_crypto_price_binance(asset)
+    if price is not None:
+        return price
+
+    logger.debug(f"Binance not available for {asset}, trying CoinGecko...")
     price = _fetch_crypto_price_coingecko(asset)
     if price is not None:
         return price
 
-    logger.debug(f"CoinGecko no disponible para {asset}, intentando CoinMarketCap...")
-    # Fallback a CoinMarketCap si está configurado
+    logger.debug(f"CoinGecko not available for {asset}, trying CoinMarketCap...")
     price = _fetch_crypto_price_coinmarketcap(asset)
     if price is not None:
         logger.info(f"Usando precio de CoinMarketCap para {asset}")
         return price
 
-    logger.debug(f"CoinMarketCap no disponible para {asset}, intentando yfinance...")
-    # Último recurso: yfinance
-    price = _fetch_crypto_price_yfinance(asset)
-    if price is not None:
-        logger.info(f"Usando precio de yfinance para {asset}")
-        return price
-
     logger.warning(f"No se pudo obtener precio para crypto {asset} en ninguna fuente")
-    return None
-
-
-def _fetch_stock_price(asset: str):
-    """Obtiene precio de acción/índice/futuro de commodity desde yfinance."""
-    ticker_symbol = YAHOO_TICKERS.get(asset.upper())
-    if not ticker_symbol:
-        return None
-    try:
-        import yfinance as yf
-        ticker = yf.Ticker(ticker_symbol)
-        info = ticker.fast_info
-        price = getattr(info, "last_price", None)
-        if price is None:
-            hist = ticker.history(period="1d")
-            if not hist.empty:
-                price = float(hist["Close"].iloc[-1])
-        if price is not None:
-            return float(price)
-    except Exception as e:
-        logger.warning(f"yfinance error para {asset} ({ticker_symbol}): {e}")
     return None
 
 
@@ -238,7 +254,7 @@ def get_price(asset: str):
     """
     Devuelve el precio actual del activo, o None si no se puede obtener.
     Usa caché de 60 segundos para evitar llamadas excesivas a la API.
-    Orden de búsqueda: CRYPTO_IDS → YAHOO_TICKERS → None.
+    Cross-validates against previous known price (rejects >50% deviation).
     """
     asset_upper = asset.upper()
 
@@ -250,24 +266,13 @@ def get_price(asset: str):
 
     if asset_upper in CRYPTO_IDS:
         price = _fetch_crypto_price(asset_upper)
-    elif asset_upper in YAHOO_TICKERS:
-        price = _fetch_stock_price(asset_upper)
 
     if price is not None:
-        # Validate price before caching — detect obvious errors
         if price <= 0:
             logger.warning(f"⚠️  Precio inválido recibido para {asset_upper}: ${price}")
             return None
-        # Log significant price changes (>50% from cache) for debugging
-        if asset_upper in _cache:
-            old_price, _ = _cache[asset_upper]
-            if old_price > 0:
-                ratio = price / old_price
-                if ratio > 1.5 or ratio < 0.67:
-                    logger.info(
-                        f"📊 Cambio de precio significativo detectado para {asset_upper}: "
-                        f"${old_price:.6f} → ${price:.6f} (ratio: {ratio:.2f}x)"
-                    )
+        if not _cross_validate_price(asset_upper, price):
+            return None
         _set_cached(asset_upper, price)
     return price
 
@@ -280,9 +285,8 @@ class RealPriceFetcher:
 
     def get_price_context(self, asset: str) -> dict:
         """
-        Devuelve contexto histórico de precio para el activo dado.
+        Devuelve contexto histórico de precio usando Binance klines (1d candles).
         Incluye precio actual, medias 7/30 días, cambio %, RSI(14) y tendencia.
-        Si falla, devuelve un dict con valores por defecto (sin lanzar excepción).
         """
         default = {
             "current": 0.0,
@@ -294,27 +298,33 @@ class RealPriceFetcher:
             "trend": "neutral",
         }
         try:
-            import yfinance as yf
+            import requests
 
             asset_upper = asset.upper()
-            ticker_symbol = YAHOO_TICKERS.get(asset_upper)
-            if not ticker_symbol and asset_upper in CRYPTO_IDS:
-                # Use yfinance for crypto with -USD suffix
-                ticker_symbol = f"{asset_upper}-USD"
-            if not ticker_symbol:
+            if asset_upper not in CRYPTO_IDS:
                 return default
 
-            hist = yf.Ticker(ticker_symbol).history(period="35d")
-            if hist.empty or len(hist) < 2:
+            sym = _BINANCE_SYMBOL_MAP.get(asset_upper, asset_upper)
+            if asset_upper in _NO_BINANCE_SPOT:
                 return default
 
-            closes = hist["Close"].dropna().tolist()
-            if not closes:
+            resp = requests.get(
+                "https://api.binance.com/api/v3/klines",
+                params={"symbol": f"{sym}USDT", "interval": "1d", "limit": 35},
+                timeout=8,
+            )
+            if resp.status_code != 200:
                 return default
 
-            current = float(closes[-1])
-            avg_7d = float(sum(closes[-7:]) / min(7, len(closes)))
-            avg_30d = float(sum(closes[-30:]) / min(30, len(closes)))
+            klines = resp.json()
+            if len(klines) < 2:
+                return default
+
+            closes = [float(k[4]) for k in klines]
+
+            current = closes[-1]
+            avg_7d = sum(closes[-7:]) / min(7, len(closes))
+            avg_30d = sum(closes[-30:]) / min(30, len(closes))
 
             change_7d_pct = round((current - avg_7d) / avg_7d * 100, 2) if avg_7d else 0.0
             change_30d_pct = round((current - avg_30d) / avg_30d * 100, 2) if avg_30d else 0.0
@@ -350,8 +360,11 @@ class RealPriceFetcher:
         asset_upper = asset.upper()
         if asset_upper not in CRYPTO_IDS:
             return None
+        if asset_upper in _NO_BINANCE_SPOT:
+            return None
 
-        pair = f"{asset_upper}USDT"
+        sym = _BINANCE_SYMBOL_MAP.get(asset_upper, asset_upper)
+        pair = f"{sym}USDT"
         try:
             import requests
             # 1h candles, fetch enough for the requested window

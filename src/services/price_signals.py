@@ -176,40 +176,50 @@ def _refresh_batch_cache(assets: list[str]):
     _batch_cache_time = _time.time()
     logger.info(f"📊 Price cache refreshed (6h klines): {success}/{len(ALL_ASSETS)} assets")
 
-    # --- Fallback: CoinGecko ---
+    # Only use CoinGecko as fallback for assets that Binance missed — never overwrite Binance data
+    missing_assets = [a for a in assets if a.upper() not in _batch_cache and a.upper() not in _NO_BINANCE_SPOT]
+    if not missing_assets:
+        return
+
     try:
         from src.services.real_price_fetcher import CRYPTO_IDS
 
         coin_ids = []
         id_to_asset = {}
-        for a in assets:
+        for a in missing_assets:
             cid = CRYPTO_IDS.get(a.upper())
             if cid:
                 coin_ids.append(cid)
                 id_to_asset[cid] = a.upper()
 
+        if not coin_ids:
+            return
+
         ids_str = ",".join(coin_ids)
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids_str}&vs_currencies=usd&include_24hr_change=true"
         resp = requests.get(url, timeout=15)
+        if resp.status_code == 429:
+            logger.warning("CoinGecko rate limited (429) — skipping fallback, Binance data preserved")
+            return
         if resp.status_code != 200:
             logger.warning(f"CoinGecko batch failed: {resp.status_code}")
             return
 
         data = resp.json()
-        _batch_cache = {}
-        _price_cache = {}
+        filled = 0
         for cid, values in data.items():
             asset = id_to_asset.get(cid)
-            if asset:
+            if asset and asset not in _batch_cache:
                 if "usd_24h_change" in values:
                     _batch_cache[asset] = values["usd_24h_change"]
-                if "usd" in values and values["usd"]:
+                    filled += 1
+                if "usd" in values and values["usd"] and asset not in _price_cache:
                     _price_cache[asset] = float(values["usd"])
 
-        _batch_cache_time = _time.time()
-        logger.info(f"📊 Price cache refreshed via CoinGecko: {len(_batch_cache)} assets")
+        if filled:
+            logger.info(f"📊 CoinGecko fallback filled {filled} missing assets")
     except Exception as e:
-        logger.warning(f"Error refreshing price batch: {e}")
+        logger.warning(f"CoinGecko fallback error (Binance data preserved): {e}")
 
 
 def _get_24h_change(asset: str) -> float | None:
@@ -271,14 +281,21 @@ def check_price_signals() -> list[dict]:
                 f"Momentum alcista reciente — movimiento en curso, no histórico."
             )
 
-        # 24h context for learning — does trend alignment improve accuracy?
+        # 24h context — filter contra-trend signals (bounce/retracement noise)
         change_24h = _change_24h_cache.get(asset.upper(), 0)
         trend_aligned = (change < 0 and change_24h < 0) or (change > 0 and change_24h > 0)
+
+        # Skip contra-trend signals: 6h UP but 24h strongly DOWN (or vice versa)
+        # These are usually temporary bounces, not real reversals
+        if not trend_aligned and abs(change_24h) > 5.0:
+            logger.debug(
+                f"Skipping contra-trend signal: {asset} 6h={change:+.1f}% vs 24h={change_24h:+.1f}%"
+            )
+            continue
 
         score = min(85, 65 + int(abs(change)))
         is_down = change < 0
         is_early = abs(change) <= ALERT_MAX_PCT
-        # Fixed: alert both UP and DOWN early moves (2.5-5%), not just DOWN
         is_alertable = is_early
         signal_type = "early_move" if is_early else "late_move"
 

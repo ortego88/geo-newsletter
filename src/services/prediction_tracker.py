@@ -24,8 +24,8 @@ logger = logging.getLogger("prediction_tracker")
 # Si en las 24h siguientes el precio se mueve >= 1% en la dirección predicha → CORRECT
 # Si se mueve >= 1% en la dirección opuesta → INCORRECT
 # Si no alcanza 1% en ninguna dirección al finalizar las 24h → NEUTRAL
-_THRESHOLD_PCT = 2.0  # 2% — simétrico y honesto: exige movimiento real
-_INCORRECT_THRESHOLD_PCT = 2.0  # 2% — mismo umbral en dirección contraria
+_THRESHOLD_PCT = 1.5  # 1.5% — more predictions resolve instead of staying neutral
+_INCORRECT_THRESHOLD_PCT = 1.5  # 1.5% — symmetric threshold for opposite direction
 
 # Ventana de evaluación en horas
 _EVALUATION_WINDOW_HOURS = 24
@@ -536,7 +536,7 @@ class PredictionTracker:
             "title": pred.get("title", ""),
             "asset": pred.get("asset", ""),
             "direction": direction,
-            "predicted_change": predicted_change,
+            "predicted_change": pred.get("predicted_change", 0),
             "actual_change": round(actual_change_pct, 2),
             "price_at_prediction": price_at,
             "price_at_validation": current_price,
