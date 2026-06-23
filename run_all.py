@@ -192,9 +192,10 @@ def _send_pipeline_alerts(events: list):
         is_price_signal = "Price Monitor" in e.get("source", "")
         is_scheduled = "Scheduled" in e.get("source", "")
         if is_scheduled:
-            # Scheduled analysis: Claude already applies strict calibration (max 85)
-            # 70+ means strong technical confluence
-            min_conf = 70
+            # Scheduled analysis: designed to guarantee daily coverage
+            # Claude's prompt enforces non-neutral and calibrates 50-82
+            # 60+ means identifiable directional bias
+            min_conf = 60
         elif is_price_signal:
             # Price signals: need trend+volume+1h alignment for high confidence
             min_conf = 75

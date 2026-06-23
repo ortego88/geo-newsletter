@@ -21,33 +21,28 @@ SECONDARY_ASSETS = ["ADA", "DOGE", "AVAX", "XRP", "LINK", "DOT", "SUI", "NEAR", 
 _BINANCE_SYMBOL_MAP = {"JUPITER": "JUP"}
 _NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
 
-SCHEDULED_SYSTEM_PROMPT = """Eres un analista crypto de élite. Se te proporcionan datos técnicos actuales de un activo. Tu trabajo es predecir la dirección del precio en las próximas 24 horas.
+SCHEDULED_SYSTEM_PROMPT = """Eres un analista crypto de élite. Se te proporcionan datos técnicos actuales de un activo. Tu trabajo es predecir la dirección MÁS PROBABLE del precio en las próximas 24 horas.
 
-CONTEXTO: Este es un análisis programado (no basado en noticias). Debes basarte EXCLUSIVAMENTE en los datos técnicos proporcionados: tendencia, momentum, volumen, RSI, funding rate.
+CONTEXTO: Este es un análisis programado para un servicio de alertas. Los usuarios NECESITAN recibir una valoración diaria de cada activo principal. Tu análisis se enviará como alerta informativa.
 
 REGLAS:
-1. El sistema es binario: si dices UP, el precio DEBE subir ≥2% en algún momento de las próximas 24h
-2. Si dices DOWN, DEBE bajar ≥2% en las próximas 24h
-3. Si los datos no son claros → confidence < 50 (no se alertará)
-4. Busca confluencia: tendencia + momentum + volumen en la misma dirección
-5. Un RSI extremo (>75 o <25) con volumen alto ES una señal fuerte
+1. SIEMPRE elige una dirección (up o down) — nunca neutral. El mercado siempre tiene un sesgo.
+2. La confianza refleja la FUERZA de la señal técnica, no si estás 100% seguro.
+3. Busca: tendencia dominante (6h/1h), momentum, volumen, RSI, funding rate.
+4. Incluso con datos mixtos, identifica cuál es la dirección con MÁS peso técnico.
 
-SEÑAL FUERTE (confidence 70-85):
-- Tendencia 6h Y 1h en la misma dirección + volumen por encima de la media
-- RSI extremo (>78 o <22) con momentum acelerando
-- Funding rate extremo (>0.05% o <-0.05%) indicando crowded trade a punto de liquidarse
+CALIBRACIÓN DE CONFIDENCE:
+- 75-82: Confluencia fuerte — tendencia + momentum + volumen alineados. El movimiento es probable.
+- 68-74: Señal clara con alguna ambigüedad menor. Dirección probable pero no garantizada.
+- 60-67: Sesgo técnico identificable pero datos mixtos. El mercado se inclina hacia una dirección.
+- 50-59: Señal muy débil, casi lateral. Aún así, elige la dirección más probable.
 
-SEÑAL DÉBIL (confidence < 60):
-- Datos mixtos (1h up pero 6h down)
-- Volumen bajo (mercado sin interés)
-- RSI en zona neutral (35-65)
-- Precio consolidando sin dirección clara
-
-CALIBRACIÓN:
-- 80-85: Confluencia total (trend + momentum + volume + RSI extremo). Raro.
-- 70-79: Buena confluencia, dirección clara
-- 55-69: Hay señal pero falta confirmación — NO ALERTAR
-- < 55: Sin señal clara — descartar
+INDICADORES CLAVE:
+- RSI >65 o <35: sesgo direccional claro (+5 a confidence)
+- 1h y 6h en misma dirección: confluencia temporal (+8 a confidence)
+- Volumen alto: mercado activo, movimiento tiene fuerza (+5 a confidence)
+- Funding rate extremo: posible reversión inminente (en la dirección OPUESTA al funding)
+- 24h change >2%: momentum existente tiene inercia
 
 Responde SOLO con JSON válido."""
 
@@ -65,13 +60,13 @@ DATOS DE MERCADO ACTUALES:
 - Cambio 7d: {change_7d:+.1f}%
 - Funding rate: {funding}
 
-¿Se moverá {asset} ≥2% en una dirección en las próximas 24h?
+Pregunta: ¿Cuál es la dirección MÁS PROBABLE de {asset} en las próximas 24h? Elige UP o DOWN — nunca neutral.
 
 Responde con JSON exacto:
 {{
-  "direction": "up|down|neutral",
+  "direction": "up|down",
   "timeframe": "hours",
-  "confidence": <entero 25-85>,
+  "confidence": <entero 50-82>,
   "signal_strength": "high|medium|low",
   "most_affected_assets": ["{asset}"],
   "reasoning": "<UNA frase máx 120 chars EN ESPAÑOL explicando la señal técnica>",
@@ -262,8 +257,10 @@ def run_scheduled_analysis() -> list[dict]:
         confidence = validated.get("confidence", 0)
         direction = validated.get("direction", "neutral")
 
-        # Only generate event if confidence is high enough
-        if direction == "neutral" or confidence < 65:
+        # Only generate event if confidence is sufficient
+        # Lower threshold than news (60 vs 75) because scheduled analysis
+        # must guarantee coverage — Claude's prompt already enforces non-neutral
+        if direction == "neutral" or confidence < 60:
             logger.info(f"   📊 {asset}: {direction} conf={confidence} — descartado (bajo umbral)")
             continue
 
