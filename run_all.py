@@ -215,11 +215,14 @@ def _send_pipeline_alerts(events: list):
         logger.info("Ninguna predicción guardada en DB para alertar")
         return
 
-    # Step 1b: Apply historical accuracy filter
+    # Step 1b: Apply historical accuracy filter (skip for scheduled analysis — it has its own calibration)
     try:
         from src.services.prediction_filter import should_send_alert
         filtered = []
         for event in saved_predictions:
+            if "Scheduled" in event.get("source", ""):
+                filtered.append(event)
+                continue
             should_send, reason = should_send_alert(event)
             if should_send:
                 filtered.append(event)
