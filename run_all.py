@@ -182,7 +182,6 @@ def _send_pipeline_alerts(events: list):
 
     # Step 1: filter alertable events — binary system requires high confidence
     # Since INCORRECT = any alert that doesn't reach +2%, we must be very selective
-    # Minimum confidence: 75 for all alerts (both news and price signals)
     resolved = []
     for e in events:
         if e.get("_silent"):
@@ -191,7 +190,12 @@ def _send_pipeline_alerts(events: list):
             continue
         conf = e.get("analysis", {}).get("confidence", 0)
         is_price_signal = "Price Monitor" in e.get("source", "")
-        if is_price_signal:
+        is_scheduled = "Scheduled" in e.get("source", "")
+        if is_scheduled:
+            # Scheduled analysis: Claude already applies strict calibration (max 85)
+            # 70+ means strong technical confluence
+            min_conf = 70
+        elif is_price_signal:
             # Price signals: need trend+volume+1h alignment for high confidence
             min_conf = 75
         else:
@@ -434,6 +438,57 @@ def run_gem_scan_cycle():
         logger.warning(f"Error en gem scan: {e}")
 
 
+def run_scheduled_analysis_cycle():
+    """
+    Runs every 8h to analyze priority assets (BTC, ETH, SOL, BNB + top 10)
+    with Claude using current market data. Guarantees daily coverage for major assets
+    regardless of news flow.
+    """
+    logger.info("=" * 60)
+    logger.info(f"📅 CICLO DE ANÁLISIS PROGRAMADO — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
+    try:
+        from src.services.scheduled_analysis import run_scheduled_analysis
+        from src.services.real_price_fetcher import get_price as _gp
+
+        events = run_scheduled_analysis()
+        if not events:
+            logger.info("📅 Sin señales técnicas suficientes en este ciclo")
+            return
+
+        # Save predictions — scheduled analysis bypasses the 3h cooldown
+        # (it uses its own 8h cycle as natural cooldown)
+        saved_events = []
+        for event in events:
+            asset = event.get("suggested_asset", "")
+            market_data = event.pop("_market_data", {})
+            price_now = market_data.get("price", 0) or _gp(asset) or 0.0
+            if price_now <= 0:
+                continue
+
+            # Bypass standard cooldown for scheduled analysis
+            original = tracker._has_recent_prediction
+            tracker._has_recent_prediction = lambda *a, **kw: False
+            try:
+                pred_id = tracker.save_prediction(event, price_now)
+            finally:
+                tracker._has_recent_prediction = original
+
+            if pred_id:
+                event["prediction_id"] = pred_id
+                event["price_at_prediction"] = price_now
+                saved_events.append(event)
+
+        if saved_events:
+            logger.info(f"📅 {len(saved_events)} predicciones programadas guardadas")
+            _send_pipeline_alerts(saved_events)
+        else:
+            logger.info("📅 Ninguna predicción guardada (cooldown o filtros)")
+
+    except Exception as e:
+        logger.error(f"Error en análisis programado: {e}", exc_info=True)
+
+
 def run_microstructure_cycle():
     """
     Runs every 3 minutes to catch whale trades/funding rate signals.
@@ -481,6 +536,14 @@ def start_scheduler():
         "interval",
         minutes=3,
         id="microstructure_cycle",
+        next_run_time=datetime.now(),
+    )
+    # Scheduled analysis: every 8h — guarantees daily coverage for BTC, ETH, SOL, BNB + top 10
+    scheduler.add_job(
+        run_scheduled_analysis_cycle,
+        "interval",
+        hours=8,
+        id="scheduled_analysis",
         next_run_time=datetime.now(),
     )
     # Gem scanner: every 4 hours (max 1 signal/cycle = ~6 checks/day)
