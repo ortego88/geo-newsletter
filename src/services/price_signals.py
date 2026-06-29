@@ -298,19 +298,21 @@ def _get_liquidation_boost(asset: str, direction: str) -> int:
 def _hour_of_day_factor() -> int:
     """
     Returns confidence adjustment based on hour of day (UTC).
-    High-continuation hours: US market open (13-16 UTC), Asia close (0-2 UTC)
-    Low-continuation hours: dead zone (4-7 UTC)
+    Based on 10 days of data: evening (19-22 UTC) = 77% accuracy,
+    US session (13-16) = 60%, early EU = 51%, other = 43%.
     """
     from datetime import datetime, timezone
     hour = datetime.now(timezone.utc).hour
-    # US session open (13-16 UTC = 9am-12pm ET) — highest volume, strongest continuations
+    # Evening session (19-22 UTC) — highest accuracy by far (77%)
+    if 19 <= hour <= 22:
+        return 5
+    # US session (13-16 UTC) — solid 60% accuracy
     if 13 <= hour <= 16:
-        return 3
-    # Asia close / Europe open overlap (7-9 UTC) — decent volume
-    if 7 <= hour <= 9:
         return 2
-    # Dead zone (3-6 UTC) — low volume, more false signals
-    if 3 <= hour <= 6:
+    # Dead zone / low accuracy hours (0-2, 8, 10, 17 UTC) — 20-40% accuracy
+    if hour in (0, 1, 2, 8, 17):
+        return -4
+    if hour == 10:
         return -3
     return 0
 

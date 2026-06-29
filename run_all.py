@@ -350,7 +350,9 @@ def run_pipeline_cycle():
                     _conf += 3
                 _conf += pe.get("_liq_boost", 0)
                 _conf += pe.get("_hour_factor", 0)
-                _conf = max(50, min(88, _conf))
+                # Cap at 78: data shows conf 80+ has WORSE accuracy (39.5%)
+                # Sweet spot is 72-76 (71.4% accuracy)
+                _conf = max(50, min(78, _conf))
 
                 _factors = pe.get("_signal_factors", {})
                 pe["analysis"] = {

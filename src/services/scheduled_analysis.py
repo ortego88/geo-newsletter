@@ -14,9 +14,15 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("scheduled_analysis")
 
-# Assets that MUST get at least 1 analysis per cycle
-PRIORITY_ASSETS = ["BTC", "ETH", "SOL", "BNB"]
-SECONDARY_ASSETS = ["ADA", "DOGE", "AVAX", "XRP", "LINK", "DOT", "SUI", "NEAR", "ARB", "OP"]
+# Mid-caps that scheduled analysis works well for (>50% accuracy historically)
+# Large caps (BTC, ETH, SOL, BNB) only included with STRICT threshold — they rarely move 2% without catalyst
+# Excluded entirely: DOT (33%), GRT (0%), LINK (42%) — consistently fail
+PRIORITY_ASSETS = ["NEAR", "ADA", "OP", "SUI", "ARB", "XRP"]
+SECONDARY_ASSETS = ["DOGE", "AVAX", "INJ", "MANA", "ENJ", "AXS", "WIF", "PENDLE", "CRV", "GALA"]
+
+# Large caps: only alert when signal is exceptionally strong (RSI extreme + volume + trend)
+LARGE_CAP_ASSETS = ["BTC", "ETH", "SOL", "BNB"]
+LARGE_CAP_MIN_CONFIDENCE = 72  # much higher bar for large caps
 
 _BINANCE_SYMBOL_MAP = {"JUPITER": "JUP"}
 _NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
@@ -30,6 +36,7 @@ REGLAS:
 2. La confianza refleja la FUERZA de la señal técnica, no si estás 100% seguro.
 3. Busca: tendencia dominante (6h/1h), momentum, volumen, RSI, funding rate.
 4. Incluso con datos mixtos, identifica cuál es la dirección con MÁS peso técnico.
+5. Para BTC, ETH, SOL, BNB: son large caps que RARA VEZ se mueven ≥2% sin catalizador. Solo da confidence ≥72 si hay señal EXTREMA (RSI >78 o <22, funding extremo, o ya lleva >3% en una dirección con volumen alto).
 
 CALIBRACIÓN DE CONFIDENCE:
 - 75-82: Confluencia fuerte — tendencia + momentum + volumen alineados. El movimiento es probable.
@@ -216,9 +223,8 @@ def run_scheduled_analysis() -> list[dict]:
     logger.info("📅 ANÁLISIS PROGRAMADO — Iniciando análisis de activos principales")
 
     # Determine which assets to analyze this cycle
-    # Priority always, secondary rotated (half each cycle)
-    cycle_secondary = SECONDARY_ASSETS[:]
-    assets_to_analyze = PRIORITY_ASSETS + cycle_secondary
+    # Priority + secondary (mid-caps with good accuracy) + large caps (strict threshold)
+    assets_to_analyze = PRIORITY_ASSETS + SECONDARY_ASSETS + LARGE_CAP_ASSETS
 
     events = []
     analyzed = 0
@@ -257,11 +263,14 @@ def run_scheduled_analysis() -> list[dict]:
         confidence = validated.get("confidence", 0)
         direction = validated.get("direction", "neutral")
 
-        # Only generate event if confidence is sufficient
-        # Lower threshold than news (60 vs 75) because scheduled analysis
-        # must guarantee coverage — Claude's prompt already enforces non-neutral
-        if direction == "neutral" or confidence < 60:
-            logger.info(f"   📊 {asset}: {direction} conf={confidence} — descartado (bajo umbral)")
+        # Dynamic threshold: large caps need much higher confidence (they rarely move 2%)
+        if asset in LARGE_CAP_ASSETS:
+            min_conf = LARGE_CAP_MIN_CONFIDENCE
+        else:
+            min_conf = 60
+
+        if direction == "neutral" or confidence < min_conf:
+            logger.info(f"   📊 {asset}: {direction} conf={confidence} — descartado (umbral={min_conf})")
             continue
 
         # Build event structure compatible with pipeline
