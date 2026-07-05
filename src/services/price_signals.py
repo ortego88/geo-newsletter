@@ -15,19 +15,19 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger("price_signals")
 
-THRESHOLD_PCT_DEFAULT = 3.0  # default minimum move for altcoins
+THRESHOLD_PCT_DEFAULT = 2.5  # default minimum move for altcoins
 ALERT_MAX_PCT = 5.0       # moves above this are sent silently (too late to act)
-COOLDOWN_PRICE_MOVE_PCT = 5.0  # re-alert only when price moves 5% from last alert
+COOLDOWN_PRICE_MOVE_PCT = 3.0  # re-alert when price moves 3% from last alert (was 5%, too restrictive)
 
-# Dynamic threshold by market cap tier — large caps need less % to generate signal
-# because they move less but with higher conviction
+# Dynamic threshold by market cap tier — aligned with validation thresholds
+# Detect signals earlier for large caps since their validation threshold is also lower
 _THRESHOLD_BY_TIER = {
-    "tier1": 2.0,  # BTC, ETH, SOL, BNB — 2% is significant for large caps
-    "tier2": 2.5,  # Top 20 by cap
-    "default": 3.0,  # everything else
+    "tier1": 1.2,  # BTC, ETH — validation is 1%, detect moves >1.2%
+    "tier2": 1.8,  # SOL, BNB, top 10 — validation is 1.5%, detect moves >1.8%
+    "default": 2.5,  # mid/small caps — validation is 2%, detect moves >2.5%
 }
-_TIER1_ASSETS = {"BTC", "ETH", "SOL", "BNB"}
-_TIER2_ASSETS = {"ADA", "DOGE", "AVAX", "DOT", "LINK", "XRP", "TON", "TRX", "LTC", "SHIB"}
+_TIER1_ASSETS = {"BTC", "ETH"}
+_TIER2_ASSETS = {"SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK", "XRP", "TON", "TRX", "LTC", "SHIB"}
 
 def _get_threshold(asset: str) -> float:
     a = asset.upper()

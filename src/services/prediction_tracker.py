@@ -2,11 +2,12 @@
 Rastreador de predicciones.
 Guarda predicciones en PostgreSQL y las valida comparando precios.
 
-Validación binaria honesta:
-- CORRECT: precio alcanza ≥+2% en la dirección predicha dentro de 24h
-- INCORRECT: cualquier otro escenario (no alcanza 2%, o ventana expira)
+Validación binaria con umbral dinámico por capitalización:
+- BTC/ETH: CORRECT si alcanza ≥1% en dirección predicha dentro de 24h
+- Top 10 (SOL, BNB, XRP, ADA...): CORRECT si alcanza ≥1.5%
+- Mid/small caps: CORRECT si alcanza ≥2%
+- INCORRECT: no alcanza umbral, o ventana expira
 - Cierre anticipado: si llega señal contraria, se cierra con el precio del momento
-  (correct si ya había alcanzado 2% en algún momento, incorrect si no)
 
 No existe "neutral" — el sistema debe estar seguro antes de alertar.
 """
@@ -23,9 +24,22 @@ from src.services.market_config import calculate_verification_time
 
 logger = logging.getLogger("prediction_tracker")
 
-# Umbral para considerar una predicción correcta.
-# El precio debe moverse ≥2% en la dirección predicha dentro de 24h.
-_THRESHOLD_PCT = 2.0
+# Umbral dinámico por capitalización — large caps se mueven menos pero con más convicción
+_TIER1_THRESHOLD = 1.0   # BTC, ETH — rara vez mueven 2% sin catalizador
+_TIER2_THRESHOLD = 1.5   # SOL, BNB, XRP, ADA, DOGE — top 10
+_DEFAULT_THRESHOLD = 2.0 # mid/small caps — necesitan más movimiento para ser significativo
+
+_TIER1_ASSETS = {"BTC", "ETH"}
+_TIER2_ASSETS = {"SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX", "DOT", "LINK", "TON", "TRX"}
+
+def _get_threshold_for_asset(asset: str) -> float:
+    """Returns the validation threshold for an asset based on market cap tier."""
+    a = asset.upper()
+    if a in _TIER1_ASSETS:
+        return _TIER1_THRESHOLD
+    if a in _TIER2_ASSETS:
+        return _TIER2_THRESHOLD
+    return _DEFAULT_THRESHOLD
 
 # Ventana de evaluación en horas
 _EVALUATION_WINDOW_HOURS = 24
@@ -224,11 +238,12 @@ class PredictionTracker:
                 best = best_so_far if best_so_far > 0 else current_price
                 best_change = (best - p_in) / p_in * 100
 
-                # Binary: correct only if best price already reached ≥2% in predicted direction
+                # Binary: correct only if best price already reached threshold in predicted direction
+                threshold = _get_threshold_for_asset(asset)
                 if pred_is_up:
-                    outcome = "correct" if best_change >= _THRESHOLD_PCT else "incorrect"
+                    outcome = "correct" if best_change >= threshold else "incorrect"
                 else:
-                    outcome = "correct" if best_change <= -_THRESHOLD_PCT else "incorrect"
+                    outcome = "correct" if best_change <= -threshold else "incorrect"
 
                 with self._get_conn() as conn:
                     conn.execute(text("""
@@ -428,17 +443,18 @@ class PredictionTracker:
 
     def validate_prediction(self, prediction_id: int, current_price: float) -> dict | None:
         """
-        Validación binaria honesta:
-        - CORRECT: precio alcanzó ≥2% en la dirección predicha en algún momento de las 24h
-        - INCORRECT: no alcanzó ≥2% al expirar la ventana de 24h
+        Validación binaria con umbral dinámico por capitalización:
+        - BTC/ETH: CORRECT si alcanza ≥1% en dirección predicha
+        - Top 10 (SOL, BNB, XRP...): CORRECT si alcanza ≥1.5%
+        - Mid/small caps: CORRECT si alcanza ≥2%
 
-        Dentro de la ventana:
+        Dentro de la ventana (24h):
         - Trackea el mejor precio visto (max para UP, min para DOWN)
-        - Si el mejor ya alcanza ≥2% → CORRECT inmediato (no esperar)
+        - Si el mejor ya alcanza umbral → CORRECT inmediato
         - Si la ventana no ha expirado y no se alcanzó → return None (retry next cycle)
 
         Al expirar la ventana:
-        - Si el mejor precio tracked alguna vez alcanzó ≥2% → CORRECT
+        - Si el mejor precio tracked alguna vez alcanzó umbral → CORRECT
         - Si no → INCORRECT (sin zona gris)
         """
         with self._get_conn() as conn:
@@ -468,6 +484,10 @@ class PredictionTracker:
         window_expired = (datetime.utcnow() - predicted_at).total_seconds() >= _EVALUATION_WINDOW_HOURS * 3600
         actual_change_pct = ((current_price - price_at) / price_at) * 100
 
+        # Dynamic threshold based on asset market cap tier
+        asset = pred.get("asset", "UNKNOWN")
+        threshold = _get_threshold_for_asset(asset)
+
         # Track best price seen so far in price_at_validation field
         prev_best = pred.get("price_at_validation") or 0
         is_up = direction in ("up", "bullish", "positive", "alza")
@@ -475,11 +495,11 @@ class PredictionTracker:
         if is_up:
             best_price = max(current_price, prev_best) if prev_best > 0 else current_price
             best_change_pct = ((best_price - price_at) / price_at) * 100
-            threshold_reached = best_change_pct >= _THRESHOLD_PCT
+            threshold_reached = best_change_pct >= threshold
         else:
             best_price = min(current_price, prev_best) if prev_best > 0 else current_price
             best_change_pct = ((best_price - price_at) / price_at) * 100
-            threshold_reached = best_change_pct <= -_THRESHOLD_PCT
+            threshold_reached = best_change_pct <= -threshold
 
         if threshold_reached:
             # Target reached — CORRECT immediately, no need to wait for window expiry

@@ -20,9 +20,10 @@ logger = logging.getLogger("scheduled_analysis")
 PRIORITY_ASSETS = ["NEAR", "ADA", "OP", "SUI", "ARB", "XRP"]
 SECONDARY_ASSETS = ["DOGE", "AVAX", "INJ", "MANA", "ENJ", "AXS", "WIF", "PENDLE", "CRV", "GALA"]
 
-# Large caps: only alert when signal is exceptionally strong (RSI extreme + volume + trend)
+# Large caps: with 1%/1.5% threshold they're now viable for prediction
+# Still need slightly higher confidence than mid-caps since they move less
 LARGE_CAP_ASSETS = ["BTC", "ETH", "SOL", "BNB"]
-LARGE_CAP_MIN_CONFIDENCE = 72  # much higher bar for large caps
+LARGE_CAP_MIN_CONFIDENCE = 65  # 1% target is achievable, moderate bar is fine
 
 _BINANCE_SYMBOL_MAP = {"JUPITER": "JUP"}
 _NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
@@ -31,12 +32,17 @@ SCHEDULED_SYSTEM_PROMPT = """Eres un analista crypto de élite. Se te proporcion
 
 CONTEXTO: Este es un análisis programado para un servicio de alertas. Los usuarios NECESITAN recibir una valoración diaria de cada activo principal. Tu análisis se enviará como alerta informativa.
 
+UMBRALES DE VALIDACIÓN (el precio debe moverse ESTO en la dirección predicha):
+- BTC, ETH: ≥1% (son large caps, 1% es significativo)
+- SOL, BNB, XRP, ADA, DOGE, AVAX, DOT, LINK: ≥1.5%
+- Resto de mid/small caps: ≥2%
+
 REGLAS:
 1. SIEMPRE elige una dirección (up o down) — nunca neutral. El mercado siempre tiene un sesgo.
 2. La confianza refleja la FUERZA de la señal técnica, no si estás 100% seguro.
 3. Busca: tendencia dominante (6h/1h), momentum, volumen, RSI, funding rate.
 4. Incluso con datos mixtos, identifica cuál es la dirección con MÁS peso técnico.
-5. Para BTC, ETH, SOL, BNB: son large caps que RARA VEZ se mueven ≥2% sin catalizador. Solo da confidence ≥72 si hay señal EXTREMA (RSI >78 o <22, funding extremo, o ya lleva >3% en una dirección con volumen alto).
+5. Para BTC/ETH: solo necesitas predecir un movimiento de 1%, que es mucho más factible. Da confidence ≥65 cuando la señal técnica es clara.
 
 CALIBRACIÓN DE CONFIDENCE:
 - 75-82: Confluencia fuerte — tendencia + momentum + volumen alineados. El movimiento es probable.
