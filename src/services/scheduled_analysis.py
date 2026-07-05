@@ -23,7 +23,7 @@ SECONDARY_ASSETS = ["DOGE", "AVAX", "INJ", "MANA", "ENJ", "AXS", "WIF", "PENDLE"
 # Large caps: with 1%/1.5% threshold they're now viable for prediction
 # Still need slightly higher confidence than mid-caps since they move less
 LARGE_CAP_ASSETS = ["BTC", "ETH", "SOL", "BNB"]
-LARGE_CAP_MIN_CONFIDENCE = 65  # 1% target is achievable, moderate bar is fine
+LARGE_CAP_MIN_CONFIDENCE = 60  # Same as mid-caps; 1% validation bar makes this viable
 
 _BINANCE_SYMBOL_MAP = {"JUPITER": "JUP"}
 _NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
@@ -42,13 +42,13 @@ REGLAS:
 2. La confianza refleja la FUERZA de la señal técnica, no si estás 100% seguro.
 3. Busca: tendencia dominante (6h/1h), momentum, volumen, RSI, funding rate.
 4. Incluso con datos mixtos, identifica cuál es la dirección con MÁS peso técnico.
-5. Para BTC/ETH: solo necesitas predecir un movimiento de 1%, que es mucho más factible. Da confidence ≥65 cuando la señal técnica es clara.
+5. Para BTC/ETH/SOL/BNB: solo necesitas predecir un movimiento de 1-1.5%, que es mucho más factible que 2%. Calibra la confidence en el rango 62-75 cuando hay CUALQUIER señal técnica identificable.
 
 CALIBRACIÓN DE CONFIDENCE:
 - 75-82: Confluencia fuerte — tendencia + momentum + volumen alineados. El movimiento es probable.
 - 68-74: Señal clara con alguna ambigüedad menor. Dirección probable pero no garantizada.
-- 60-67: Sesgo técnico identificable pero datos mixtos. El mercado se inclina hacia una dirección.
-- 50-59: Señal muy débil, casi lateral. Aún así, elige la dirección más probable.
+- 62-67: Sesgo técnico identificable. Para large caps (BTC/ETH/SOL/BNB) esto es SUFICIENTE — 1% se consigue con facilidad.
+- 50-61: Señal muy débil, casi lateral. Aún así, elige la dirección más probable.
 
 INDICADORES CLAVE:
 - RSI >65 o <35: sesgo direccional claro (+5 a confidence)
