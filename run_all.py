@@ -240,7 +240,24 @@ def _send_pipeline_alerts(events: list):
 
     logger.info(f"📊 {len(saved_predictions)} eventos listos para alertar")
 
-    # Step 2: send per-user alerts based on telegram_chat_id + selected_assets
+    # Step 2: prioritize events by historical asset accuracy (best first)
+    # When users hit daily limits, they get the most reliable alerts first
+    try:
+        from src.services.prediction_filter import get_filter_stats
+        asset_accuracy = {
+            k: v.get("accuracy", 50)
+            for k, v in get_filter_stats().get("by_asset", {}).items()
+        }
+        saved_predictions.sort(
+            key=lambda e: asset_accuracy.get(
+                (e.get("analysis", {}).get("most_affected_assets", [""]) or [""])[0].upper(), 50
+            ),
+            reverse=True,
+        )
+    except Exception:
+        pass
+
+    # Send per-user alerts based on telegram_chat_id + selected_assets
     # (the public channel only gets 1 BTC alert/day via send_daily_channel_alert + daily summary)
     alerted_prediction_ids = set()
     user_sent = _send_per_user_alerts(saved_predictions, format_telegram_alert, send_telegram)
@@ -560,18 +577,7 @@ def start_scheduler():
         id="gem_scan",
         next_run_time=datetime.now(),
     )
-    # Weekly digest: every Sunday at 10:00 AM (Madrid time) for Premium/Pro users
-    from src.services.weekly_digest import send_weekly_digest
-    scheduler.add_job(
-        lambda: send_weekly_digest(DB_PATH, os.getenv("APP_DB_PATH", "data/app.db")),
-        "cron",
-        day_of_week="sun",
-        hour=10,
-        minute=0,
-        timezone="Europe/Madrid",
-        id="weekly_digest",
-    )
-    # Newsletter: every Monday at 8:00 AM (Madrid time) for all subscribers
+    # Weekly newsletter: every Monday at 8:00 AM (Madrid time) for all subscribers
     from src.services.newsletter_sender import send_weekly_newsletter
     scheduler.add_job(
         send_weekly_newsletter,
