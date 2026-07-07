@@ -630,6 +630,35 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="daily_channel_summary",
     )
+    # Expire trials/subscriptions that have passed their end date without Stripe renewal
+    def expire_stale_subscriptions():
+        try:
+            from web.db_engine import get_engine
+            from sqlalchemy import text as _t
+            now_iso = datetime.utcnow().isoformat()
+            with get_engine("app").connect() as conn:
+                result = conn.execute(_t("""
+                    UPDATE subscriptions SET status='cancelled', updated_at=:now
+                    WHERE status IN ('trial', 'active')
+                      AND stripe_subscription_id IS NULL
+                      AND (
+                        (status = 'trial' AND trial_ends_at < :now)
+                        OR (status = 'active' AND current_period_end < :now)
+                      )
+                """), {"now": now_iso})
+                if result.rowcount > 0:
+                    logger.info(f"⏰ {result.rowcount} suscripciones expiradas (sin Stripe) canceladas")
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Error expirando suscripciones: {e}")
+
+    scheduler.add_job(
+        expire_stale_subscriptions,
+        "interval",
+        hours=6,
+        id="expire_subscriptions",
+        next_run_time=datetime.now(),
+    )
     # Channel membership sync: every hour, kick expired subscribers
     def sync_channel():
         try:
