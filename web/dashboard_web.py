@@ -96,8 +96,8 @@ def _require_active_subscription():
         flash("Tu período de prueba ha finalizado. Activa tu suscripción para continuar.", "warning")
         return redirect(url_for("dashboard_web.subscription"))
 
-    # Paso 2: Verificar método de pago
-    if not _user_has_payment_method(current_user.id):
+    # Paso 2: Verificar método de pago (skip for Stripe-managed or admin-activated accounts)
+    if not sub.get("stripe_subscription_id") and not _user_has_payment_method(current_user.id):
         flash("Añade tu método de pago para continuar", "warning")
         return redirect(url_for("billing.checkout_trial", plan=sub["plan"], next_step="select_assets"))
 
@@ -393,8 +393,8 @@ def settings():
         flash("Tu período de prueba ha finalizado. Activa tu suscripción para continuar.", "warning")
         return redirect(url_for("dashboard_web.subscription"))
 
-    # Si no tiene método de pago, redirigir a checkout
-    if not _user_has_payment_method(current_user.id):
+    # Si no tiene método de pago, redirigir a checkout (skip for Stripe-managed or admin-activated)
+    if not sub.get("stripe_subscription_id") and not _user_has_payment_method(current_user.id):
         flash("Añade tu método de pago antes de seleccionar activos", "warning")
         return redirect(url_for("billing.checkout_trial", plan=sub["plan"], next_step="select_assets"))
 
