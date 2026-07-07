@@ -97,8 +97,7 @@ def _compute_accuracy_rules() -> dict:
     for asset, stats in by_asset.items():
         if stats["total"] >= _MIN_SAMPLES:
             acc = stats["correct"] / stats["total"] * 100
-            if acc < 35:
-                # Don't hard-block; raise confidence threshold for this asset
+            if acc < 40:
                 rules["min_score_by_asset"][asset] = 75
                 logger.info(f"Filter: raising threshold for {asset} (accuracy {acc:.0f}% over {stats['total']} → needs conf>=75)")
 

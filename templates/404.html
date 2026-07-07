@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Página no encontrada | Trianio</title>
+  <meta name="robots" content="noindex, nofollow">
+  {% include "partials/brand_head.html" %}
+</head>
+<body class="bg-slate-900 text-slate-200 antialiased">
+
+  {% include 'partials/nav.html' %}
+
+  <main class="pt-32 pb-20 px-6 min-h-screen flex items-center justify-center">
+    <div class="max-w-lg mx-auto text-center">
+      <p class="text-8xl font-extrabold text-emerald-500 mb-4">404</p>
+      <h1 class="text-3xl md:text-4xl font-bold text-white mb-4">Página no encontrada</h1>
+      <p class="text-slate-400 text-lg mb-8">La página que buscas no existe o ha sido movida.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/" class="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-lg transition">
+          Volver al inicio
+        </a>
+        <a href="/blog" class="border border-slate-600 hover:border-emerald-500 text-slate-300 hover:text-white font-semibold px-6 py-3 rounded-lg transition">
+          Ver el blog
+        </a>
+      </div>
+    </div>
+  </main>
+
+  {% include 'partials/footer.html' %}
+</body>
+</html>

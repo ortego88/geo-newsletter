@@ -748,6 +748,10 @@ def create_app():
 
     app.register_blueprint(main_bp)
 
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template("404.html", dl_page_name="404", dl_section_name="error", dl_service_type="error", dl_web_area="public"), 404
+
     @app.context_processor
     def inject_globals():
         from flask_login import current_user
