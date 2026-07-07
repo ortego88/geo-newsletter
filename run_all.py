@@ -673,9 +673,48 @@ def start_scheduler():
         hours=1,
         id="channel_sync",
     )
+    # Twitter alerts: morning (9:30) and afternoon (17:30) Madrid time
+    def twitter_alert():
+        try:
+            from src.services.twitter_bot import run_twitter_alert_cycle
+            run_twitter_alert_cycle()
+        except Exception as e:
+            logger.warning(f"Error en Twitter alert: {e}")
+
+    scheduler.add_job(
+        twitter_alert,
+        "cron",
+        hour=9,
+        minute=30,
+        timezone="Europe/Madrid",
+        id="twitter_alert_morning",
+    )
+    scheduler.add_job(
+        twitter_alert,
+        "cron",
+        hour=17,
+        minute=30,
+        timezone="Europe/Madrid",
+        id="twitter_alert_afternoon",
+    )
+    # Twitter results: check every 2h for validated predictions to post results
+    def twitter_results():
+        try:
+            from src.services.twitter_bot import run_twitter_result_cycle
+            run_twitter_result_cycle()
+        except Exception as e:
+            logger.warning(f"Error en Twitter results: {e}")
+
+    scheduler.add_job(
+        twitter_results,
+        "interval",
+        hours=2,
+        id="twitter_results",
+    )
     scheduler.start()
     logger.info("✅ Scheduler iniciado (pipeline cada 10 min, canal sync cada 1h, blog diario 9:00 AM)")
     logger.info("✅ Alertas: canal (1ª BTC del día) + resumen 10:00 + bot individual (personalizadas)")
+    logger.info("✅ Twitter: alertas 9:30 + 17:30, resultados cada 2h")
     logger.info("✅ Verificación: respeta horarios de mercado (Crypto 24/7)")
     return scheduler
 
