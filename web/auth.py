@@ -94,7 +94,7 @@ def _redirect_based_on_completion_status():
 def register():
     import os
     if os.getenv("REGISTRATION_OPEN", "false").lower() not in ("true", "1", "yes"):
-        return redirect("/waitlist")
+        return redirect("/pricing")
     if current_user.is_authenticated:
         # Si ya está autenticado, redirigir según el estado del flujo
         return _redirect_based_on_completion_status()

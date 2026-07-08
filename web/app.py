@@ -197,43 +197,9 @@ def create_app():
     def assets_page():
         return render_template("assets.html", dl_page_name="assets", dl_section_name="informational", dl_service_type="serviceInformation", dl_web_area="public")
 
-    @main_bp.route("/waitlist", methods=["GET", "POST"])
+    @main_bp.route("/waitlist")
     def waitlist():
-        if request.method == "POST":
-            first_name = request.form.get("first_name", "").strip()
-            last_name = request.form.get("last_name", "").strip()
-            email = request.form.get("email", "").strip().lower()
-            terms = request.form.get("terms")
-
-            if not first_name or not email or "@" not in email:
-                flash("Por favor, introduce tu nombre y email.", "error")
-                return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
-            if not terms:
-                flash("Debes aceptar los términos.", "error")
-                return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
-
-            subscribe_newsletter = bool(request.form.get("subscribe_newsletter"))
-            try:
-                with get_conn() as conn:
-                    exists = conn.execute(
-                        text("SELECT id FROM newsletter_subscribers WHERE email = :email"),
-                        {"email": email}
-                    ).fetchone()
-                    if not exists:
-                        conn.execute(text("""
-                            INSERT INTO newsletter_subscribers (first_name, last_name, email, subscribed_at)
-                            VALUES (:fn, :ln, :email, :now)
-                        """), {"fn": first_name, "ln": last_name, "email": email,
-                               "now": datetime.utcnow().isoformat()})
-                        conn.commit()
-                if subscribe_newsletter:
-                    _sync_brevo_contact(email, first_name, last_name)
-            except Exception as e:
-                _logger.error(f"Waitlist signup error: {e}")
-
-            return render_template("waitlist.html", submitted=True, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
-
-        return render_template("waitlist.html", submitted=False, dl_page_name="waitlist", dl_section_name="acquisition", dl_service_type="serviceInformation", dl_web_area="public")
+        return redirect("/register")
 
     @main_bp.route("/privacy")
     def privacy():
