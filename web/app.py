@@ -193,6 +193,10 @@ def create_app():
     def how_it_works():
         return render_template("how_it_works.html", dl_page_name="how_it_works", dl_section_name="informational", dl_service_type="serviceInformation", dl_web_area="public")
 
+    @main_bp.route("/activos")
+    def assets_page():
+        return render_template("assets.html", dl_page_name="assets", dl_section_name="informational", dl_service_type="serviceInformation", dl_web_area="public")
+
     @main_bp.route("/waitlist", methods=["GET", "POST"])
     def waitlist():
         if request.method == "POST":
