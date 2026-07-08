@@ -631,6 +631,31 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="daily_channel_summary",
     )
+    # Channel BTC fallback: ensure at least 1 BTC alert per day in the free channel
+    def channel_btc_fallback():
+        try:
+            from src.services.channel_alert import send_daily_btc_fallback
+            send_daily_btc_fallback()
+        except Exception as e:
+            logger.warning(f"Error en fallback BTC canal: {e}")
+
+    scheduler.add_job(
+        channel_btc_fallback,
+        "cron",
+        hour=12,
+        minute=0,
+        timezone="Europe/Madrid",
+        id="channel_btc_fallback_noon",
+    )
+    scheduler.add_job(
+        channel_btc_fallback,
+        "cron",
+        hour=18,
+        minute=0,
+        timezone="Europe/Madrid",
+        id="channel_btc_fallback_evening",
+    )
+
     # Channel BTC result: check every 30 min if today's BTC alert has been validated
     def send_channel_result():
         try:

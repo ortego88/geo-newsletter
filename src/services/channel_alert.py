@@ -29,8 +29,8 @@ logger = logging.getLogger("channel_alert")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")
 
-_MIN_SCORE = 70
-_MIN_CONFIDENCE = 70
+_MIN_SCORE = 60
+_MIN_CONFIDENCE = 60
 
 _MADRID_TZ = pytz.timezone("Europe/Madrid")
 
@@ -359,6 +359,69 @@ def send_daily_summary() -> bool:
     if _send_to_channel(msg):
         logger.info(f"📊 Resumen diario enviado al canal: {total} alertas, {accuracy}% accuracy")
         return True
+
+    return False
+
+
+def send_daily_btc_fallback() -> bool:
+    """
+    Fallback: if no BTC alert was sent today via the pipeline, find the best
+    BTC prediction of the day from the DB and send it to the channel.
+    Called at 12:00 and 18:00 Madrid time.
+    """
+    if not TELEGRAM_CHANNEL_ID:
+        return False
+
+    if _already_sent_today():
+        return False
+
+    _init_channel_log_table()
+
+    try:
+        engine = get_engine("predictions")
+        with engine.connect() as conn:
+            today = _now_madrid().strftime("%Y-%m-%d")
+            row = conn.execute(text("""
+                SELECT id, asset, direction, confidence, score, reasoning,
+                       price_at_prediction, source
+                FROM predictions
+                WHERE asset = 'BTC'
+                  AND alerted = 1
+                  AND DATE(predicted_at) = :today
+                ORDER BY confidence DESC, score DESC
+                LIMIT 1
+            """), {"today": today}).fetchone()
+
+        if not row:
+            logger.info("Canal fallback: sin predicciones BTC hoy")
+            return False
+
+        pred_id, asset, direction, confidence, score, reasoning, price_pred, source = row
+
+        fetcher = AssetPriceFetcher()
+
+        event = {
+            "title": f"Señal BTC — {direction.upper()}",
+            "score": score,
+            "prediction_id": pred_id,
+            "source": source or "",
+        }
+        analysis = {
+            "direction": direction,
+            "confidence": confidence,
+            "most_affected_assets": ["BTC"],
+            "reasoning": reasoning or "",
+            "timeframe": "hours",
+        }
+
+        msg = _format_channel_message(event, analysis)
+        if _send_to_channel(msg):
+            _log_sent(event, analysis)
+            logger.info(f"📢 Canal fallback: alerta BTC enviada (conf={confidence}, score={score})")
+            return True
+
+    except Exception as e:
+        logger.error(f"Error in channel BTC fallback: {e}")
 
     return False
 
