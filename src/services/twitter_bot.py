@@ -254,7 +254,7 @@ def post_intro_thread():
         (
             "🚀 Presentamos Trianio — Inteligencia crypto antes de que el mercado se mueva\n\n"
             "Usamos IA (Claude) para analizar señales técnicas en tiempo real y predecir "
-            "movimientos de +35 criptomonedas.\n\n"
+            "movimientos de +50 criptomonedas.\n\n"
             "Transparencia total: publicamos TODAS nuestras predicciones y resultados. 🧵👇"
         ),
         (
@@ -348,7 +348,7 @@ def follow_crypto_accounts():
 # Influencer outreach DM template
 INFLUENCER_DM_TEMPLATE = """Hola {name} 👋
 
-Somos Trianio, un servicio de alertas crypto con IA que predice movimientos de +35 activos con un 63% de accuracy verificable.
+Somos Trianio, un servicio de alertas crypto con IA que predice movimientos de +50 activos con un 63% de accuracy verificable.
 
 Lo que nos diferencia:
 • Publicamos TODOS los resultados (aciertos y fallos) en tiempo real
@@ -365,7 +365,7 @@ trianio.com"""
 
 INFLUENCER_DM_TEMPLATE_EN = """Hi {name} 👋
 
-We're Trianio, an AI-powered crypto alert service that predicts price movements for 35+ assets with 63% verified accuracy.
+We're Trianio, an AI-powered crypto alert service that predicts price movements for 50+ assets with 63% verified accuracy.
 
 What makes us different:
 • We publish ALL results (wins AND losses) in real-time

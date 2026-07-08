@@ -342,7 +342,7 @@ def send_daily_summary() -> bool:
         lines.append("📡 Seguimos optimizando nuestros modelos de predicción.")
 
     lines.append("")
-    lines.append("💎 Recibe alertas personalizadas de +65 criptomonedas")
+    lines.append("💎 Recibe alertas personalizadas de +50 criptomonedas")
     lines.append("👉 Suscríbete en trianio.com")
 
     msg = "\n".join(lines)

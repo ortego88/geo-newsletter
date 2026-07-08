@@ -130,7 +130,6 @@ AVAILABLE_ASSETS = [
     {"symbol": "LTC", "name": "Litecoin", "icon": ""},
     {"symbol": "HBAR", "name": "Hedera", "icon": ""},
     {"symbol": "UNI", "name": "Uniswap", "icon": ""},
-    {"symbol": "ATOM", "name": "Cosmos", "icon": ""},
     {"symbol": "XLM", "name": "Stellar", "icon": ""},
     {"symbol": "NEAR", "name": "NEAR Protocol", "icon": ""},
     # ── Layer 2 & Infra ───────────────────────────────────────────────────────
@@ -146,9 +145,7 @@ AVAILABLE_ASSETS = [
     {"symbol": "AAVE", "name": "Aave", "icon": ""},
     {"symbol": "MKR", "name": "Maker", "icon": ""},
     {"symbol": "CRV", "name": "Curve", "icon": ""},
-    {"symbol": "LDO", "name": "Lido DAO", "icon": ""},
     {"symbol": "DYDX", "name": "dYdX", "icon": ""},
-    {"symbol": "SNX", "name": "Synthetix", "icon": ""},
     {"symbol": "PENDLE", "name": "Pendle", "icon": ""},
     {"symbol": "JUPITER", "name": "Jupiter", "icon": ""},
     # ── AI & Data ─────────────────────────────────────────────────────────────
@@ -165,13 +162,8 @@ AVAILABLE_ASSETS = [
     {"symbol": "GALA", "name": "Gala", "icon": ""},
     {"symbol": "ENJ", "name": "Enjin Coin", "icon": ""},
     # ── New L1s ───────────────────────────────────────────────────────────────
-    {"symbol": "APT", "name": "Aptos", "icon": ""},
-    {"symbol": "SEI", "name": "Sei", "icon": ""},
-    {"symbol": "TIA", "name": "Celestia", "icon": ""},
     {"symbol": "KAS", "name": "Kaspa", "icon": ""},
-    {"symbol": "ALGO", "name": "Algorand", "icon": ""},
     # ── Memecoins ─────────────────────────────────────────────────────────────
-    {"symbol": "PEPE", "name": "Pepe", "icon": ""},
     {"symbol": "WIF", "name": "Dogwifhat", "icon": ""},
     {"symbol": "FLOKI", "name": "Floki", "icon": ""},
     {"symbol": "BONK", "name": "Bonk", "icon": ""},

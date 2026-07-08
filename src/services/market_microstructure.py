@@ -86,7 +86,7 @@ def get_funding_rate(symbol: str = "BTCUSDT") -> dict | None:
 
 
 def get_funding_rates_all() -> list[dict]:
-    """Gets funding rates for all 65 tracked assets that have futures on Binance."""
+    """Gets funding rates for all tracked assets that have futures on Binance."""
     FUTURES_SYMBOLS = [
         # Top caps
         "BTCUSDT","ETHUSDT","XRPUSDT","SOLUSDT","BNBUSDT","ADAUSDT","DOGEUSDT",
@@ -424,7 +424,7 @@ def scan_microstructure_signals() -> list[dict]:
             )
             signals.append(_build_signal(asset, "up", confidence, reasoning, "funding_extreme_short", f["rate_pct"]))
 
-    # 2. Order book + large trades scan for all 65 assets
+    # 2. Order book + large trades scan for all tracked assets
     # min_trade: minimum single trade size to count
     # whale_threshold: total volume needed to trigger signal
     LARGE_TRADE_ASSETS = [
