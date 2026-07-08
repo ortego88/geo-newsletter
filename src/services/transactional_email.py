@@ -39,6 +39,31 @@ def _send(to_email: str, to_name: str, subject: str, html: str):
         logger.warning(f"Transactional email failed: {e}")
 
 
+ADMIN_EMAIL = "info@trianio.com"
+
+
+def send_new_subscriber_notification(user_email: str, user_name: str, plan: str, cycle: str):
+    """Notifies admin when a new user completes checkout."""
+    plan_names = {"basic": "Básico", "premium": "Premium", "pro": "Profesional"}
+    plan_display = plan_names.get(plan, plan)
+    cycle_display = "anual" if cycle == "yearly" else "mensual"
+
+    subject = f"🎉 Nuevo suscriptor: {user_name} ({plan_display})"
+    html = f"""
+<div style="font-family:sans-serif;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:12px;">
+  <h2 style="color:#34d399;margin-top:0;">Nuevo suscriptor en Trianio</h2>
+  <table style="border-collapse:collapse;width:100%;">
+    <tr><td style="padding:8px 0;color:#94a3b8;">Nombre:</td><td style="padding:8px 0;color:#fff;font-weight:bold;">{user_name}</td></tr>
+    <tr><td style="padding:8px 0;color:#94a3b8;">Email:</td><td style="padding:8px 0;color:#fff;">{user_email}</td></tr>
+    <tr><td style="padding:8px 0;color:#94a3b8;">Plan:</td><td style="padding:8px 0;color:#e8b84b;font-weight:bold;">{plan_display} ({cycle_display})</td></tr>
+    <tr><td style="padding:8px 0;color:#94a3b8;">Fecha:</td><td style="padding:8px 0;color:#fff;">{datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M")} UTC</td></tr>
+  </table>
+  <p style="margin-top:16px;color:#94a3b8;font-size:13px;">Trial de 7 días activado. El cobro se realizará si no cancela antes.</p>
+</div>
+"""
+    _send(ADMIN_EMAIL, "Trianio Admin", subject, html)
+
+
 def send_welcome_email(email: str, name: str, plan: str, trial_end: str):
     """Sends welcome email after registration."""
     plan_names = {"basic": "Básica", "premium": "Premium", "pro": "Profesional"}

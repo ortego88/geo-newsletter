@@ -442,9 +442,10 @@ def stripe_success():
         flash("✅ Prueba gratuita de 7 días activada. No se te cobrará hasta que finalice.", "success")
 
         try:
-            from src.services.transactional_email import send_welcome_email
+            from src.services.transactional_email import send_welcome_email, send_new_subscriber_notification
             trial_end_display = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
             send_welcome_email(current_user.email, current_user.name, plan, trial_end_display)
+            send_new_subscriber_notification(current_user.email, current_user.name, plan, cycle)
         except Exception:
             pass
 
