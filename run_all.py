@@ -691,6 +691,22 @@ def start_scheduler():
         minutes=15,
         id="early_reversals",
     )
+    # Abandoned checkout reminders: check every hour
+    def check_abandoned():
+        try:
+            from src.services.transactional_email import init_abandoned_checkout_table, check_abandoned_checkouts
+            init_abandoned_checkout_table()
+            check_abandoned_checkouts()
+        except Exception as e:
+            logger.warning(f"Error en abandoned checkout check: {e}")
+
+    scheduler.add_job(
+        check_abandoned,
+        "interval",
+        hours=1,
+        id="abandoned_checkout",
+    )
+
     # Twitter alerts: morning (9:30) and afternoon (17:30) Madrid time
     def twitter_alert():
         try:
