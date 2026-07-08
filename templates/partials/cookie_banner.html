@@ -40,12 +40,6 @@
     document.cookie = 'trianio_consent=' + (granted ? 'granted' : 'denied') + ';path=/;expires=' + d.toUTCString() + ';SameSite=Lax';
     applyConsent(granted);
     document.getElementById('cookie-banner').classList.remove('is-visible');
-    if (granted && !document.querySelector('script[src*="contentsquare"]')) {
-      var s = document.createElement('script');
-      s.src = 'https://t.contentsquare.net/uxa/94c4e7defc904.js';
-      s.defer = true;
-      document.head.appendChild(s);
-    }
   };
 </script>
 {% else %}
