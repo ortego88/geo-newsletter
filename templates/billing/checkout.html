@@ -57,7 +57,7 @@
           </div>
           <div class="text-right">
             <p class="text-white font-bold" id="price-display">{{ plan_config.price_monthly }}€/mes</p>
-            <p class="text-slate-500 text-xs line-through" id="original-price-display">{{ plan_config.original_price }}€</p>
+            <p class="text-slate-500 text-xs line-through" id="original-price-display">{% if billing_cycle == 'yearly' %}{{ (plan_config.original_price * 12)|round(2) }}€/año{% else %}{{ plan_config.original_price }}€/mes{% endif %}</p>
           </div>
         </div>
 
@@ -189,8 +189,6 @@
       if (cycleInput) cycleInput.value = newCycle;
       var planNameDisplay = document.getElementById('plan-name-display');
       if (planNameDisplay) planNameDisplay.textContent = 'Plan ' + PLANS_DATA[newPlan].name;
-      var originalDisplay = document.getElementById('original-price-display');
-      if (originalDisplay) originalDisplay.textContent = PLANS_DATA[newPlan].original + '€';
       setCycle(newCycle);
     }
 
@@ -212,7 +210,9 @@
 
       var trialPriceText = document.getElementById('trial-price-text');
       var afterTrialPrice = document.getElementById('after-trial-price');
+      var originalDisplay = document.getElementById('original-price-display');
       if (cycle === 'yearly') {
+        if (originalDisplay) originalDisplay.textContent = (PLANS_DATA[currentPlan].original * 12).toFixed(2) + '€/año';
         if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
         if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
         if (priceDisplay) priceDisplay.textContent = PRICE_YEARLY + '€/año';
@@ -232,6 +232,7 @@
         if (submitBtnText) submitBtnText.textContent = 'Continuar al pago — ' + PRICE_MONTHLY + '€/mes';
         if (trialPriceText) trialPriceText.textContent = PRICE_MONTHLY + '€/mes';
         if (afterTrialPrice) afterTrialPrice.textContent = PRICE_MONTHLY + '€/mes';
+        if (originalDisplay) originalDisplay.textContent = PLANS_DATA[currentPlan].original + '€/mes';
       }
     }
 
