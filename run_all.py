@@ -631,6 +631,22 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="daily_channel_summary",
     )
+    # Channel BTC result: check every 30 min if today's BTC alert has been validated
+    def send_channel_result():
+        try:
+            from src.services.channel_alert import send_channel_btc_result, _init_channel_log_table
+            _init_channel_log_table()
+            send_channel_btc_result()
+        except Exception as e:
+            logger.warning(f"Error enviando resultado BTC al canal: {e}")
+
+    scheduler.add_job(
+        send_channel_result,
+        "interval",
+        minutes=30,
+        id="channel_btc_result",
+    )
+
     # Expire trials/subscriptions that have passed their end date without Stripe renewal
     def expire_stale_subscriptions():
         try:

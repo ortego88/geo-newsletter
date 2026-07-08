@@ -48,7 +48,8 @@ def _init_channel_log_table():
                 score INTEGER,
                 confidence INTEGER,
                 prediction_id INTEGER,
-                sent_at TEXT NOT NULL
+                sent_at TEXT NOT NULL,
+                result_posted BOOLEAN DEFAULT FALSE
             )
         """))
         conn.commit()
@@ -59,6 +60,14 @@ def _init_channel_log_table():
         """)).fetchone()
         if not result:
             conn.execute(text("ALTER TABLE channel_alert_log ADD COLUMN prediction_id INTEGER"))
+            conn.commit()
+        # Migration: add result_posted if missing
+        result = conn.execute(text("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name='channel_alert_log' AND column_name='result_posted'
+        """)).fetchone()
+        if not result:
+            conn.execute(text("ALTER TABLE channel_alert_log ADD COLUMN result_posted BOOLEAN DEFAULT FALSE"))
             conn.commit()
 
 
@@ -350,5 +359,95 @@ def send_daily_summary() -> bool:
     if _send_to_channel(msg):
         logger.info(f"📊 Resumen diario enviado al canal: {total} alertas, {accuracy}% accuracy")
         return True
+
+    return False
+
+
+def send_channel_btc_result() -> bool:
+    """
+    Checks if today's BTC channel alert has been validated and sends the result.
+    Called periodically (every 30 min). Only sends once per prediction.
+    """
+    if not TELEGRAM_CHANNEL_ID:
+        return False
+
+    try:
+        engine_app = get_engine("app")
+        engine_pred = get_engine("predictions")
+
+        # Find channel alerts that have a prediction_id but result not yet posted
+        with engine_app.connect() as conn:
+            pending = conn.execute(text("""
+                SELECT prediction_id, sent_date
+                FROM channel_alert_log
+                WHERE prediction_id IS NOT NULL
+                  AND result_posted IS NOT TRUE
+                ORDER BY sent_at DESC
+                LIMIT 5
+            """)).fetchall()
+
+        if not pending:
+            return False
+
+        for pred_id, sent_date in pending:
+            # Check if the prediction has been validated
+            with engine_pred.connect() as conn:
+                pred = conn.execute(text("""
+                    SELECT asset, direction, outcome, confidence,
+                           price_at_prediction, price_at_validation
+                    FROM predictions
+                    WHERE id = :pid AND outcome IN ('correct', 'incorrect')
+                """), {"pid": pred_id}).fetchone()
+
+            if not pred:
+                continue
+
+            asset, direction, outcome, confidence, price_pred, price_val = pred
+
+            # Format the result message
+            if price_pred and price_val and price_pred > 0:
+                move_pct = (price_val - price_pred) / price_pred * 100
+            else:
+                move_pct = 0
+
+            if outcome == "correct":
+                emoji = "✅"
+                result_text = "ACERTADA"
+                desc = f"El precio se movió {abs(move_pct):.1f}% en la dirección predicha"
+            else:
+                emoji = "❌"
+                result_text = "FALLADA"
+                desc = f"El precio no alcanzó el umbral en la dirección predicha ({move_pct:+.1f}%)"
+
+            dir_text = "ALCISTA" if direction in ("up", "bullish") else "BAJISTA"
+
+            lines = []
+            lines.append(f"{emoji} RESULTADO — Alerta BTC del {sent_date}")
+            lines.append("")
+            lines.append(f"📍 Señal: {dir_text} (confianza {confidence}%)")
+            lines.append(f"💰 Precio entrada: ${price_pred:.2f}" if price_pred else "")
+            lines.append(f"💰 Precio cierre: ${price_val:.2f}" if price_val else "")
+            lines.append("")
+            lines.append(f"📊 Resultado: {result_text}")
+            lines.append(f"💡 {desc}")
+            lines.append("")
+            lines.append("━━━━━━━━━━━━━━━━━━━━")
+            lines.append("📈 Historial completo: trianio.com/historial")
+            lines.append("💎 Alertas de +50 activos: trianio.com")
+
+            msg = "\n".join(l for l in lines if l is not None)
+
+            if _send_to_channel(msg):
+                # Mark result as posted
+                with engine_app.connect() as conn:
+                    conn.execute(text(
+                        "UPDATE channel_alert_log SET result_posted = TRUE WHERE prediction_id = :pid"
+                    ), {"pid": pred_id})
+                    conn.commit()
+                logger.info(f"📢 Resultado BTC enviado al canal: {outcome} (pred {pred_id})")
+                return True
+
+    except Exception as e:
+        logger.error(f"Error sending channel BTC result: {e}")
 
     return False
