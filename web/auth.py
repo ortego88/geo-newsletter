@@ -108,16 +108,16 @@ def register():
             plan = "basic"
         if not name or not email or not password:
             flash("Todos los campos son obligatorios", "error")
-            return render_template("auth/register.html", plan=plan)
+            return render_template("auth/register.html", plan=plan, plans=PLANS)
         if password != password2:
             flash("Las contraseñas no coinciden", "error")
-            return render_template("auth/register.html", plan=plan)
+            return render_template("auth/register.html", plan=plan, plans=PLANS)
         if len(password) < 8:
             flash("La contraseña debe tener al menos 8 caracteres", "error")
-            return render_template("auth/register.html", plan=plan)
+            return render_template("auth/register.html", plan=plan, plans=PLANS)
         if User.get_by_email(email):
             flash("Ya existe una cuenta con ese email", "error")
-            return render_template("auth/register.html", plan=plan)
+            return render_template("auth/register.html", plan=plan, plans=PLANS)
         VALID_LANGS = {'es', 'en', 'fr', 'de', 'it', 'pt', 'zh', 'ar'}
         preferred_lang = request.form.get("preferred_lang", "es").strip()
         if preferred_lang not in VALID_LANGS:
@@ -141,7 +141,7 @@ def register():
     if plan not in PLANS:
         plan = "basic"
     trial_end_date = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
-    return render_template("auth/register.html", plan=plan, trial_end_date=trial_end_date, dl_page_name="register/step01/personalDetails", dl_section_name="register", dl_service_type="userRegister", dl_web_area="public", dl_process_type="register", dl_process_step="step01", dl_process_detail="personalDetails")
+    return render_template("auth/register.html", plan=plan, plans=PLANS, trial_end_date=trial_end_date, dl_page_name="register/step01/personalDetails", dl_section_name="register", dl_service_type="userRegister", dl_web_area="public", dl_process_type="register", dl_process_step="step01", dl_process_detail="personalDetails")
 
 
 

@@ -440,6 +440,14 @@ def stripe_success():
             conn.commit()
 
         flash("✅ Prueba gratuita de 7 días activada. No se te cobrará hasta que finalice.", "success")
+
+        try:
+            from src.services.transactional_email import send_welcome_email
+            trial_end_display = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%d/%m/%Y")
+            send_welcome_email(current_user.email, current_user.name, plan, trial_end_display)
+        except Exception:
+            pass
+
     except Exception as e:
         logger.error(f"Stripe success callback error: {e}")
 
