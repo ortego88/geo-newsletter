@@ -44,7 +44,7 @@
               {{ p_val.name }} — {{ p_val.price_monthly }}€/mes (mensual)
             </option>
             <option value="{{ p_key }}__yearly" {% if p_key == plan and billing_cycle == 'yearly' %}selected{% endif %}>
-              {{ p_val.name }} — {{ plans_yearly_monthly[p_key] }}€/mes · {{ p_val.price_yearly }}€/año ✦ Ahorra 2 meses
+              {{ p_val.name }} — {{ plans_yearly_monthly[p_key] }}€/mes · {{ p_val.price_yearly }}€/año ✦ Ahorra 6 meses
             </option>
             {% endfor %}
           </select>
@@ -57,7 +57,7 @@
           </div>
           <div class="text-right">
             <p class="text-white font-bold" id="price-display">{{ plan_config.price_monthly }}€/mes</p>
-            <p class="text-slate-500 text-xs line-through" id="original-price-display">{% if billing_cycle == 'yearly' %}{{ (plan_config.original_price * 12)|round(2) }}€/año{% else %}{{ plan_config.original_price }}€/mes{% endif %}</p>
+            <p class="text-slate-500 text-xs line-through" id="original-price-display">{% if billing_cycle == 'yearly' %}{{ plan_config.original_price_yearly }}€/año{% else %}{{ plan_config.original_price }}€/mes{% endif %}</p>
           </div>
         </div>
 
@@ -165,7 +165,7 @@
   <script>
     var PLANS_DATA = {
       {% for p_key, p_val in plans.items() %}
-      '{{ p_key }}': { monthly: {{ p_val.price_monthly }}, yearly: {{ p_val.price_yearly }}, original: {{ p_val.original_price }}, name: '{{ p_val.name }}' },
+      '{{ p_key }}': { monthly: {{ p_val.price_monthly }}, yearly: {{ p_val.price_yearly }}, original: {{ p_val.original_price }}, originalYearly: {{ p_val.original_price_yearly }}, name: '{{ p_val.name }}' },
       {% endfor %}
     };
     var currentPlan = '{{ plan }}';
@@ -212,7 +212,7 @@
       var afterTrialPrice = document.getElementById('after-trial-price');
       var originalDisplay = document.getElementById('original-price-display');
       if (cycle === 'yearly') {
-        if (originalDisplay) originalDisplay.textContent = (PLANS_DATA[currentPlan].original * 12).toFixed(2) + '€/año';
+        if (originalDisplay) originalDisplay.textContent = PLANS_DATA[currentPlan].originalYearly + '€/año';
         if (btnMonthly) { btnMonthly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white'; }
         if (btnYearly) { btnYearly.className = 'flex-1 py-2 rounded-lg text-sm font-semibold transition bg-slate-700 text-white'; }
         if (priceDisplay) priceDisplay.textContent = PRICE_YEARLY + '€/año';

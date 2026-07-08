@@ -18,6 +18,7 @@ PLANS = {
         "price_monthly": 19.99,
         "price_yearly": 119.99,
         "original_price": 39.99,
+        "original_price_yearly": 239.99,
         "discount_pct": 50,
         "max_assets": 5,
         "max_daily_alerts": 10,
@@ -47,6 +48,7 @@ PLANS = {
         "price_monthly": 39.99,
         "price_yearly": 239.99,
         "original_price": 79.99,
+        "original_price_yearly": 479.99,
         "discount_pct": 50,
         "max_assets": 20,
         "max_daily_alerts": -1,  # unlimited
@@ -80,6 +82,7 @@ PLANS = {
         "price_monthly": 79.99,
         "price_yearly": 479.99,
         "original_price": 159.99,
+        "original_price_yearly": 959.99,
         "discount_pct": 50,
         "max_assets": -1,  # unlimited (65+)
         "max_daily_alerts": -1,  # unlimited
