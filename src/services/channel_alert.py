@@ -233,6 +233,7 @@ def send_daily_channel_alert(events: list) -> bool:
         if _send_to_channel(msg):
             _log_sent(event, analysis)
             logger.info(f"📢 Alerta BTC enviada al canal: score={event_score} conf={event_confidence}")
+            _send_tweet_draft_email(event, analysis)
             return True
 
     return False
@@ -418,6 +419,7 @@ def send_daily_btc_fallback() -> bool:
         if _send_to_channel(msg):
             _log_sent(event, analysis)
             logger.info(f"📢 Canal fallback: alerta BTC enviada (conf={confidence}, score={score})")
+            _send_tweet_draft_email(event, analysis)
             return True
 
     except Exception as e:
@@ -508,9 +510,85 @@ def send_channel_btc_result() -> bool:
                     ), {"pid": pred_id})
                     conn.commit()
                 logger.info(f"📢 Resultado BTC enviado al canal: {outcome} (pred {pred_id})")
+                _send_result_tweet_draft_email(outcome, direction, confidence, price_pred, price_val, move_pct)
                 return True
 
     except Exception as e:
         logger.error(f"Error sending channel BTC result: {e}")
 
     return False
+
+
+def _send_tweet_draft_email(event: dict, analysis: dict):
+    """Sends an email to admin with a ready-to-copy tweet for the BTC alert."""
+    try:
+        from src.services.transactional_email import _send
+
+        direction = analysis.get("direction", "neutral")
+        confidence = analysis.get("confidence", 0)
+        reasoning = (analysis.get("reasoning") or "")[:100]
+
+        if direction in ("up", "bullish"):
+            arrow = "📈"
+            dir_text = "ALCISTA"
+        else:
+            arrow = "📉"
+            dir_text = "BAJISTA"
+
+        tweet = (
+            f"{arrow} #BTC — Señal {dir_text} (confianza: {confidence}%)\n\n"
+            f"{reasoning}\n\n"
+            f"Resultado verificado en 24h.\n\n"
+            f"Canal gratuito con alertas diarias de BTC 👇\n"
+            f"t.me/trianio\n\n"
+            f"#Bitcoin #crypto #trading"
+        )
+
+        html = f"""
+<div style="font-family:monospace;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:12px;">
+  <h2 style="color:#34d399;margin-top:0;">Tweet listo para publicar (alerta BTC)</h2>
+  <p style="color:#94a3b8;font-size:13px;">Copia y pega en X:</p>
+  <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:#fff;">{tweet}</div>
+  <p style="color:#64748b;font-size:12px;margin-top:12px;">Caracteres: {len(tweet)}/280</p>
+</div>
+"""
+        _send("info@trianio.com", "Trianio Admin", f"🐦 Tweet BTC {dir_text} listo para publicar", html)
+    except Exception as e:
+        logger.warning(f"Error sending tweet draft email: {e}")
+
+
+def _send_result_tweet_draft_email(outcome: str, direction: str, confidence: int,
+                                    price_pred: float, price_val: float, move_pct: float):
+    """Sends an email to admin with a ready-to-copy tweet for the BTC result."""
+    try:
+        from src.services.transactional_email import _send
+
+        if outcome == "correct":
+            emoji = "✅"
+            result_text = f"ACERTADA (+{abs(move_pct):.1f}%)"
+        else:
+            emoji = "❌"
+            result_text = f"FALLADA ({move_pct:+.1f}%)"
+
+        dir_text = "ALCISTA" if direction in ("up", "bullish") else "BAJISTA"
+
+        tweet = (
+            f"{emoji} Resultado #BTC:\n\n"
+            f"Señal {dir_text} (conf. {confidence}%) → {result_text}\n\n"
+            f"${price_pred:.0f} → ${price_val:.0f}\n\n"
+            f"Publicamos TODOS los resultados. Sin filtros.\n"
+            f"Canal gratuito: t.me/trianio\n\n"
+            f"#Bitcoin #crypto #trading"
+        )
+
+        html = f"""
+<div style="font-family:monospace;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:12px;">
+  <h2 style="color:#34d399;margin-top:0;">Tweet listo para publicar (resultado BTC)</h2>
+  <p style="color:#94a3b8;font-size:13px;">Publica como respuesta al tweet de la alerta:</p>
+  <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:#fff;">{tweet}</div>
+  <p style="color:#64748b;font-size:12px;margin-top:12px;">Caracteres: {len(tweet)}/280</p>
+</div>
+"""
+        _send("info@trianio.com", "Trianio Admin", f"🐦 Resultado BTC ({result_text}) — tweet listo", html)
+    except Exception as e:
+        logger.warning(f"Error sending result tweet draft email: {e}")
