@@ -480,7 +480,7 @@ def run_scheduled_analysis_cycle():
             return
 
         # Save predictions — scheduled analysis bypasses the 3h cooldown
-        # (it uses its own 8h cycle as natural cooldown)
+        # but respects daily limit (3/asset) and same-direction dedup
         saved_events = []
         for event in events:
             asset = event.get("suggested_asset", "")
@@ -489,7 +489,8 @@ def run_scheduled_analysis_cycle():
             if price_now <= 0:
                 continue
 
-            # Bypass standard cooldown for scheduled analysis
+            # Bypass only the time-based cooldown (8h cycle is its own cooldown)
+            # Daily limit and same-direction dedup still enforced
             original = tracker._has_recent_prediction
             tracker._has_recent_prediction = lambda *a, **kw: False
             try:
@@ -672,6 +673,23 @@ def start_scheduler():
         "interval",
         hours=1,
         id="channel_sync",
+    )
+    # Early reversal detection: every 15 min — if a prediction is failing badly, reverse it
+    def check_reversals():
+        try:
+            from src.services.real_price_fetcher import RealPriceFetcher
+            price_fetcher = RealPriceFetcher()
+            reversals = tracker.check_early_reversals(price_fetcher)
+            if reversals:
+                _send_pipeline_alerts(reversals)
+        except Exception as e:
+            logger.warning(f"Error en detección de reversiones: {e}")
+
+    scheduler.add_job(
+        check_reversals,
+        "interval",
+        minutes=15,
+        id="early_reversals",
     )
     # Twitter alerts: morning (9:30) and afternoon (17:30) Madrid time
     def twitter_alert():

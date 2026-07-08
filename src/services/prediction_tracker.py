@@ -207,6 +207,34 @@ class PredictionTracker:
             """), {"asset": asset, "cutoff": cutoff}).fetchone()
         return row is not None
 
+    def _count_daily_predictions(self, asset: str) -> int:
+        """Counts how many alerted predictions exist for this asset today."""
+        day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        with self._get_conn() as conn:
+            row = conn.execute(text("""
+                SELECT COUNT(*) FROM predictions
+                WHERE asset = :asset
+                AND alerted = 1
+                AND predicted_at >= :day_start
+            """), {"asset": asset, "day_start": day_start}).fetchone()
+        return row[0] if row else 0
+
+    def _has_same_direction_pending(self, asset: str, direction: str) -> bool:
+        """Checks if there's already a pending prediction for this asset in the same direction."""
+        is_up = direction in ("up", "bullish", "positive", "alza")
+        up_dirs = "('up','bullish','positive','alza')"
+        down_dirs = "('down','bearish','negative','baja')"
+        dir_filter = up_dirs if is_up else down_dirs
+        with self._get_conn() as conn:
+            row = conn.execute(text(f"""
+                SELECT id FROM predictions
+                WHERE asset = :asset
+                AND outcome = 'pending'
+                AND direction IN {dir_filter}
+                LIMIT 1
+            """), {"asset": asset}).fetchone()
+        return row is not None
+
     def _close_opposite_pending(self, asset: str, new_direction: str, current_price: float):
         """
         When a new signal arrives in opposite direction, close any pending prediction
@@ -331,6 +359,17 @@ class PredictionTracker:
         direction = analysis.get("direction", "neutral")
         if direction == "neutral":
             logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
+            return None
+
+        # Max 3 alerted predictions per asset per day
+        daily_count = self._count_daily_predictions(asset)
+        if daily_count >= 3:
+            logger.info(f"⏭️ Predicción omitida para {asset}: ya tiene {daily_count} alertas hoy (máx 3)")
+            return None
+
+        # Skip if same direction already pending (avoid duplicates)
+        if self._has_same_direction_pending(asset, direction):
+            logger.info(f"⏭️ Predicción omitida para {asset}: ya hay una pendiente en dirección {direction}")
             return None
 
         # Cooldown de 3h entre predicciones del mismo activo
@@ -672,3 +711,117 @@ class PredictionTracker:
             "page_size": page_size,
             "total_pages": total_pages,
         }
+
+    def check_early_reversals(self, price_fetcher) -> list[dict]:
+        """
+        Checks pending predictions that are moving strongly AGAINST the predicted direction.
+        If price moved >= 1.5x threshold against, mark as incorrect early and return
+        reversal events (opposite direction) ready to be alerted.
+
+        This lets users react quickly when the market turns against a prediction.
+        """
+        pending = self.get_pending_predictions()
+        if not pending:
+            return []
+
+        reversals = []
+        now = datetime.utcnow()
+
+        for pred in pending:
+            pred_id = pred.get("id")
+            asset = pred.get("asset", "UNKNOWN")
+            direction = pred.get("direction", "neutral")
+            price_at = pred.get("price_at_prediction", 0)
+            predicted_at_str = pred.get("predicted_at", "")
+
+            if not price_at or price_at <= 0 or direction == "neutral":
+                continue
+
+            # Only check predictions that are at least 1h old (avoid noise)
+            try:
+                predicted_at = datetime.fromisoformat(predicted_at_str)
+                elapsed_hours = (now - predicted_at).total_seconds() / 3600
+                if elapsed_hours < 1:
+                    continue
+            except (ValueError, TypeError):
+                continue
+
+            current_price = price_fetcher.get_price(asset)
+            if current_price is None or current_price <= 0:
+                continue
+
+            change_pct = (current_price - price_at) / price_at * 100
+            threshold = _get_threshold_for_asset(asset)
+            reversal_threshold = threshold * 1.5
+
+            is_up = direction in ("up", "bullish", "positive", "alza")
+
+            # Check if price moved strongly AGAINST the prediction
+            should_reverse = False
+            if is_up and change_pct <= -reversal_threshold:
+                should_reverse = True
+            elif not is_up and change_pct >= reversal_threshold:
+                should_reverse = True
+
+            if not should_reverse:
+                continue
+
+            # Check daily limit before generating reversal
+            daily_count = self._count_daily_predictions(asset)
+            if daily_count >= 3:
+                logger.info(f"🔄 Reversión detectada para {asset} pero ya tiene {daily_count} alertas hoy")
+                continue
+
+            # Mark the failing prediction as incorrect
+            with self._get_conn() as conn:
+                conn.execute(text("""
+                    UPDATE predictions
+                    SET outcome = 'incorrect',
+                        price_at_validation = :price,
+                        validated_at = :now
+                    WHERE id = :id
+                """), {
+                    "price": current_price,
+                    "now": now.isoformat(),
+                    "id": pred_id,
+                })
+                conn.commit()
+
+            new_direction = "down" if is_up else "up"
+            logger.info(
+                f"🔄 REVERSIÓN: {asset} #{pred_id} {direction} → marcada incorrecta "
+                f"({change_pct:+.1f}% vs umbral ±{reversal_threshold:.1f}%). "
+                f"Generando señal {new_direction}"
+            )
+
+            # Build reversal event
+            reversal_event = {
+                "title": f"[Reversión] {asset} señal {new_direction.upper()} (cambio de tendencia)",
+                "description": f"Predicción anterior ({direction}) invalidada por movimiento de {change_pct:+.1f}%. Nueva dirección: {new_direction}.",
+                "source": "Early Reversal",
+                "score": 75,
+                "suggested_asset": asset,
+                "category": "reversal",
+                "_silent": False,
+                "_is_reversal": True,
+                "analysis": {
+                    "direction": new_direction,
+                    "confidence": 70,
+                    "most_affected_assets": [asset],
+                    "timeframe": "hours",
+                    "reasoning": f"Reversión: {asset} {change_pct:+.1f}% contra predicción anterior. Cambio de tendencia confirmado.",
+                    "signal_strength": "high",
+                    "verification_window_hours": 24,
+                },
+            }
+
+            # Save the reversal prediction
+            rev_pred_id = self.save_prediction(reversal_event, current_price)
+            if rev_pred_id:
+                reversal_event["prediction_id"] = rev_pred_id
+                reversal_event["price_at_prediction"] = current_price
+                reversals.append(reversal_event)
+
+        if reversals:
+            logger.info(f"🔄 {len(reversals)} reversiones generadas en este ciclo")
+        return reversals
