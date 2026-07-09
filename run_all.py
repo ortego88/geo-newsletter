@@ -715,23 +715,6 @@ def start_scheduler():
         hours=1,
         id="channel_sync",
     )
-    # Early reversal detection: every 15 min — if a prediction is failing badly, reverse it
-    def check_reversals():
-        try:
-            from src.services.real_price_fetcher import RealPriceFetcher
-            price_fetcher = RealPriceFetcher()
-            reversals = tracker.check_early_reversals(price_fetcher)
-            if reversals:
-                _send_pipeline_alerts(reversals)
-        except Exception as e:
-            logger.warning(f"Error en detección de reversiones: {e}")
-
-    scheduler.add_job(
-        check_reversals,
-        "interval",
-        minutes=15,
-        id="early_reversals",
-    )
     # Abandoned checkout reminders: check every hour
     def check_abandoned():
         try:

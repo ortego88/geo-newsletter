@@ -377,8 +377,7 @@ class PredictionTracker:
             logger.info(f"⏭️ Predicción omitida para {asset}: ya existe predicción reciente (<3h)")
             return None
 
-        # If there's an opposite pending prediction, close it first (counter-signal)
-        self._close_opposite_pending(asset, direction, current_price)
+        # No longer close opposite predictions early — let each prediction live its full 24h window
 
         impact_percent = float(analysis.get("market_impact_percent", 0))
         timeframe = analysis.get("timeframe", "hours")
