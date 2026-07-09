@@ -592,3 +592,150 @@ def _send_result_tweet_draft_email(outcome: str, direction: str, confidence: int
         _send("info@trianio.com", "Trianio Admin", f"🐦 Resultado BTC ({result_text}) — tweet listo", html)
     except Exception as e:
         logger.warning(f"Error sending result tweet draft email: {e}")
+
+
+def send_correct_prediction_tweet_email(asset: str, direction: str, price_pred: float,
+                                         price_val: float, predicted_at: str):
+    """Sends a tweet draft email whenever ANY prediction is validated as correct."""
+    try:
+        from src.services.transactional_email import _send
+
+        move_pct = ((price_val - price_pred) / price_pred) * 100
+        is_up = direction in ("up", "bullish", "positive", "alza")
+
+        if is_up:
+            arrow = "📈"
+            dir_text = "alcista"
+        else:
+            arrow = "📉"
+            dir_text = "bajista"
+
+        # Parse date for display
+        try:
+            dt = datetime.fromisoformat(predicted_at)
+            date_str = dt.strftime("%d/%m a las %H:%M")
+        except Exception:
+            date_str = "ayer"
+
+        tweet = (
+            f"{arrow} Señal {dir_text} en ${asset} detectada el {date_str}h.\n\n"
+            f"Resultado: ${price_pred:.4g} → ${price_val:.4g} ({move_pct:+.2f}%)\n\n"
+            f"Nuestro algoritmo analiza microestructura de mercado en tiempo real. "
+            f"Sin noticias, sin opiniones. Solo datos.\n\n"
+            f"Alertas gratis de $BTC → t.me/trianio\n\n"
+            f"#crypto #{asset} #trading"
+        )
+
+        # Trim if over 280
+        if len(tweet) > 280:
+            tweet = (
+                f"{arrow} ${asset} — señal {dir_text} el {date_str}h\n\n"
+                f"${price_pred:.4g} → ${price_val:.4g} ({move_pct:+.2f}%)\n\n"
+                f"Algoritmo de microestructura. Sin opiniones, solo datos.\n\n"
+                f"t.me/trianio\n\n"
+                f"#crypto #{asset}"
+            )
+
+        html = f"""
+<div style="font-family:monospace;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:12px;">
+  <h2 style="color:#34d399;margin-top:0;">Tweet listo — {asset} {dir_text} ✅</h2>
+  <p style="color:#94a3b8;font-size:13px;">Copia y pega en X:</p>
+  <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:#fff;">{tweet}</div>
+  <p style="color:#64748b;font-size:12px;margin-top:12px;">Caracteres: {len(tweet)}/280</p>
+</div>
+"""
+        _send("info@trianio.com", "Trianio Admin", f"🐦 Tweet {asset} {move_pct:+.1f}% — predicción acertada", html)
+    except Exception as e:
+        logger.warning(f"Error sending correct prediction tweet email: {e}")
+
+
+def send_daily_best_performer_tweet():
+    """
+    Daily job: sends an email with a tweet about the best-performing asset
+    and the best loss-avoided asset over the last 7 days (simulator data).
+    """
+    try:
+        from src.services.transactional_email import _send
+        from web.app import _get_best_performers
+
+        data = _get_best_performers()
+        best_gain = data.get("best_gain", {})
+        best_avoided = data.get("best_avoided", {})
+
+        tweets = []
+
+        # Tweet 1: Best gainer
+        if best_gain.get("asset") and best_gain.get("pct", 0) > 0:
+            asset = best_gain["asset"]
+            pct = best_gain["pct"]
+            balance = 1000 * (1 + pct / 100)
+
+            tweet_gain = (
+                f"📈 Si hubieras seguido nuestras alertas de ${asset} "
+                f"con 1.000€ en los últimos 7 días, ahora tendrías "
+                f"{balance:.2f}€ → +{pct}% de beneficio.\n\n"
+                f"Algoritmo de microestructura. Sin opiniones.\n\n"
+                f"Pruébalo gratis → t.me/trianio\n\n"
+                f"#crypto #{asset} #trading"
+            )
+            if len(tweet_gain) > 280:
+                tweet_gain = (
+                    f"📈 ${asset} últimos 7 días con nuestras alertas:\n\n"
+                    f"1.000€ → {balance:.2f}€ (+{pct}%)\n\n"
+                    f"Algoritmo de microestructura en tiempo real.\n\n"
+                    f"t.me/trianio\n\n"
+                    f"#crypto #{asset} #trading"
+                )
+            tweets.append(("ganancia", asset, tweet_gain))
+
+        # Tweet 2: Best loss avoided
+        if best_avoided.get("asset") and best_avoided.get("pct", 0) > 0:
+            asset = best_avoided["asset"]
+            pct = best_avoided["pct"]
+            saved = 1000 * pct / 100
+
+            tweet_avoided = (
+                f"🛡️ Si hubieras seguido nuestras alertas de ${asset} "
+                f"con 1.000€ en los últimos 7 días, habrías evitado "
+                f"{saved:.2f}€ en pérdidas → {pct}% de ahorro.\n\n"
+                f"Te avisamos antes de las caídas.\n\n"
+                f"Canal gratuito → t.me/trianio\n\n"
+                f"#crypto #{asset} #trading"
+            )
+            if len(tweet_avoided) > 280:
+                tweet_avoided = (
+                    f"🛡️ ${asset} últimos 7 días con nuestras alertas:\n\n"
+                    f"Pérdidas evitadas: {saved:.2f}€ de 1.000€ ({pct}%)\n\n"
+                    f"Te avisamos antes de las caídas.\n\n"
+                    f"t.me/trianio\n\n"
+                    f"#crypto #{asset}"
+                )
+            tweets.append(("ahorro", asset, tweet_avoided))
+
+        if not tweets:
+            logger.info("No best performer data available for tweet")
+            return
+
+        # Build email with both tweets
+        blocks = []
+        for label, asset, tweet_text in tweets:
+            color = "#34d399" if label == "ganancia" else "#60a5fa"
+            blocks.append(f"""
+  <div style="margin-bottom:24px;">
+    <h3 style="color:{color};margin-top:0;">Tweet {label.upper()} — ${asset}</h3>
+    <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:#fff;">{tweet_text}</div>
+    <p style="color:#64748b;font-size:12px;margin-top:8px;">Caracteres: {len(tweet_text)}/280</p>
+  </div>""")
+
+        html = f"""
+<div style="font-family:monospace;padding:20px;background:#1e293b;color:#e2e8f0;border-radius:12px;">
+  <h2 style="color:#f59e0b;margin-top:0;">📊 Tweets diarios — mejores activos 7 días</h2>
+  <p style="color:#94a3b8;font-size:13px;">Copia y pega en X (uno o ambos):</p>
+  {"".join(blocks)}
+</div>
+"""
+        _send("info@trianio.com", "Trianio Admin", "📊 Tweets diarios — mejor ganancia + mejor ahorro (7 días)", html)
+        logger.info(f"📊 Email con tweets de best performers enviado ({len(tweets)} tweets)")
+
+    except Exception as e:
+        logger.warning(f"Error sending daily best performer tweet: {e}")

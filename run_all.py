@@ -615,6 +615,22 @@ def start_scheduler():
         timezone="Europe/Madrid",
         id="daily_blog_post",
     )
+    # Daily best performer tweet email: 11:00 Madrid
+    def send_best_performer_tweet():
+        try:
+            from src.services.channel_alert import send_daily_best_performer_tweet
+            send_daily_best_performer_tweet()
+        except Exception as e:
+            logger.warning(f"Error enviando tweet de best performer: {e}")
+
+    scheduler.add_job(
+        send_best_performer_tweet,
+        "cron",
+        hour=11,
+        minute=0,
+        timezone="Europe/Madrid",
+        id="daily_best_performer_tweet",
+    )
     # Daily channel summary: 10:00 Madrid — yesterday's prediction results
     def send_channel_summary():
         try:

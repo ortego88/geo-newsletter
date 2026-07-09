@@ -203,6 +203,20 @@ class PredictionValidatorScheduler:
                 stats = self.tracker.get_accuracy_stats()
                 _send_validation_telegram(result, stats)
 
+            # Send tweet draft email for correct predictions on major assets
+            if result["outcome"] == "correct" and asset in ("BTC", "ETH", "SOL", "BNB", "ADA", "XRP", "AVAX", "DOT", "NEAR", "DOGE"):
+                try:
+                    from src.services.channel_alert import send_correct_prediction_tweet_email
+                    send_correct_prediction_tweet_email(
+                        asset=asset,
+                        direction=pred.get("direction", ""),
+                        price_pred=pred.get("price_at_prediction", 0),
+                        price_val=result.get("price_at_validation", current_price),
+                        predicted_at=pred.get("predicted_at", ""),
+                    )
+                except Exception as e:
+                    logger.debug(f"Error sending tweet email for {asset}: {e}")
+
         if validated_count:
             stats = self.tracker.get_accuracy_stats()
             logger.info(
