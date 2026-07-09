@@ -617,9 +617,21 @@ def send_correct_prediction_tweet_email(asset: str, direction: str, price_pred: 
         except Exception:
             date_str = "ayer"
 
+        # Format prices: use commas for readability, no scientific notation
+        def _fmt_price(p):
+            if p >= 1000:
+                return f"{p:,.0f}".replace(",", ".")
+            elif p >= 1:
+                return f"{p:.2f}"
+            else:
+                return f"{p:.4f}"
+
+        p_pred = _fmt_price(price_pred)
+        p_val = _fmt_price(price_val)
+
         tweet = (
             f"{arrow} Señal {dir_text} en ${asset} detectada el {date_str}h.\n\n"
-            f"Resultado: ${price_pred:.4g} → ${price_val:.4g} ({move_pct:+.2f}%)\n\n"
+            f"Resultado: ${p_pred} → ${p_val} ({move_pct:+.2f}%)\n\n"
             f"Nuestro algoritmo analiza microestructura de mercado en tiempo real. "
             f"Sin noticias, sin opiniones. Solo datos.\n\n"
             f"Alertas gratis de $BTC → t.me/trianio\n\n"
@@ -630,7 +642,7 @@ def send_correct_prediction_tweet_email(asset: str, direction: str, price_pred: 
         if len(tweet) > 280:
             tweet = (
                 f"{arrow} ${asset} — señal {dir_text} el {date_str}h\n\n"
-                f"${price_pred:.4g} → ${price_val:.4g} ({move_pct:+.2f}%)\n\n"
+                f"${p_pred} → ${p_val} ({move_pct:+.2f}%)\n\n"
                 f"Algoritmo de microestructura. Sin opiniones, solo datos.\n\n"
                 f"t.me/trianio\n\n"
                 f"#crypto #{asset}"
