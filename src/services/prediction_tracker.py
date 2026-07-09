@@ -586,7 +586,7 @@ class PredictionTracker:
         logger.info(
             f"Predicción validada: ID={prediction_id} | {outcome_icon} {outcome.upper()} | "
             f"Dirección: {direction} | Mejor cambio: {best_change_pct:+.2f}% | "
-            f"Umbral: {_THRESHOLD_PCT}% | Ventana {'expirada' if window_expired else 'activa'}"
+            f"Umbral: {threshold}% | Ventana {'expirada' if window_expired else 'activa'}"
         )
         return result
 
