@@ -530,10 +530,11 @@ def create_app():
             return jsonify([])
 
         # Batch request with only valid symbols
+        # Binance requires literal quotes in the query string, not URL-encoded
         try:
+            symbols_param = "[" + ",".join(f'"{s}"' for s in valid) + "]"
             resp = _req.get(
-                "https://api.binance.com/api/v3/ticker/price",
-                params={"symbols": _json.dumps(valid)},
+                f"https://api.binance.com/api/v3/ticker/price?symbols={symbols_param}",
                 timeout=5,
             )
             data = resp.json()
