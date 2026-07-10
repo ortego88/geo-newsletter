@@ -499,22 +499,50 @@ def create_app():
         return Response(xml, mimetype="application/xml")
 
 
+    _BINANCE_VALID_SYMBOLS = set()
+
     @main_bp.route("/api/prices")
     def api_prices():
         """Proxy to Binance for live prices — avoids CORS issues in browser."""
+        import json as _json
         import requests as _req
+        from concurrent.futures import ThreadPoolExecutor
+        nonlocal _BINANCE_VALID_SYMBOLS
+
         symbols_raw = request.args.get("symbols", "")
         if not symbols_raw:
             return jsonify([])
         try:
+            symbols_list = _json.loads(symbols_raw)
+        except Exception:
+            return jsonify([])
+
+        # Cache valid Binance symbols (refreshed once per process)
+        if not _BINANCE_VALID_SYMBOLS:
+            try:
+                info = _req.get("https://api.binance.com/api/v3/exchangeInfo", timeout=5).json()
+                _BINANCE_VALID_SYMBOLS = {s["symbol"] for s in info.get("symbols", [])}
+            except Exception:
+                pass
+
+        # Filter to only valid symbols
+        valid = [s for s in symbols_list if not _BINANCE_VALID_SYMBOLS or s in _BINANCE_VALID_SYMBOLS]
+        if not valid:
+            return jsonify([])
+
+        # Batch request with only valid symbols
+        try:
             resp = _req.get(
                 "https://api.binance.com/api/v3/ticker/price",
-                params={"symbols": symbols_raw},
+                params={"symbols": _json.dumps(valid)},
                 timeout=5,
             )
-            return jsonify(resp.json())
+            data = resp.json()
+            if isinstance(data, list):
+                return jsonify(data)
         except Exception:
-            return jsonify([]), 502
+            pass
+        return jsonify([])
 
     @main_bp.route("/api/simulate", methods=["POST"])
     def simulate():

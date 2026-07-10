@@ -273,10 +273,16 @@
                       {% endif %}
                     </td>
                     <td class="px-3 py-3 text-right font-mono"
+                        {% if outcome == 'pending' %}
                         data-live-asset="{{ pred.asset }}"
                         data-entry-price="{{ pred.price_at_prediction or 0 }}"
-                        data-direction="{{ pred.direction or 'neutral' }}">
-                      <span class="live-price text-slate-500">—</span>
+                        data-direction="{{ pred.direction or 'neutral' }}"
+                        {% endif %}>
+                      {% if outcome == 'pending' %}
+                        <span class="live-price text-slate-500">—</span>
+                      {% else %}
+                        <span class="text-slate-500">—</span>
+                      {% endif %}
                     </td>
                     <td class="px-3 py-3 text-center">
                       {% if outcome == 'correct' %}
