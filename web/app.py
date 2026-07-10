@@ -499,15 +499,13 @@ def create_app():
         return Response(xml, mimetype="application/xml")
 
 
-    _BINANCE_VALID_SYMBOLS = set()
+    _binance_cache = {"symbols": None}
 
     @main_bp.route("/api/prices")
     def api_prices():
         """Proxy to Binance for live prices — avoids CORS issues in browser."""
         import json as _json
         import requests as _req
-        from concurrent.futures import ThreadPoolExecutor
-        nonlocal _BINANCE_VALID_SYMBOLS
 
         symbols_raw = request.args.get("symbols", "")
         if not symbols_raw:
@@ -517,16 +515,17 @@ def create_app():
         except Exception:
             return jsonify([])
 
-        # Cache valid Binance symbols (refreshed once per process)
-        if not _BINANCE_VALID_SYMBOLS:
+        # Cache valid Binance symbols (loaded once per process)
+        if _binance_cache["symbols"] is None:
             try:
-                info = _req.get("https://api.binance.com/api/v3/exchangeInfo", timeout=5).json()
-                _BINANCE_VALID_SYMBOLS = {s["symbol"] for s in info.get("symbols", [])}
+                info = _req.get("https://api.binance.com/api/v3/exchangeInfo", timeout=10).json()
+                _binance_cache["symbols"] = {s["symbol"] for s in info.get("symbols", [])}
             except Exception:
-                pass
+                _binance_cache["symbols"] = set()
 
         # Filter to only valid symbols
-        valid = [s for s in symbols_list if not _BINANCE_VALID_SYMBOLS or s in _BINANCE_VALID_SYMBOLS]
+        valid_set = _binance_cache["symbols"]
+        valid = [s for s in symbols_list if s in valid_set] if valid_set else symbols_list
         if not valid:
             return jsonify([])
 
