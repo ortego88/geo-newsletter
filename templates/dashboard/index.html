@@ -736,9 +736,9 @@
     });
     if (assets.size === 0) return;
 
-    // Fetch all from Binance in one call
+    // Fetch all prices via server proxy (avoids Binance CORS issues)
     var symbols = JSON.stringify(Array.from(assets).map(function(a){ return a + 'USDT'; }));
-    fetch('https://api.binance.com/api/v3/ticker/price?symbols=' + encodeURIComponent(symbols))
+    fetch('/api/prices?symbols=' + encodeURIComponent(symbols))
       .then(function(r){ return r.json(); })
       .then(function(data) {
         var prices = {};

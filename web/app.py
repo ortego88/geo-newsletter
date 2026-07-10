@@ -499,6 +499,23 @@ def create_app():
         return Response(xml, mimetype="application/xml")
 
 
+    @main_bp.route("/api/prices")
+    def api_prices():
+        """Proxy to Binance for live prices — avoids CORS issues in browser."""
+        import requests as _req
+        symbols_raw = request.args.get("symbols", "")
+        if not symbols_raw:
+            return jsonify([])
+        try:
+            resp = _req.get(
+                "https://api.binance.com/api/v3/ticker/price",
+                params={"symbols": symbols_raw},
+                timeout=5,
+            )
+            return jsonify(resp.json())
+        except Exception:
+            return jsonify([]), 502
+
     @main_bp.route("/api/simulate", methods=["POST"])
     def simulate():
         data = request.get_json(silent=True) or {}
