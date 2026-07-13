@@ -361,6 +361,34 @@ class PredictionTracker:
             logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
             return None
 
+        # ── Quality gate: reject signals with historically poor accuracy ──
+        confidence = float(analysis.get("confidence", 0))
+        raw_source = event.get("source", "")
+        is_price_signal = "Price Monitor" in raw_source or raw_source == "price_signal"
+        is_up = direction in ("up", "bullish", "positive", "alza")
+
+        # 1. Block Price Monitor signals — 41% accuracy
+        if is_price_signal:
+            logger.info(f"⏭️ Filtro calidad: Price Monitor descartado para {asset} (41% histórico)")
+            return None
+
+        # 2. Block UP signals with confidence < 65 — 27.6% accuracy
+        if is_up and confidence < 65:
+            logger.info(f"⏭️ Filtro calidad: UP+conf<65 descartado para {asset} (conf={confidence})")
+            return None
+
+        # 3. Block assets with 0% accuracy in last 7 days
+        _BLOCKED_ASSETS = {"BNB", "SUI", "OP", "DOGE"}
+        if asset.upper() in _BLOCKED_ASSETS:
+            logger.info(f"⏭️ Filtro calidad: {asset} bloqueado (0% accuracy última semana)")
+            return None
+
+        # 4. Block bad hours: 15:00-20:00 UTC (27-32% accuracy)
+        hour_utc = datetime.utcnow().hour
+        if 15 <= hour_utc <= 20:
+            logger.info(f"⏭️ Filtro calidad: hora {hour_utc} UTC descartada (27-32% histórico)")
+            return None
+
         # Max 3 alerted predictions per asset per day
         daily_count = self._count_daily_predictions(asset)
         if daily_count >= 3:
