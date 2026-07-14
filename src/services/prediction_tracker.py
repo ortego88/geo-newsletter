@@ -377,10 +377,10 @@ class PredictionTracker:
             logger.info(f"⏭️ Filtro calidad: conf<65 descartado para {asset} {direction} (conf={confidence})")
             return None
 
-        # 3. Block assets with 0% accuracy in last 7 days
-        _BLOCKED_ASSETS = {"BNB", "SUI", "OP", "DOGE"}
+        # 3. Block assets with <50% accuracy historically (sufficient sample)
+        _BLOCKED_ASSETS = {"BNB", "AVAX", "AXS", "WIF", "AAVE", "LINK", "SUI", "SOL", "INJ"}
         if asset.upper() in _BLOCKED_ASSETS:
-            logger.info(f"⏭️ Filtro calidad: {asset} bloqueado (0% accuracy última semana)")
+            logger.info(f"⏭️ Filtro calidad: {asset} bloqueado (<50% accuracy histórico)")
             return None
 
         # 4. Block bad hours: 15:00-20:00 UTC (27-32% accuracy)
