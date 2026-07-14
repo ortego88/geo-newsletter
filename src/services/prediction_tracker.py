@@ -372,9 +372,9 @@ class PredictionTracker:
             logger.info(f"⏭️ Filtro calidad: Price Monitor descartado para {asset} (41% histórico)")
             return None
 
-        # 2. Block UP signals with confidence < 65 — 27.6% accuracy
-        if is_up and confidence < 65:
-            logger.info(f"⏭️ Filtro calidad: UP+conf<65 descartado para {asset} (conf={confidence})")
+        # 2. Minimum confidence 65 for ALL signals (below = coin flip or worse)
+        if confidence < 65:
+            logger.info(f"⏭️ Filtro calidad: conf<65 descartado para {asset} {direction} (conf={confidence})")
             return None
 
         # 3. Block assets with 0% accuracy in last 7 days
@@ -388,6 +388,22 @@ class PredictionTracker:
         if 15 <= hour_utc <= 20:
             logger.info(f"⏭️ Filtro calidad: hora {hour_utc} UTC descartada (27-32% histórico)")
             return None
+
+        # 5. Max 3 predictions per scheduled cycle (prevents 8-prediction dumps)
+        if not raw_source:  # scheduled analysis has empty source
+            cutoff_1h = (datetime.utcnow() - timedelta(hours=1)).isoformat()
+            try:
+                with self._get_conn() as conn:
+                    recent_scheduled = conn.execute(text("""
+                        SELECT COUNT(*) FROM predictions
+                        WHERE (source IS NULL OR source = '')
+                          AND predicted_at >= :cutoff
+                    """), {"cutoff": cutoff_1h}).fetchone()[0]
+                if recent_scheduled >= 3:
+                    logger.info(f"⏭️ Filtro calidad: límite 3/ciclo scheduled alcanzado ({asset})")
+                    return None
+            except Exception:
+                pass
 
         # Max 3 alerted predictions per asset per day
         daily_count = self._count_daily_predictions(asset)
