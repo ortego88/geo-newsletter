@@ -372,13 +372,14 @@ class PredictionTracker:
             logger.info(f"⏭️ Filtro calidad: Price Monitor descartado para {asset} (41% histórico)")
             return None
 
-        # 2. Minimum confidence 65 for ALL signals (below = coin flip or worse)
-        if confidence < 65:
-            logger.info(f"⏭️ Filtro calidad: conf<65 descartado para {asset} {direction} (conf={confidence})")
+        # 2. Minimum confidence: 70 for UP (42% accuracy at 65), 65 for DOWN (75%)
+        min_conf = 70 if is_up else 65
+        if confidence < min_conf:
+            logger.info(f"⏭️ Filtro calidad: {direction} conf<{min_conf} descartado para {asset} (conf={confidence})")
             return None
 
-        # 3. Block assets with <50% accuracy historically (sufficient sample)
-        _BLOCKED_ASSETS = {"BNB", "AVAX", "AXS", "WIF", "AAVE", "LINK", "SUI", "SOL", "INJ"}
+        # 3. Block assets with poor accuracy historically
+        _BLOCKED_ASSETS = {"BNB", "AVAX", "AXS", "WIF", "AAVE", "LINK", "SUI", "SOL", "INJ", "OP", "DOGE", "XRP"}
         if asset.upper() in _BLOCKED_ASSETS:
             logger.info(f"⏭️ Filtro calidad: {asset} bloqueado (<50% accuracy histórico)")
             return None
