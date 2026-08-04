@@ -361,37 +361,24 @@ class PredictionTracker:
             logger.info(f"⏭️ Predicción neutral descartada para {asset}: no genera valor")
             return None
 
-        # ── Quality gate: reject signals with historically poor accuracy ──
+        # ── Quality gate: lightweight filters to ensure minimum signal quality ──
         confidence = float(analysis.get("confidence", 0))
         raw_source = event.get("source", "")
         is_price_signal = "Price Monitor" in raw_source or raw_source == "price_signal"
         is_up = direction in ("up", "bullish", "positive", "alza")
 
-        # 1. Block Price Monitor signals — 41% accuracy
-        if is_price_signal:
-            logger.info(f"⏭️ Filtro calidad: Price Monitor descartado para {asset} (41% histórico)")
+        # 1. Price Monitor: require multi-timeframe confirmation (conf >= 65)
+        if is_price_signal and confidence < 65:
+            logger.info(f"⏭️ Price Monitor conf<65 descartado para {asset} (conf={confidence})")
             return None
 
-        # 2. Minimum confidence: 70 for UP (42% accuracy at 65), 65 for DOWN (75%)
-        min_conf = 70 if is_up else 65
-        if confidence < min_conf:
-            logger.info(f"⏭️ Filtro calidad: {direction} conf<{min_conf} descartado para {asset} (conf={confidence})")
+        # 2. Minimum confidence: 65 for all directions
+        if confidence < 65:
+            logger.info(f"⏭️ Filtro calidad: conf<65 descartado para {asset} (conf={confidence})")
             return None
 
-        # 3. Block assets with poor accuracy historically
-        _BLOCKED_ASSETS = {"BNB", "AVAX", "AXS", "WIF", "AAVE", "LINK", "SUI", "SOL", "INJ", "OP", "DOGE", "XRP"}
-        if asset.upper() in _BLOCKED_ASSETS:
-            logger.info(f"⏭️ Filtro calidad: {asset} bloqueado (<50% accuracy histórico)")
-            return None
-
-        # 4. Block bad hours: 15:00-20:00 UTC (27-32% accuracy)
-        hour_utc = datetime.utcnow().hour
-        if 15 <= hour_utc <= 20:
-            logger.info(f"⏭️ Filtro calidad: hora {hour_utc} UTC descartada (27-32% histórico)")
-            return None
-
-        # 5. Max 3 predictions per scheduled cycle (prevents 8-prediction dumps)
-        if not raw_source:  # scheduled analysis has empty source
+        # 3. Max 8 predictions per scheduled cycle
+        if not raw_source:
             cutoff_1h = (datetime.utcnow() - timedelta(hours=1)).isoformat()
             try:
                 with self._get_conn() as conn:
@@ -400,8 +387,8 @@ class PredictionTracker:
                         WHERE (source IS NULL OR source = '')
                           AND predicted_at >= :cutoff
                     """), {"cutoff": cutoff_1h}).fetchone()[0]
-                if recent_scheduled >= 3:
-                    logger.info(f"⏭️ Filtro calidad: límite 3/ciclo scheduled alcanzado ({asset})")
+                if recent_scheduled >= 8:
+                    logger.info(f"⏭️ Filtro calidad: límite 8/ciclo scheduled alcanzado ({asset})")
                     return None
             except Exception:
                 pass

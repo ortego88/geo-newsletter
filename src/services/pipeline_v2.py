@@ -582,11 +582,11 @@ class AnalysisPipeline:
                 market_bearish = btc_7d <= -5
 
                 if asset_bearish and market_bearish:
-                    required_conf = 90  # almost impossible — block UP in full bear market
+                    required_conf = 80
                 elif asset_bearish or market_bearish:
-                    required_conf = 85
+                    required_conf = 75
                 else:
-                    required_conf = 80  # UP always needs 80+
+                    required_conf = 70
 
                 if event_confidence < required_conf:
                     logger.info(

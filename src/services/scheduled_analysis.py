@@ -17,63 +17,71 @@ logger = logging.getLogger("scheduled_analysis")
 # Mid-caps that scheduled analysis works well for (>50% accuracy historically)
 # Large caps (BTC, ETH, SOL, BNB) only included with STRICT threshold — they rarely move 2% without catalyst
 # Excluded entirely: DOT (33%), GRT (0%), LINK (42%) — consistently fail
-PRIORITY_ASSETS = ["NEAR", "ADA", "OP", "SUI", "ARB", "XRP"]
-SECONDARY_ASSETS = ["DOGE", "AVAX", "INJ", "MANA", "ENJ", "AXS", "WIF", "PENDLE", "CRV", "GALA"]
+PRIORITY_ASSETS = ["NEAR", "ADA", "OP", "SUI", "ARB", "XRP", "LINK", "AVAX", "DOT"]
+SECONDARY_ASSETS = [
+    "DOGE", "INJ", "MANA", "ENJ", "AXS", "WIF", "PENDLE", "CRV", "GALA",
+    "AAVE", "UNI", "FIL", "ATOM", "RENDER", "FET", "APT", "TIA", "MATIC",
+    "SHIB", "LTC", "ICP", "STX", "HBAR",
+]
 
-# Large caps: with 1%/1.5% threshold they're now viable for prediction
-# Still need slightly higher confidence than mid-caps since they move less
 LARGE_CAP_ASSETS = ["BTC", "ETH", "SOL", "BNB"]
-LARGE_CAP_MIN_CONFIDENCE = 60  # Same as mid-caps; 1% validation bar makes this viable
+LARGE_CAP_MIN_CONFIDENCE = 60
 
 _BINANCE_SYMBOL_MAP = {"JUPITER": "JUP"}
 _NO_BINANCE_SPOT = {"MNT", "AIOZ", "CRO", "OKB", "GT", "KAS"}
 
-SCHEDULED_SYSTEM_PROMPT = """Eres un analista crypto de élite. Se te proporcionan datos técnicos actuales de un activo. Tu trabajo es predecir la dirección MÁS PROBABLE del precio en las próximas 24 horas.
-
-CONTEXTO: Este es un análisis programado para un servicio de alertas. Los usuarios NECESITAN recibir una valoración diaria de cada activo principal. Tu análisis se enviará como alerta informativa.
+SCHEDULED_SYSTEM_PROMPT = """Eres un analista crypto de élite. Se te proporcionan datos técnicos y de microestructura de un activo. Tu trabajo es predecir la dirección MÁS PROBABLE del precio en las próximas 24 horas.
 
 UMBRALES DE VALIDACIÓN (el precio debe moverse ESTO en la dirección predicha):
-- BTC, ETH: ≥1% (son large caps, 1% es significativo)
+- BTC, ETH: ≥1%
 - SOL, BNB, XRP, ADA, DOGE, AVAX, DOT, LINK: ≥1.5%
 - Resto de mid/small caps: ≥2%
 
 REGLAS:
-1. SIEMPRE elige una dirección (up o down) — nunca neutral. El mercado siempre tiene un sesgo.
-2. La confianza refleja la FUERZA de la señal técnica, no si estás 100% seguro.
-3. Busca: tendencia dominante (6h/1h), momentum, volumen, RSI, funding rate.
-4. Incluso con datos mixtos, identifica cuál es la dirección con MÁS peso técnico.
-5. Para BTC/ETH/SOL/BNB: solo necesitas predecir un movimiento de 1-1.5%, que es mucho más factible que 2%. Calibra la confidence en el rango 62-75 cuando hay CUALQUIER señal técnica identificable.
+1. Elige UP o DOWN solo cuando tengas al menos 2 indicadores alineados.
+2. Si los datos son mixtos sin sesgo claro, usa confidence < 55 para indicar baja convicción.
+3. NO asumas que "down" es siempre más probable — analiza los datos sin sesgo direccional.
+4. El order book (bid/ask ratio) y el open interest son señales de presión compradora/vendedora.
+5. Si BTC se mueve fuerte en una dirección, las altcoins suelen seguir (correlación).
 
 CALIBRACIÓN DE CONFIDENCE:
-- 75-82: Confluencia fuerte — tendencia + momentum + volumen alineados. El movimiento es probable.
-- 68-74: Señal clara con alguna ambigüedad menor. Dirección probable pero no garantizada.
-- 62-67: Sesgo técnico identificable. Para large caps (BTC/ETH/SOL/BNB) esto es SUFICIENTE — 1% se consigue con facilidad.
-- 50-61: Señal muy débil, casi lateral. Aún así, elige la dirección más probable.
+- 75-82: Confluencia fuerte — tendencia + momentum + microestructura alineados.
+- 68-74: Señal clara, 2-3 indicadores coinciden. Alta probabilidad.
+- 62-67: Sesgo identificable con alguna ambigüedad. Predicción razonable.
+- 55-61: Señal débil, solo 1 indicador sugiere dirección.
+- 50-54: Sin señal real — lateralidad. Evita predecir con alta convicción aquí.
 
 INDICADORES CLAVE:
-- RSI >65 o <35: sesgo direccional claro (+5 a confidence)
-- 1h y 6h en misma dirección: confluencia temporal (+8 a confidence)
-- Volumen alto: mercado activo, movimiento tiene fuerza (+5 a confidence)
-- Funding rate extremo: posible reversión inminente (en la dirección OPUESTA al funding)
-- 24h change >2%: momentum existente tiene inercia
+- RSI >70 o <30: sobrecompra/sobreventa — posible reversión
+- 1h y 6h en misma dirección: confluencia temporal (+8 confianza)
+- Order book >60% bids: presión compradora. >60% asks: presión vendedora.
+- Funding rate positivo extremo (>0.05%): longs sobrepalancados → probable caída
+- Funding rate negativo extremo (<-0.03%): shorts sobrepalancados → probable subida
+- Volumen alto + dirección clara: el movimiento tiene fuerza
+- BTC y activo moviéndose en misma dirección: confirmación del sector
 
 Responde SOLO con JSON válido."""
 
 SCHEDULED_PROMPT_TEMPLATE = """Análisis técnico programado para {asset}:
 
-DATOS DE MERCADO ACTUALES:
+DATOS DE MERCADO:
 - Precio: ${price:.6g}
 - Cambio 1h: {change_1h:+.2f}%
 - Cambio 6h: {change_6h:+.2f}%
 - Cambio 24h: {change_24h:+.2f}%
-- Volumen 24h: ${volume:.0f}
-- Volumen vs media: {volume_label}
+- Volumen 24h: ${volume:.0f} ({volume_label})
 - RSI(14): {rsi:.0f} ({rsi_label})
-- Tendencia 7d: {trend_7d}
-- Cambio 7d: {change_7d:+.1f}%
-- Funding rate: {funding}
+- Tendencia 7d: {trend_7d} ({change_7d:+.1f}%)
 
-Pregunta: ¿Cuál es la dirección MÁS PROBABLE de {asset} en las próximas 24h? Elige UP o DOWN — nunca neutral.
+MICROESTRUCTURA:
+- Funding rate: {funding} (últimas 3 lecturas: {funding_history})
+- Order book: {bid_ratio}% bids / {ask_ratio}% asks (top 20 niveles)
+- Open interest: {open_interest}
+- BTC contexto: {btc_change_1h:+.2f}% (1h), {btc_change_6h:+.2f}% (6h)
+
+Pregunta: ¿Cuál es la dirección MÁS PROBABLE de {asset} en las próximas 24h?
+
+Si no hay al menos 2 indicadores claros alineados, responde con confidence < 55.
 
 Responde con JSON exacto:
 {{
@@ -166,15 +174,75 @@ def _get_market_data(asset: str) -> dict | None:
     try:
         r = requests.get(
             "https://fapi.binance.com/fapi/v1/fundingRate",
-            params={"symbol": sym, "limit": 1},
+            params={"symbol": sym, "limit": 3},
             timeout=5,
         )
         if r.status_code == 200 and r.json():
-            data["funding_rate"] = float(r.json()[0]["fundingRate"])
+            rates = r.json()
+            data["funding_rate"] = float(rates[0]["fundingRate"])
+            data["funding_history"] = [round(float(x["fundingRate"]) * 100, 4) for x in rates]
         else:
             data["funding_rate"] = 0
+            data["funding_history"] = []
     except Exception:
         data["funding_rate"] = 0
+        data["funding_history"] = []
+
+    # Open interest change (futures)
+    try:
+        r = requests.get(
+            "https://fapi.binance.com/fapi/v1/openInterest",
+            params={"symbol": sym},
+            timeout=5,
+        )
+        if r.status_code == 200:
+            data["open_interest"] = float(r.json().get("openInterest", 0))
+        else:
+            data["open_interest"] = 0
+    except Exception:
+        data["open_interest"] = 0
+
+    # Order book imbalance (top 20 levels)
+    try:
+        r = requests.get(
+            "https://api.binance.com/api/v3/depth",
+            params={"symbol": sym, "limit": 20},
+            timeout=5,
+        )
+        if r.status_code == 200:
+            book = r.json()
+            bid_vol = sum(float(b[1]) * float(b[0]) for b in book.get("bids", []))
+            ask_vol = sum(float(a[1]) * float(a[0]) for a in book.get("asks", []))
+            total = bid_vol + ask_vol
+            data["bid_ratio"] = round(bid_vol / total * 100, 1) if total > 0 else 50
+            data["ask_ratio"] = round(ask_vol / total * 100, 1) if total > 0 else 50
+        else:
+            data["bid_ratio"] = 50
+            data["ask_ratio"] = 50
+    except Exception:
+        data["bid_ratio"] = 50
+        data["ask_ratio"] = 50
+
+    # BTC context (if not BTC itself)
+    if asset.upper() != "BTC":
+        try:
+            r = requests.get(
+                "https://api.binance.com/api/v3/klines",
+                params={"symbol": "BTCUSDT", "interval": "1h", "limit": 7},
+                timeout=5,
+            )
+            if r.status_code == 200:
+                btc_candles = r.json()
+                if len(btc_candles) >= 7:
+                    btc_open_6h = float(btc_candles[0][1])
+                    btc_close = float(btc_candles[-1][4])
+                    data["btc_change_6h"] = round((btc_close - btc_open_6h) / btc_open_6h * 100, 2)
+                    btc_open_1h = float(btc_candles[-1][1])
+                    data["btc_change_1h"] = round((btc_close - btc_open_1h) / btc_open_1h * 100, 2)
+        except Exception:
+            pass
+    data.setdefault("btc_change_6h", 0)
+    data.setdefault("btc_change_1h", 0)
 
     return data
 
@@ -243,6 +311,10 @@ def run_scheduled_analysis() -> list[dict]:
 
         # Build prompt with real data
         funding_str = f"{market_data['funding_rate']*100:.4f}%" if market_data['funding_rate'] != 0 else "neutral (0%)"
+        funding_hist = market_data.get("funding_history", [])
+        funding_hist_str = ", ".join(f"{x:.4f}%" for x in funding_hist) if funding_hist else "N/A"
+        oi_val = market_data.get("open_interest", 0)
+        oi_str = f"{oi_val:,.0f}" if oi_val > 0 else "N/A"
         prompt = SCHEDULED_PROMPT_TEMPLATE.format(
             asset=asset,
             price=market_data["price"],
@@ -256,6 +328,12 @@ def run_scheduled_analysis() -> list[dict]:
             trend_7d=market_data["trend_7d"],
             change_7d=market_data["change_7d"],
             funding=funding_str,
+            funding_history=funding_hist_str,
+            bid_ratio=market_data.get("bid_ratio", 50),
+            ask_ratio=market_data.get("ask_ratio", 50),
+            open_interest=oi_str,
+            btc_change_1h=market_data.get("btc_change_1h", 0),
+            btc_change_6h=market_data.get("btc_change_6h", 0),
         )
 
         result = _call_claude(prompt, system_prompt=SCHEDULED_SYSTEM_PROMPT)

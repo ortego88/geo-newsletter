@@ -152,7 +152,7 @@ def get_daily_best_predictions(n: int = 2) -> list[dict]:
                 FROM predictions
                 WHERE outcome = 'pending'
                   AND alerted = 1
-                  AND predicted_at >= (NOW() - INTERVAL '4 hours')
+                  AND predicted_at >= (NOW() - INTERVAL '12 hours')
                 ORDER BY confidence DESC
                 LIMIT :n
             """), {"n": n}).mappings().fetchall()
